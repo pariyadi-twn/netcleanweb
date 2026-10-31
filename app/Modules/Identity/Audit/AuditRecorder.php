@@ -24,9 +24,25 @@ final class AuditRecorder
 
     public const SUBJECT_QUOTE = 'quote';
 
+    public const SUBJECT_PAYMENT = 'payment';
+
+    public const SUBJECT_INVOICE = 'invoice';
+
+    public const SUBJECT_REFUND = 'refund';
+
+    public const SUBJECT_ALLOCATION = 'payment_allocation';
+
+    public const SUBJECT_EXPENSE = 'expense';
+
+    public const SUBJECT_CASH_TRANSFER = 'cash_transfer';
+
+    public const SUBJECT_IMPORT_BATCH = 'import_batch';
+
+    public const SUBJECT_REPORT_EXPORT = 'report_export';
+
     public const SUBJECT_OUTBOX_EVENT = 'outbox_event';
 
-    private const ALLOWED_SUBJECTS = [self::SUBJECT_TENANT_MEMBERSHIP, self::SUBJECT_ROLE, self::SUBJECT_BRANCH, self::SUBJECT_SERVICE, self::SUBJECT_DEADLINE_PROMISE, self::SUBJECT_ORDER, self::SUBJECT_QUOTE, self::SUBJECT_OUTBOX_EVENT];
+    private const ALLOWED_SUBJECTS = [self::SUBJECT_TENANT_MEMBERSHIP, self::SUBJECT_ROLE, self::SUBJECT_BRANCH, self::SUBJECT_SERVICE, self::SUBJECT_DEADLINE_PROMISE, self::SUBJECT_ORDER, self::SUBJECT_QUOTE, self::SUBJECT_PAYMENT, self::SUBJECT_INVOICE, self::SUBJECT_REFUND, self::SUBJECT_ALLOCATION, self::SUBJECT_EXPENSE, self::SUBJECT_CASH_TRANSFER, self::SUBJECT_IMPORT_BATCH, self::SUBJECT_REPORT_EXPORT, self::SUBJECT_OUTBOX_EVENT];
 
     private const SENSITIVE_KEY_PATTERN = '/pass(word)?|token|secret|mfa|recovery|authorization|api[_-]?key|credential/i';
 

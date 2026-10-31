@@ -10,7 +10,7 @@ final class AttachmentUrl
 {
     public function handle(Attachment $attachment): string
     {
-        if ($attachment->state !== AttachmentState::Ready) {
+        if ($attachment->state !== AttachmentState::Ready || $attachment->purpose === 'report_export') {
             abort(404);
         }
 

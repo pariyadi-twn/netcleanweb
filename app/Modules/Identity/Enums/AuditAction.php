@@ -15,6 +15,18 @@ enum AuditAction: string
     case DiscountApprovalDecided = 'discount.approval_decided';
     case OrderRevised = 'order.revised';
     case OrderRevisionDecided = 'order.revision_decided';
+    case PaymentRecorded = 'payment.recorded';
+    case CreditApproved = 'credit.approved';
+    case RefundRequested = 'refund.requested';
+    case RefundDecided = 'refund.decided';
+    case RefundStatusChanged = 'refund.status_changed';
+    case AllocationReversed = 'allocation.reversed';
+    case ExpenseCreated = 'expense.created';
+    case ExpenseDecided = 'expense.decided';
+    case CashTransferConfirmed = 'cash_transfer.confirmed';
+    case OrderCancelled = 'order.cancelled';
+    case ImportCompleted = 'import.completed';
+    case ExportCompleted = 'export.completed';
     case BagRepacked = 'bag.repacked';
     case OutboxEventApplied = 'outbox.event_applied';
 }

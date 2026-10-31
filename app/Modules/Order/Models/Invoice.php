@@ -5,6 +5,7 @@ namespace App\Modules\Order\Models;
 use App\Modules\Customer\Models\Customer;
 use App\Modules\Identity\Models\Branch;
 use App\Modules\Order\Enums\InvoiceDocumentStatus;
+use App\Modules\Payment\Models\PaymentAllocation;
 use App\Support\Database\TenantModel;
 use Database\Factories\InvoiceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -53,6 +54,29 @@ class Invoice extends TenantModel
     public function adjustments(): HasMany
     {
         return $this->hasMany(InvoiceAdjustment::class);
+    }
+
+    public function allocations(): HasMany
+    {
+        return $this->hasMany(PaymentAllocation::class);
+    }
+
+    public function totalRupiah(): int
+    {
+        return (int) $this->original_total_rupiah + (int) $this->adjustments()->sum('amount_rupiah');
+    }
+
+    public function netAllocatedRupiah(): int
+    {
+        $this->loadMissing(['allocations.reversals', 'allocations.refundAllocations.refund']);
+
+        return (int) $this->allocations->sum(function (PaymentAllocation $allocation): int {
+            $refunded = $allocation->refundAllocations
+                ->filter(fn ($refundAllocation): bool => $refundAllocation->refund?->status->value === 'succeeded')
+                ->sum('amount_rupiah');
+
+            return (int) $allocation->amount_rupiah - (int) $allocation->reversals->sum('amount_rupiah') - (int) $refunded;
+        });
     }
 
     /** @return array<string, string> */

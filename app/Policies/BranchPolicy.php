@@ -24,4 +24,11 @@ class BranchPolicy
             && $this->context->can(PermissionCode::BranchesManage)
             && $this->context->canAccessBranch($branch);
     }
+
+    public function viewReports(User $user, Branch $branch): bool
+    {
+        return $user->id === $this->context->userId
+            && $this->context->can(PermissionCode::ReportsView)
+            && $this->context->canAccessBranch($branch);
+    }
 }

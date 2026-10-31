@@ -13,11 +13,11 @@ final class BuildReceipt
      */
     public function handle(Order $order, ?string $trackingToken = null): array
     {
-        $order->loadMissing(['lines', 'invoice.adjustments', 'salesBranch', 'pickupBranch', 'quote']);
+        $order->loadMissing(['lines', 'invoice.adjustments', 'invoice.allocations', 'salesBranch', 'pickupBranch', 'quote']);
 
         $invoice = $order->invoice;
-        $invoiceTotal = (int) ($invoice?->original_total_rupiah ?? 0)
-            + (int) ($invoice?->adjustments?->sum('amount_rupiah') ?? 0);
+        $invoiceTotal = $invoice?->totalRupiah() ?? 0;
+        $invoicePaid = $invoice?->netAllocatedRupiah() ?? 0;
         $lines = $order->lines->map(fn ($line): array => [
             'service_name' => $line->service_snapshot['name'] ?? null,
             'unit' => $line->unit->value,
@@ -57,8 +57,8 @@ final class BuildReceipt
                 'express_surcharge_rupiah' => array_sum(array_column($lines, 'express_surcharge_rupiah')),
                 'delivery_fee_rupiah' => $delivery,
                 'total_rupiah' => $invoiceTotal,
-                'paid_rupiah' => 0,
-                'balance_due_rupiah' => $invoiceTotal,
+                'paid_rupiah' => $invoicePaid,
+                'balance_due_rupiah' => $invoiceTotal - $invoicePaid,
             ],
             'tracking_url' => null,
         ];

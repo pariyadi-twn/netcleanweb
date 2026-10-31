@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'height',
     'original_name',
     'state',
+    'purpose',
 ])]
 #[UseFactory(AttachmentFactory::class)]
 class Attachment extends TenantModel

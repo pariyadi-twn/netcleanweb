@@ -50,4 +50,9 @@ class OrderPolicy
     {
         return $this->revise($user, $order);
     }
+
+    public function cancel(User $user, Order $order): bool
+    {
+        return $this->revise($user, $order);
+    }
 }

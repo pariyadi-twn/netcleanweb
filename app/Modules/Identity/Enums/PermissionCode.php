@@ -19,5 +19,19 @@ enum PermissionCode: string
     case OrdersManage = 'orders.manage';
     case DiscountsStandard = 'discounts.standard';
     case DiscountsOverride = 'discounts.override';
+    case CashView = 'cash.view';
+    case CashManage = 'cash.manage';
+    case CashReopen = 'cash.reopen';
+    case PaymentsView = 'payments.view';
+    case PaymentsManage = 'payments.manage';
+    case CreditManage = 'credit.manage';
+    case RefundsRequest = 'refunds.request';
+    case RefundsApprove = 'refunds.approve';
+    case ExpensesManage = 'expenses.manage';
+    case ExpensesApprove = 'expenses.approve';
+    case CancellationsApprove = 'cancellations.approve';
+    case ReportsView = 'reports.view';
+    case ReportsExport = 'reports.export';
+    case ImportsManage = 'imports.manage';
     case AuditView = 'audit.view';
 }

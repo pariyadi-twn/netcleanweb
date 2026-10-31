@@ -84,6 +84,7 @@ class PriceBookTest extends TestCase
 
     public function test_publication_requires_an_active_workflow_and_an_effective_tenant_price(): void
     {
+        $this->travelTo('2026-10-31 00:00:00');
         [$tenant, , $token] = $this->scenario();
         $workflow = WorkflowTemplate::factory()->for($tenant)->create(['code' => 'standard']);
         $service = $this->service($tenant, workflow: $workflow);

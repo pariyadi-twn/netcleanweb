@@ -12,17 +12,22 @@ class CustomerOrderResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $total = ($this->invoice?->original_total_rupiah ?? 0) + ($this->invoice?->adjustments?->sum('amount_rupiah') ?? 0);
+        $invoice = $this->invoice;
+        $total = $invoice?->totalRupiah() ?? 0;
+        $paid = $invoice?->netAllocatedRupiah() ?? 0;
+        $invoiceStatus = $invoice === null || $total === 0
+            ? 'paid'
+            : ($paid <= 0 ? 'unpaid' : ($paid === $total ? 'paid' : ($paid < $total ? 'partially_paid' : 'overallocated')));
 
         return [
             'order_id' => $this->public_id,
             'order_number' => $this->order_number,
             'operational_status' => $this->operational_status->value,
-            'invoice_status' => $total === 0 ? 'paid' : 'unpaid',
+            'invoice_status' => $invoiceStatus,
             'invoice_number' => $this->invoice?->invoice_number,
             'total_rupiah' => $total,
-            'paid_rupiah' => 0,
-            'balance_due_rupiah' => $total,
+            'paid_rupiah' => $paid,
+            'balance_due_rupiah' => $total - $paid,
             'due_at_original' => $this->due_at_original?->utc()->format('Y-m-d\TH:i:s\Z'),
             'due_at_current' => $this->due_at_current?->utc()->format('Y-m-d\TH:i:s\Z'),
             'accepted_at' => $this->accepted_at?->utc()->format('Y-m-d\TH:i:s\Z'),

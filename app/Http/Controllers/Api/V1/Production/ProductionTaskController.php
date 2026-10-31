@@ -5,12 +5,16 @@ namespace App\Http\Controllers\Api\V1\Production;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Production\ListProductionTasksRequest;
 use App\Http\Requests\Api\V1\Production\PlanProductionTasksRequest;
+use App\Http\Requests\Api\V1\Production\RecordQcResultRequest;
 use App\Http\Requests\Api\V1\Production\TransitionProductionTaskRequest;
 use App\Http\Resources\Api\V1\ProductionTaskResource;
+use App\Http\Resources\Api\V1\QcResultResource;
 use App\Modules\Identity\Authorization\TenantContext;
 use App\Modules\Identity\Models\Location;
 use App\Modules\Order\Models\Order;
+use App\Modules\Production\Actions\AssessOrderReadiness;
 use App\Modules\Production\Actions\PlanProductionTasks;
+use App\Modules\Production\Actions\RecordQcResult;
 use App\Modules\Production\Actions\TransitionProductionTask;
 use App\Modules\Production\Enums\ProductionTaskStatus;
 use App\Modules\Production\Models\ProductionTask;
@@ -83,6 +87,51 @@ class ProductionTaskController extends Controller
             'data' => ProductionTaskResource::collection((new ProductionTask)->newCollection($tasks)->load(['content.orderLine', 'content.order', 'content.bag', 'location']))->resolve($request),
             'meta' => ['correlation_id' => CorrelationId::current()],
         ], 201);
+    }
+
+    public function recordQc(
+        RecordQcResultRequest $request,
+        string $task,
+        RecordQcResult $record,
+    ): JsonResponse {
+        $context = app(TenantContext::class);
+        $model = ProductionTask::query()
+            ->where('tenant_id', $context->tenantId)
+            ->where('public_id', Str::lower($task))
+            ->firstOrFail();
+        Gate::authorize('recordQc', $model);
+
+        $result = $record->handle(
+            $model,
+            $request->string('outcome')->toString(),
+            $request->input('checklist', []),
+            $request->input('notes'),
+            $context->membershipId,
+            $request->user(),
+        );
+
+        return response()->json([
+            'data' => [
+                'qc' => (new QcResultResource($result['qc']->load(['content', 'task'])))->resolve($request),
+                'readiness' => $result['readiness'],
+            ],
+            'meta' => ['correlation_id' => CorrelationId::current()],
+        ]);
+    }
+
+    public function readiness(string $order, AssessOrderReadiness $readiness): JsonResponse
+    {
+        Gate::authorize('viewAny', ProductionTask::class);
+        $context = app(TenantContext::class);
+        $model = Order::query()
+            ->where('tenant_id', $context->tenantId)
+            ->where('public_id', Str::lower($order))
+            ->firstOrFail();
+
+        return response()->json([
+            'data' => $readiness->snapshot($model),
+            'meta' => ['correlation_id' => CorrelationId::current()],
+        ]);
     }
 
     public function transition(

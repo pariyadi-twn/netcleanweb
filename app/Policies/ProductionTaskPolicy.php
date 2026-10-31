@@ -33,4 +33,12 @@ class ProductionTaskPolicy
             && $this->context->can(PermissionCode::ProductionManage)
             && $this->context->canAccessLocation($task->location);
     }
+
+    public function recordQc(User $user, ProductionTask $task): bool
+    {
+        return $user->id === $this->context->userId
+            && $task->tenant_id === $this->context->tenantId
+            && $this->context->can(PermissionCode::ProductionQc)
+            && $this->context->canAccessLocation($task->location);
+    }
 }

@@ -46,6 +46,7 @@ class IdentityPermissionSeeder extends Seeder
             'data_requests.manage' => 'Ajukan permintaan penghapusan data pelanggan',
             'production.view' => 'Lihat antrean produksi',
             'production.manage' => 'Rencanakan dan jalankan tahap produksi',
+            'production.qc' => 'Catat hasil quality control',
             'audit.view' => 'Lihat jejak audit',
         ];
 

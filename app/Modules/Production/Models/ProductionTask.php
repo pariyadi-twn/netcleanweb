@@ -41,6 +41,11 @@ class ProductionTask extends TenantModel
         return $this->belongsTo(self::class, 'original_task_id');
     }
 
+    public function qcResults(): HasMany
+    {
+        return $this->hasMany(QcResult::class, 'production_task_id');
+    }
+
     public function events(): HasMany
     {
         return $this->hasMany(ProductionTaskEvent::class);

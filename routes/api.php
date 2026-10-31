@@ -144,6 +144,8 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/production/tasks', [ProductionTaskController::class, 'index'])->middleware('tenant');
         Route::post('/orders/{order}/production-tasks', [ProductionTaskController::class, 'plan'])->middleware('tenant');
         Route::post('/production/tasks/{task}/transitions', [ProductionTaskController::class, 'transition'])->middleware('tenant');
+        Route::post('/production/tasks/{task}/qc-results', [ProductionTaskController::class, 'recordQc'])->middleware('tenant');
+        Route::get('/orders/{order}/readiness', [ProductionTaskController::class, 'readiness'])->middleware('tenant');
         Route::post('/orders/{order}/revisions', [OrderRevisionController::class, 'store'])->middleware('tenant');
         Route::post('/orders/{order}/revisions/{revision}/decision', [OrderRevisionController::class, 'decide'])->middleware('tenant');
         Route::post('/orders/{order}/tracking-token', [TrackingTokenController::class, 'store'])->middleware('tenant');

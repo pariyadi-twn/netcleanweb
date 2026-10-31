@@ -8,6 +8,7 @@ use App\Modules\Identity\Audit\AuditRecorder;
 use App\Modules\Identity\Authorization\TenantContext;
 use App\Modules\Identity\Enums\AuditAction;
 use App\Modules\Operations\Outbox\OutboxWriter;
+use App\Modules\Order\Models\Order;
 use App\Modules\Production\Enums\ProductionTaskStatus;
 use App\Modules\Production\Models\ProductionTask;
 use App\Modules\Production\Models\ProductionTaskEvent;
@@ -21,6 +22,7 @@ final class TransitionProductionTask
         private readonly AuditRecorder $auditor,
         private readonly OutboxWriter $outbox,
         private readonly TenantContext $context,
+        private readonly AssessOrderReadiness $readiness,
     ) {}
 
     public function handle(
@@ -120,6 +122,12 @@ final class TransitionProductionTask
                     'to_status' => $to->value,
                 ],
             );
+
+            $order = Order::query()
+                ->where('tenant_id', $locked->tenant_id)
+                ->whereKey($locked->content->order_id)
+                ->firstOrFail();
+            $this->readiness->handle($order);
 
             return $locked->refresh();
         });

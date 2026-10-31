@@ -30,6 +30,8 @@ return [
         'support_grant.revoked',
         'production.tasks_planned',
         'production.task_transitioned',
+        'production.qc_recorded',
+        'order.readiness_changed',
     ],
 
     'consumers' => [

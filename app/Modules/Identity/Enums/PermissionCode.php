@@ -37,5 +37,6 @@ enum PermissionCode: string
     case DataRequestsManage = 'data_requests.manage';
     case ProductionView = 'production.view';
     case ProductionManage = 'production.manage';
+    case ProductionQc = 'production.qc';
     case AuditView = 'audit.view';
 }

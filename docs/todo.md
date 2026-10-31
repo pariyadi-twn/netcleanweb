@@ -130,14 +130,20 @@ Untuk fitur backend yang dipakai Flutter/web, task baru selesai setelah kontrak 
 
   Verifikasi: `PricingCalendarFixtureTest` lulus **9 test/22 assertion** untuk aritmetika BR05, express, pembulatan kuantitas, dan enam skenario tenggat termasuk cut-off dan libur. Seluruh suite lulus **112 test/593 assertion** saat T002 ditutup. Aktivasi pajak dan harga kontrak pelanggan tetap memerlukan keputusan lanjutan; harga tenant/cabang sudah diimplementasikan pada T022.
 
-- [ ] **T003 Tetapkan aturan uang kas dan kompensasi**
+- [x] **T003 Tetapkan aturan uang kas dan kompensasi**
   Rujukan: FR31 FR33 FR34 FR35 DEC04 DEC06. Dependensi: T001. Selesai jika: Alur DP, refund, setoran, kembalian, piutang, penyerahan, dan maker checker mempunyai contoh angka serta penyetuju.
+
+  Status selesai 31 Oktober 2026, disetujui pemilik usaha. DP boleh bertahap; contoh BR05 tagihan Rp71.600, DP Rp30.000, sisa Rp41.600. Metode P0 tunai dan transfer manual; gateway tetap P1. Piutang default Rp0 per pelanggan; owner dapat menetapkan limit per pelanggan dengan jatuh tempo 7 hari, dan penyerahan diblokir bila outstanding melewati limit. Refund hanya terhadap payment asal; contoh invoice Rp100.000, refund Rp20.000, sisa refundable Rp80.000. Refund dan kompensasi memerlukan owner; tindakan di atas Rp100.000 atau diskon di atas 10% memerlukan aktor berbeda. Shift memakai kas awal, ledger, setoran, kas fisik, dan selisih; contoh kas awal Rp200.000 + penjualan tunai Rp500.000 - biaya Rp50.000 = Rp650.000, fisik Rp648.000, selisih -Rp2.000 masih dalam toleransi Rp5.000. Selisih di atas toleransi dan reopen shift memerlukan alasan serta persetujuan owner. Kompensasi barang hilang/rusak memakai rewash atau penggantian lebih dahulu; kompensasi tunai dinilai per kasus dengan bukti kondisi awal dan persetujuan owner. Batas diskon: kasir 0%, supervisor maksimum 10%, owner sampai 100%, semuanya diaudit.
 
 - [ ] **T004 Pilih perangkat serta lokasi pilot**
   Rujukan: FR12 FR15 DEC05. Dependensi: T001. Selesai jika: Model printer, koneksi, ukuran nota, Android sasaran, dan minimal satu calon jaringan tiga cabang dicatat.
 
-- [ ] **T005 Sahkan kebijakan data dan dukungan**
+  Status 31 Oktober 2026, disetujui arah operasional: printer ESC/POS 80 mm dengan fallback 58 mm, koneksi Bluetooth/USB/LAN, Android 10+ target API 35 RAM 4 GB, kamera + scanner Bluetooth keyboard-wedge, iOS tidak masuk P0, dan calon pilot berupa satu jaringan tiga cabang + pusat produksi. Belum selesai: model printer aktual, ukuran nota final, nama/lokasi calon jaringan pilot. Task tetap terbuka sampai tiga detail itu dicatat.
+
+- [x] **T005 Sahkan kebijakan data dan dukungan**
   Rujukan: SEC04 SEC09 SEC10 SEC16 DEC07. Dependensi: T001. Selesai jika: Tujuan data, consent per kanal, kanal notifikasi layanan pilot, lokasi hosting, retensi, akses bantuan, ekspor, penghapusan, serta perlindungan cache perangkat mempunyai pemilik keputusan dan kebijakan yang dicatat. Nilai usulan pada security.md tidak dianggap kebijakan final tanpa keputusan.
+
+  Status selesai 31 Oktober 2026, disetujui product owner. Tujuan data: layanan, pembayaran, dukungan, dan kewajiban legal; marketing terpisah dan opt-in per kanal. Kanal layanan pilot: WhatsApp resmi + email fallback; push tetap opsional. Hosting di Indonesia dengan database dan object storage privat. Retensi: ledger/dokumen transaksi 10 tahun, audit 5 tahun, log operasional 90 hari, foto kondisi 180 hari, ekspor sementara 24 jam, data impor 7 hari, backup 35 hari, cache perangkat maksimum 4 jam. Grant support maksimum 24 jam, terikat tenant/kasus, read-only, tanpa refund atau eskalasi role, dan diaudit. Ekspor/penghapusan memerlukan verifikasi identitas dan tetap menghormati kewajiban retensi ledger; daftar penghapusan diterapkan ulang setelah restore. Cache PII dienkripsi dan dipurge saat logout/ganti akun. Bukti test aplikasi belum ada karena task ini menetapkan kebijakan; implementasi consent/history menjadi T024, notifikasi T077, ekspor T046, dan retensi T045.
 
 - [ ] **T006 Uji prototype kasir**
   Rujukan: FR13 NFR10. Dependensi: T002, T003, T004. Selesai jika: Staf dapat memahami jumlah fisik, berat tertagih, total, tenggat, dan status pending; masalah usability dicatat.

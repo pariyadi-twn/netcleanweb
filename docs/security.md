@@ -147,13 +147,13 @@ Komunikasi kepada pelanggan, penyedia, atau pihak berwenang ditentukan penanggun
 
 | Data | Usulan awal atau keputusan yang diperlukan |
 |---|---|
-| Ledger dan dokumen transaksi | Ditetapkan melalui DEC07 sesuai kebutuhan usaha serta kewajiban yang berlaku; tidak dihapus oleh kasir |
-| Foto kondisi | Minimum yang dibutuhkan untuk layanan serta komplain; periode akhir disahkan sebelum peluncuran |
-| Ekspor sementara | Usulan file hasil kedaluwarsa setelah 24 jam; akses tetap diperiksa tiap unduhan |
-| Data mentah impor | Usulan maksimum tujuh hari sesudah proses selesai kecuali perlu penyelesaian error yang disetujui |
-| Log operasional | Usulan 90 hari dengan redaksi; audit keamanan dan bisnis memiliki kebijakan tersendiri |
-| Backup | Usulan 35 hari; data yang dihapus dapat tersisa sampai lifecycle backup berakhir |
-| Cache perangkat | Dataset kerja minimum dan batas verifikasi offline empat jam; purge sesuai perubahan akun atau scope |
+| Ledger dan dokumen transaksi | Disahkan 31 Oktober 2026: 10 tahun; tidak dihapus oleh kasir |
+| Foto kondisi | 180 hari setelah order selesai, kecuali kasus komplain aktif |
+| Ekspor sementara | Kedaluwarsa setelah 24 jam; akses tetap diperiksa tiap unduhan |
+| Data mentah impor | Maksimum tujuh hari sesudah proses selesai kecuali perlu penyelesaian error yang disetujui |
+| Log operasional | 90 hari dengan redaksi; audit keamanan 5 tahun |
+| Backup | 35 hari; data yang dihapus dapat tersisa sampai lifecycle backup berakhir |
+| Cache perangkat | Dataset kerja minimum, enkripsi PII lokal, batas offline empat jam; purge saat logout atau perubahan akun/scope |
 
 Catat consent per tujuan dan kanal. Permintaan akses, ekspor, koreksi, serta penghapusan memerlukan verifikasi identitas dan pemeriksaan kewajiban penyimpanan. Catat pekerjaan penghapusan tanpa menyimpan ulang isi data yang dihapus pada log. Restore backup harus mengaplikasikan kembali daftar penghapusan yang sah agar data tidak muncul kembali tanpa kontrol.
 

@@ -615,10 +615,10 @@ Akuntansi umum lengkap, payroll, pengurusan pajak, marketplace lintas tenant, do
 | DEC01 | Satu badan usaha per tenant; cabang dan pusat produksi milik badan usaha tersebut berada dalam tenant yang sama; waralaba independen memakai tenant terpisah | Pemilik produk/pengguna, dikonfirmasi dalam sesi implementasi 31 Oktober 2026 | Disetujui untuk fondasi P0 |
 | DEC02 | Dana laundry langsung ke merchant tenant; merchant platform hanya menerima langganan SaaS | Pemilik produk/pengguna, dikonfirmasi dalam sesi implementasi 31 Oktober 2026 | Disetujui; adapter gateway tetap P1 |
 | DEC03 | Pajak, minimum, pembulatan, dan aturan diskon | Operasional sebelum acceptance pricing; disahkan pengguna 31 Oktober 2026 | Disetujui untuk fixture P0; pajak nonaktif sampai keputusan aktivasi |
-| DEC04 | Penyerahan dengan piutang dan batas kredit | Pemilik usaha sebelum pilot | Terbuka |
-| DEC05 | Printer, scanner, Android, dan kebutuhan iOS | Operasional sebelum pembelian perangkat | Terbuka |
-| DEC06 | Kebijakan kompensasi dan bukti kondisi awal | Operasional sebelum UAT | Terbuka |
-| DEC07 | Retensi, consent, lokasi hosting, dan dukungan | Product owner sebelum berbayar | Terbuka |
+| DEC04 | Penyerahan dengan piutang dan batas kredit | Pemilik usaha; disetujui 31 Oktober 2026 | Disetujui: piutang default Rp0 per pelanggan, limit dan jatuh tempo 7 hari ditetapkan owner; penyerahan diblokir bila outstanding melewati limit |
+| DEC05 | Printer, scanner, Android, dan kebutuhan iOS | Operasional; arah disetujui 31 Oktober 2026 | Disetujui arah: ESC/POS 80 mm dengan fallback 58 mm, Bluetooth/USB/LAN, Android 10+ target API 35 RAM 4 GB, kamera + scanner Bluetooth, iOS tidak masuk P0. Model printer dan identitas pilot masih perlu dicatat |
+| DEC06 | Kebijakan kompensasi dan bukti kondisi awal | Operasional; disetujui 31 Oktober 2026 | Disetujui: rewash/penggantian didahulukan; kompensasi tunai per kasus dengan bukti kondisi awal dan persetujuan owner; tanpa formula otomatis pada P0 |
+| DEC07 | Retensi, consent, lokasi hosting, dan dukungan | Product owner; disetujui 31 Oktober 2026 | Disetujui: consent per tujuan/kanal, WhatsApp resmi + email fallback, hosting Indonesia dengan DB/object privat, retensi pada SEC16, grant support maksimum 24 jam |
 | DEC08 | Harga paket dan biaya add on | Bisnis setelah biaya pilot tersedia | Terbuka |
 
 ### SOP organisasi dan merchant untuk T001

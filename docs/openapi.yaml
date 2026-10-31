@@ -1,0 +1,1006 @@
+openapi: 3.0.3
+info:
+  title: NetClean Laundry API
+  version: 1.0.0
+  description: |
+    Kontrak rancangan T073 berdasarkan TR03. Endpoint pada dokumen ini belum
+    dinyatakan tersedia hanya karena tercantum dalam kontrak. x-release-phase
+    membedakan P0 dari P1; bukti implementasi mengikuti task modul dan route:list.
+    UUID adalah ID publik; bigint internal tidak dikirim. Uang integer rupiah,
+    kuantitas decimal string, waktu ISO 8601 UTC. Input tenant/actor/harga final
+    tidak dipercaya. Semua objek dan replay diperiksa Policy tenant/cabang/lokasi.
+    API tidak memakai token mobile untuk autentikasi webhook provider.
+servers:
+  - url: /api/v1
+security:
+  - BearerToken: []
+    TenantContext: []
+tags:
+  - name: Identity
+  - name: Customer
+  - name: Order
+  - name: Production
+  - name: Logistics
+  - name: Payment
+  - name: Cash
+  - name: Sync
+  - name: Reporting
+paths:
+  /auth/tokens:
+    get:
+      tags: [Identity]
+      operationId: listDeviceSessions
+      x-release-phase: P0
+      security: [{BearerToken: []}]
+      summary: Daftar sesi perangkat aktif milik pengguna login
+      responses:
+        '200':
+          description: Hanya perangkat dan token aktif milik pengguna login
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    maxItems: 100
+                    items: {$ref: '#/components/schemas/DeviceSession'}
+                  meta: {$ref: '#/components/schemas/Meta'}
+        '401': {$ref: '#/components/responses/Error'}
+    post:
+      tags: [Identity]
+      operationId: issueDeviceToken
+      x-release-phase: P0
+      security: []
+      summary: Login dan terbitkan token perangkat dengan expiry eksplisit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [email, password, device_name, installation_id]
+              properties:
+                email: {type: string, format: email, maxLength: 254}
+                password: {type: string, format: password, maxLength: 1024}
+                device_name: {type: string, maxLength: 120}
+                installation_id:
+                  type: string
+                  format: uuid
+                  description: UUID instalasi dari secure storage perangkat; server hanya menyimpan hash
+                mfa_code: {type: string, nullable: true, maxLength: 32, description: TOTP atau recovery code sekali pakai}
+      responses:
+        '201':
+          description: Token hanya dikirim sekali; server menyimpan hash
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: object
+                    required: [token, token_type, expires_at, device_id]
+                    properties:
+                      token: {type: string}
+                      token_type: {type: string, enum: [Bearer]}
+                      expires_at: {$ref: '#/components/schemas/UtcTime'}
+                      device_id: {$ref: '#/components/schemas/PublicId'}
+                  meta: {$ref: '#/components/schemas/Meta'}
+        '401': {$ref: '#/components/responses/Error'}
+        '422': {$ref: '#/components/responses/Error'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+  /auth/tokens/{deviceId}:
+    delete:
+      tags: [Identity]
+      operationId: revokeDeviceSession
+      x-release-phase: P0
+      security: [{BearerToken: []}]
+      summary: Cabut seluruh token perangkat; request berikutnya 401
+      parameters:
+        - {name: deviceId, in: path, required: true, schema: {$ref: '#/components/schemas/PublicId'}}
+      responses:
+        '204': {description: Token dihapus dan perangkat ditandai revoked}
+        '401': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+  /auth/password-reset-links:
+    post:
+      tags: [Identity]
+      operationId: requestPasswordResetLink
+      x-release-phase: P0
+      security: []
+      summary: Minta tautan reset; respons tidak mengonfirmasi keberadaan akun
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [email]
+              properties:
+                email: {type: string, format: email, maxLength: 254}
+      responses:
+        '202':
+          description: Permintaan diterima dengan respons sama untuk akun ada maupun tidak ada
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: object
+                    required: [status]
+                    properties:
+                      status: {type: string, enum: [accepted]}
+                  meta: {$ref: '#/components/schemas/Meta'}
+        '422': {$ref: '#/components/responses/Error'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+  /auth/password-resets:
+    post:
+      tags: [Identity]
+      operationId: resetPassword
+      x-release-phase: P0
+      security: []
+      summary: Selesaikan reset password dengan token sekali pakai
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [token, email, password, password_confirmation]
+              properties:
+                token: {type: string, maxLength: 255}
+                email: {type: string, format: email, maxLength: 254}
+                password: {type: string, format: password, minLength: 12, maxLength: 1024}
+                password_confirmation: {type: string, format: password, minLength: 12, maxLength: 1024}
+      responses:
+        '200':
+          description: Password berubah; token perangkat dan sesi lama dicabut
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: object
+                    required: [status]
+                    properties:
+                      status: {type: string, enum: [password_reset]}
+                  meta: {$ref: '#/components/schemas/Meta'}
+        '422': {$ref: '#/components/responses/Error'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+  /me/mfa:
+    post:
+      tags: [Identity]
+      operationId: beginMfaEnrollment
+      x-release-phase: P0
+      security: [{BearerToken: []}]
+      summary: Mulai enrollment TOTP; secret hanya ditampilkan pada respons ini
+      responses:
+        '201':
+          description: Secret dan provisioning URI untuk aplikasi authenticator
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: object
+                    required: [secret, provisioning_uri]
+                    properties:
+                      secret: {type: string}
+                      provisioning_uri: {type: string}
+                  meta: {$ref: '#/components/schemas/Meta'}
+        '401': {$ref: '#/components/responses/Error'}
+        '422': {$ref: '#/components/responses/Error'}
+  /me/mfa/confirmation:
+    post:
+      tags: [Identity]
+      operationId: confirmMfaEnrollment
+      x-release-phase: P0
+      security: [{BearerToken: []}]
+      summary: Konfirmasi TOTP dan terbitkan recovery codes sekali pakai
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [code]
+              properties:
+                code: {type: string, maxLength: 32}
+      responses:
+        '200':
+          description: Recovery codes plaintext hanya ditampilkan sekali; server menyimpan hash
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: object
+                    required: [recovery_codes]
+                    properties:
+                      recovery_codes:
+                        type: array
+                        minItems: 1
+                        maxItems: 20
+                        uniqueItems: true
+                        items: {type: string}
+                  meta: {$ref: '#/components/schemas/Meta'}
+        '401': {$ref: '#/components/responses/Error'}
+        '422': {$ref: '#/components/responses/Error'}
+  /me/mfa/recovery-codes:
+    post:
+      tags: [Identity]
+      operationId: regenerateMfaRecoveryCodes
+      x-release-phase: P0
+      security: [{BearerToken: []}]
+      summary: Ganti recovery codes setelah verifikasi password saat ini
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [password]
+              properties:
+                password: {type: string, format: password, maxLength: 1024}
+      responses:
+        '200':
+          description: Recovery codes baru menggantikan seluruh kode lama
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: object
+                    required: [recovery_codes]
+                    properties:
+                      recovery_codes:
+                        type: array
+                        minItems: 1
+                        maxItems: 20
+                        uniqueItems: true
+                        items: {type: string}
+                  meta: {$ref: '#/components/schemas/Meta'}
+        '401': {$ref: '#/components/responses/Error'}
+        '422': {$ref: '#/components/responses/Error'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+  /me/context:
+    get:
+      tags: [Identity]
+      operationId: listMyContexts
+      x-release-phase: P0
+      security: [{BearerToken: []}]
+      summary: Membership serta scope milik pengguna login, sebelum tenant dipilih
+      responses:
+        '200':
+          description: Hanya membership milik identitas login; tanpa daftar tenant global
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      required: [tenant_id, membership_id, permission_version, branch_ids, location_ids]
+                      properties:
+                        tenant_id: {$ref: '#/components/schemas/PublicId'}
+                        membership_id: {$ref: '#/components/schemas/PublicId'}
+                        permission_version: {type: integer, format: int64, minimum: 1}
+                        branch_ids: {type: array, items: {$ref: '#/components/schemas/PublicId'}}
+                        location_ids: {type: array, items: {$ref: '#/components/schemas/PublicId'}}
+                  meta: {$ref: '#/components/schemas/Meta'}
+        '401': {$ref: '#/components/responses/Error'}
+  /memberships/{membershipId}/assignments:
+    post:
+      tags: [Identity]
+      operationId: updateMembershipAssignments
+      x-release-phase: P0
+      security: [{BearerToken: [], TenantContext: []}]
+      summary: Ganti role dan assignment membership secara idempoten per tenant
+      parameters:
+        - {name: membershipId, in: path, required: true, schema: {$ref: '#/components/schemas/PublicId'}}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [client_command_id, role_ids, branch_ids, location_ids]
+              properties:
+                client_command_id: {$ref: '#/components/schemas/PublicId'}
+                role_ids:
+                  type: array
+                  maxItems: 50
+                  uniqueItems: true
+                  items: {$ref: '#/components/schemas/PublicId'}
+                branch_ids:
+                  type: array
+                  maxItems: 100
+                  uniqueItems: true
+                  items: {$ref: '#/components/schemas/PublicId'}
+                location_ids:
+                  type: array
+                  maxItems: 100
+                  uniqueItems: true
+                  items: {$ref: '#/components/schemas/PublicId'}
+                reason: {type: string, nullable: true, maxLength: 1000}
+      responses:
+        '200':
+          description: Hasil resource yang sama untuk replay key+payload yang sama
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: object
+                    required: [membership_id, permission_version, role_ids, branch_ids, location_ids]
+                    properties:
+                      membership_id: {$ref: '#/components/schemas/PublicId'}
+                      permission_version: {type: integer, format: int64, minimum: 1}
+                      role_ids: {type: array, items: {$ref: '#/components/schemas/PublicId'}}
+                      branch_ids: {type: array, items: {$ref: '#/components/schemas/PublicId'}}
+                      location_ids: {type: array, items: {$ref: '#/components/schemas/PublicId'}}
+                  meta: {$ref: '#/components/schemas/Meta'}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+        '409': {$ref: '#/components/responses/Error'}
+        '422': {$ref: '#/components/responses/Error'}
+  /branches/{branchId}:
+    get:
+      tags: [Identity]
+      operationId: getBranchConfiguration
+      x-release-phase: P0
+      security: [{BearerToken: [], TenantContext: []}]
+      summary: Detail konfigurasi cabang dalam tenant terpilih
+      parameters:
+        - {name: branchId, in: path, required: true, schema: {$ref: '#/components/schemas/PublicId'}}
+      responses:
+        '200':
+          description: Cabang dalam tenant dan scope actor
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: {$ref: '#/components/schemas/Branch'}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+    patch:
+      tags: [Identity]
+      operationId: updateBranchConfiguration
+      x-release-phase: P0
+      security: [{BearerToken: [], TenantContext: []}]
+      summary: Ubah profil, zona waktu, atau status aktif cabang
+      parameters:
+        - {name: branchId, in: path, required: true, schema: {$ref: '#/components/schemas/PublicId'}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                name: {type: string, maxLength: 150}
+                timezone: {type: string, example: 'Asia/Jakarta'}
+                address: {type: string, maxLength: 2000}
+                phone: {type: string, nullable: true, maxLength: 32}
+                is_active: {type: boolean}
+                reason: {type: string, nullable: true, maxLength: 1000}
+      responses:
+        '200':
+          description: Konfigurasi tersimpan; versi bertambah; audit tercatat
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: {$ref: '#/components/schemas/Branch'}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+        '422': {$ref: '#/components/responses/Error'}
+  /customers:
+    get:
+      tags: [Customer]
+      operationId: searchCustomers
+      x-release-phase: P0
+      parameters:
+        - {name: q, in: query, schema: {type: string, maxLength: 150}}
+        - {$ref: '#/components/parameters/PageSize'}
+        - {$ref: '#/components/parameters/Cursor'}
+      responses:
+        '200':
+          description: Hasil terisolasi tenant dan dipaginasi, bukan seluruh histori
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    maxItems: 100
+                    items:
+                      type: object
+                      required: [id, name, normalized_phone, version]
+                      properties:
+                        id: {$ref: '#/components/schemas/PublicId'}
+                        name: {type: string}
+                        normalized_phone: {type: string, nullable: true}
+                        version: {type: integer, format: int64, minimum: 1}
+                  meta: {$ref: '#/components/schemas/PageMeta'}
+        default: {$ref: '#/components/responses/Error'}
+  /orders/quotes:
+    post:
+      tags: [Order]
+      operationId: createQuote
+      x-release-phase: P0
+      summary: Hitung harga dan tenggat di server; expiry usulan 15 menit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/OrderInput'}
+      responses:
+        '201':
+          description: Quote server; perubahan draft memerlukan quote baru
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: object
+                    required: [id, total_rupiah, due_at, expires_at]
+                    properties:
+                      id: {$ref: '#/components/schemas/PublicId'}
+                      total_rupiah: {$ref: '#/components/schemas/Money'}
+                      due_at: {$ref: '#/components/schemas/UtcTime'}
+                      expires_at: {$ref: '#/components/schemas/UtcTime'}
+                  meta: {$ref: '#/components/schemas/Meta'}
+        default: {$ref: '#/components/responses/Error'}
+  /orders:
+    post:
+      tags: [Order]
+      operationId: acceptOrder
+      x-release-phase: P0
+      summary: Quote single-use, order/invoice/unit fisik/audit/outbox commit bersama
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - {$ref: '#/components/schemas/Command'}
+                - {$ref: '#/components/schemas/OrderInput'}
+                - type: object
+                  required: [quote_id]
+                  properties:
+                    quote_id: {$ref: '#/components/schemas/PublicId'}
+      responses:
+        '201': {$ref: '#/components/responses/OrderAccepted'}
+        '200': {$ref: '#/components/responses/OrderAccepted'}
+        '409': {$ref: '#/components/responses/Error'}
+        default: {$ref: '#/components/responses/Error'}
+    get:
+      tags: [Order]
+      operationId: listOrders
+      x-release-phase: P0
+      parameters:
+        - {$ref: '#/components/parameters/PageSize'}
+        - {$ref: '#/components/parameters/Cursor'}
+      responses:
+        '200':
+          description: Urutan stabil created_at/id; field dibatasi per peran
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data: {type: array, maxItems: 100, items: {$ref: '#/components/schemas/OrderResult'}}
+                  meta: {$ref: '#/components/schemas/PageMeta'}
+        default: {$ref: '#/components/responses/Error'}
+  /orders/{id}:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    get:
+      tags: [Order]
+      operationId: getOrder
+      x-release-phase: P0
+      responses:
+        '200': {$ref: '#/components/responses/OrderAccepted'}
+        '404': {$ref: '#/components/responses/Error'}
+        default: {$ref: '#/components/responses/Error'}
+  /tasks/{id}/transitions:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    post:
+      tags: [Production]
+      operationId: transitionTask
+      x-release-phase: P0
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - {$ref: '#/components/schemas/VersionedCommand'}
+                - type: object
+                  required: [to_status]
+                  properties:
+                    to_status: {type: string, enum: [in_progress, done, blocked, skipped]}
+                    reason: {type: string, nullable: true, maxLength: 1000}
+      responses:
+        '200': {$ref: '#/components/responses/ActionResult'}
+        default: {$ref: '#/components/responses/Error'}
+  /invoices/{id}/payments:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    post:
+      tags: [Payment]
+      operationId: recordInvoicePayment
+      x-release-phase: P0
+      description: |
+        Cash/bank_manual tervalidasi pada P0; gateway pending diaktifkan P1.
+        Payment final, allocation, cash entry jika tunai, audit, dan receipt atomik.
+        Amount adalah dana bersih, bukan uang diserahkan sebelum kembalian.
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - {$ref: '#/components/schemas/Command'}
+                - type: object
+                  required: [method, amount_rupiah]
+                  properties:
+                    method: {type: string, enum: [cash, bank_manual, gateway]}
+                    amount_rupiah: {$ref: '#/components/schemas/PositiveMoney'}
+                    tendered_rupiah: {$ref: '#/components/schemas/Money'}
+                    cash_session_id: {$ref: '#/components/schemas/PublicId'}
+                    reference: {type: string, maxLength: 150}
+      responses:
+        '201': {$ref: '#/components/responses/ActionResult'}
+        '200': {$ref: '#/components/responses/ActionResult'}
+        '202': {$ref: '#/components/responses/ActionResult'}
+        default: {$ref: '#/components/responses/Error'}
+  /payments/{id}/refunds:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    post:
+      tags: [Payment]
+      operationId: requestRefund
+      x-release-phase: P0
+      summary: Reservasi batas refund; requested/processing bukan dana berhasil dikembalikan
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - {$ref: '#/components/schemas/Command'}
+                - type: object
+                  required: [amount_rupiah, reason]
+                  properties:
+                    amount_rupiah: {$ref: '#/components/schemas/PositiveMoney'}
+                    reason: {type: string, minLength: 1, maxLength: 1000}
+      responses:
+        '201': {$ref: '#/components/responses/ActionResult'}
+        '200': {$ref: '#/components/responses/ActionResult'}
+        default: {$ref: '#/components/responses/Error'}
+  /orders/{id}/handovers:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    post:
+      tags: [Logistics]
+      operationId: handOverBags
+      x-release-phase: P0
+      summary: Online, bag utuh, QC/lokasi/sisa/pembayaran atau piutang diverifikasi
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - {$ref: '#/components/schemas/VersionedCommand'}
+                - type: object
+                  required: [bag_ids, recipient_name, verification_method]
+                  properties:
+                    bag_ids: {$ref: '#/components/schemas/BagIds'}
+                    recipient_name: {type: string, minLength: 1, maxLength: 150}
+                    verification_method: {type: string, enum: [receipt, otp, verified_staff_exception]}
+                    credit_approval_id: {$ref: '#/components/schemas/NullablePublicId'}
+      responses:
+        '201': {$ref: '#/components/responses/ActionResult'}
+        '200': {$ref: '#/components/responses/ActionResult'}
+        default: {$ref: '#/components/responses/Error'}
+  /cash-sessions/{id}/close:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    post:
+      tags: [Cash]
+      operationId: closeCashSession
+      x-release-phase: P0
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - {$ref: '#/components/schemas/VersionedCommand'}
+                - type: object
+                  required: [counted_closing_rupiah]
+                  properties:
+                    counted_closing_rupiah: {$ref: '#/components/schemas/Money'}
+                    discrepancy_reason: {type: string, nullable: true, maxLength: 1000}
+      responses:
+        '200': {$ref: '#/components/responses/ActionResult'}
+        default: {$ref: '#/components/responses/Error'}
+  /sync/commands:
+    post:
+      tags: [Sync]
+      operationId: replayCommands
+      x-release-phase: P0
+      description: |
+        Maksimum usulan 50 item; hasil per command, bukan transaksi global.
+        UUID/hash command immutable, dependensi yang gagal menghentikan turunan.
+        Timeout memakai key sama; quote baru memakai command baru.
+        401 menghentikan replay; 403 mengunci scope; 409 memerlukan resolusi.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [commands]
+              properties:
+                commands:
+                  type: array
+                  minItems: 1
+                  maxItems: 50
+                  items:
+                    allOf:
+                      - {$ref: '#/components/schemas/Command'}
+                      - type: object
+                        required: [command_type, payload]
+                        properties:
+                          command_type: {type: string, maxLength: 100}
+                          payload: {type: object, description: 'DTO tervalidasi per allowlist action, bukan arbitrary action/class'}
+                          depends_on: {type: array, items: {$ref: '#/components/schemas/PublicId'}}
+      responses:
+        '200':
+          description: Hasil completed/rejected/conflict/dependency_blocked per item dengan error atau referensi hasil
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data: {type: array, maxItems: 50, items: {type: object}}
+                  meta: {$ref: '#/components/schemas/Meta'}
+        default: {$ref: '#/components/responses/Error'}
+  /reports/exports:
+    post:
+      tags: [Reporting]
+      operationId: requestExport
+      x-release-phase: P0
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - {$ref: '#/components/schemas/Command'}
+                - type: object
+                  required: [report_type, filters]
+                  properties:
+                    report_type: {type: string, maxLength: 80}
+                    filters: {type: object, description: 'Allowlist filter, timezone, periode, serta scope berizin'}
+      responses:
+        '202': {$ref: '#/components/responses/ActionResult'}
+        default: {$ref: '#/components/responses/Error'}
+  /transfers:
+    post:
+      tags: [Logistics]
+      operationId: createTransfer
+      x-release-phase: P1
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - {$ref: '#/components/schemas/Command'}
+                - type: object
+                  required: [from_location_id, to_location_id, bag_ids]
+                  properties:
+                    from_location_id: {$ref: '#/components/schemas/PublicId'}
+                    to_location_id: {$ref: '#/components/schemas/PublicId'}
+                    bag_ids: {$ref: '#/components/schemas/BagIds'}
+      responses:
+        '201': {$ref: '#/components/responses/ActionResult'}
+        '200': {$ref: '#/components/responses/ActionResult'}
+        default: {$ref: '#/components/responses/Error'}
+  /transfers/{id}/dispatch:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    post:
+      tags: [Logistics]
+      operationId: dispatchTransfer
+      x-release-phase: P1
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/VersionedCommand'}
+      responses:
+        '200': {$ref: '#/components/responses/ActionResult'}
+        default: {$ref: '#/components/responses/Error'}
+  /transfers/{id}/receipts:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    post:
+      tags: [Logistics]
+      operationId: receiveTransfer
+      x-release-phase: P1
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - {$ref: '#/components/schemas/VersionedCommand'}
+                - type: object
+                  required: [received_bag_ids]
+                  properties:
+                    received_bag_ids: {$ref: '#/components/schemas/BagIds'}
+                    discrepancy_reason: {type: string, nullable: true, maxLength: 1000}
+      responses:
+        '201': {$ref: '#/components/responses/ActionResult'}
+        '200': {$ref: '#/components/responses/ActionResult'}
+        default: {$ref: '#/components/responses/Error'}
+  /sync/changes:
+    get:
+      tags: [Sync]
+      operationId: getChangeFeed
+      x-release-phase: P1
+      description: Cursor terikat tenant/user/scope/generation/sequence committed; tombstone dan bootstrap konsisten
+      parameters:
+        - {$ref: '#/components/parameters/Cursor'}
+        - {$ref: '#/components/parameters/PageSize'}
+      responses:
+        '200':
+          description: Delta atau snapshot bootstrap dalam scope berizin; permission change memaksa purge/bootstrap
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data: {type: array, maxItems: 100, items: {type: object}}
+                  meta: {$ref: '#/components/schemas/PageMeta'}
+        '409': {$ref: '#/components/responses/Error'}
+        default: {$ref: '#/components/responses/Error'}
+  /webhooks/payments/{account_public_id}:
+    parameters:
+      - {name: account_public_id, in: path, required: true, schema: {$ref: '#/components/schemas/PublicId'}}
+    post:
+      tags: [Payment]
+      operationId: receivePaymentWebhook
+      x-release-phase: P1
+      security: []
+      description: |
+        Account publik dipetakan ke merchant server. Autentikasi/signature
+        mengikuti adapter resmi provider, bukan HMAC generik atau tenant body.
+        Validasi merchant/reference/amount/currency/status. Inbox autentik durable
+        sebelum 2xx; kegagalan penyimpanan mengembalikan non-2xx agar provider retry.
+        Pending yang terlambat tidak menurunkan succeeded; retry internal wajib.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, description: Payload provider; schema tepat ditetapkan adapter T060}
+      responses:
+        '200': {description: Inbox terverifikasi telah disimpan secara durable}
+        '401': {$ref: '#/components/responses/Error'}
+        '503': {$ref: '#/components/responses/Error'}
+components:
+  securitySchemes:
+    BearerToken: {type: http, scheme: bearer, description: 'Token Sanctum per perangkat, bukan JWT atau refresh token OAuth'}
+    TenantContext: {type: apiKey, in: header, name: X-Tenant-ID, description: UUID pemilih konteks; membership aktif tetap diverifikasi server}
+  parameters:
+    Id: {name: id, in: path, required: true, schema: {$ref: '#/components/schemas/PublicId'}}
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: UUID sama dengan client_command_id. Ketidaksamaan 422; payload berubah pada key sama 409; replay diotorisasi ulang.
+      schema: {$ref: '#/components/schemas/PublicId'}
+    PageSize: {name: per_page, in: query, schema: {type: integer, default: 25, minimum: 1, maximum: 100}}
+    Cursor: {name: cursor, in: query, schema: {type: string, maxLength: 2048}}
+    CorrelationId: {name: X-Correlation-ID, in: header, required: false, schema: {type: string, minLength: 1, maxLength: 100, pattern: '^[A-Za-z0-9._-]+$'}}
+  responses:
+    Error:
+      description: 401 autentikasi; 403 aksi; 404 objek di luar scope; 409 konflik; 422 validasi; 5xx tanpa stack trace/schema/secret
+      headers:
+        X-Correlation-ID: {schema: {type: string}}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    RateLimited:
+      description: Rate limit; antrean klien menunggu, bukan membuat command baru
+      headers:
+        Retry-After: {schema: {type: integer, minimum: 1}}
+        X-Correlation-ID: {schema: {type: string}}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    OrderAccepted:
+      description: 201 baru / 200 replay; replay tidak terhalang expiry quote hasil lama
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data, meta]
+            properties:
+              data: {$ref: '#/components/schemas/OrderResult'}
+              meta: {$ref: '#/components/schemas/Meta'}
+    ActionResult:
+      description: Referensi hasil action; detail resource diperinci saat modul diimplementasikan
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data, meta]
+            properties:
+              data:
+                type: object
+                required: [id]
+                properties:
+                  id: {$ref: '#/components/schemas/PublicId'}
+                  status: {type: string}
+                  version: {type: integer, format: int64, minimum: 1}
+              meta: {$ref: '#/components/schemas/Meta'}
+  schemas:
+    PublicId: {type: string, format: uuid}
+    NullablePublicId: {type: string, format: uuid, nullable: true}
+    UtcTime: {type: string, format: date-time, description: ISO 8601 UTC dengan Z}
+    Money: {type: integer, format: int64, minimum: 0, description: Integer rupiah tanpa float}
+    PositiveMoney: {type: integer, format: int64, minimum: 1}
+    Quantity: {type: string, pattern: '^(0|[1-9][0-9]{0,8})(\.[0-9]{1,3})?$', example: '2.300'}
+    Branch:
+      type: object
+      required: [id, code, name, timezone, address, phone, is_active, version, created_at, updated_at]
+      properties:
+        id: {$ref: '#/components/schemas/PublicId'}
+        code: {type: string, maxLength: 20}
+        name: {type: string, maxLength: 150}
+        timezone: {type: string, example: 'Asia/Jakarta'}
+        address: {type: string}
+        phone: {type: string, nullable: true, maxLength: 32}
+        is_active: {type: boolean}
+        version: {type: integer, format: int64, minimum: 1}
+        created_at: {$ref: '#/components/schemas/UtcTime'}
+        updated_at: {$ref: '#/components/schemas/UtcTime'}
+    DeviceSession:
+      type: object
+      required: [device_id, name, created_at, last_used_at, expires_at]
+      properties:
+        device_id: {$ref: '#/components/schemas/PublicId'}
+        name: {type: string, maxLength: 120}
+        created_at: {type: string, format: date-time, nullable: true}
+        last_used_at: {type: string, format: date-time, nullable: true}
+        expires_at: {type: string, format: date-time, nullable: true}
+    Command:
+      type: object
+      required: [client_command_id]
+      properties:
+        client_command_id: {$ref: '#/components/schemas/PublicId'}
+    VersionedCommand:
+      allOf:
+        - {$ref: '#/components/schemas/Command'}
+        - type: object
+          required: [expected_version]
+          properties:
+            expected_version: {type: integer, format: int64, minimum: 1}
+    BagIds:
+      type: array
+      minItems: 1
+      maxItems: 100
+      uniqueItems: true
+      items: {$ref: '#/components/schemas/PublicId'}
+    OrderInput:
+      type: object
+      required: [branch_id, lines, fulfillment_method]
+      properties:
+        branch_id: {$ref: '#/components/schemas/PublicId'}
+        customer_id: {$ref: '#/components/schemas/NullablePublicId'}
+        fulfillment_method: {type: string, enum: [pickup, delivery]}
+        pickup_branch_id: {$ref: '#/components/schemas/NullablePublicId'}
+        instructions: {type: string, nullable: true, maxLength: 2000}
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            required: [service_id, measured_quantity]
+            properties:
+              service_id: {$ref: '#/components/schemas/PublicId'}
+              measured_quantity: {$ref: '#/components/schemas/Quantity'}
+              tier: {type: string, enum: [regular, express], default: regular}
+    OrderResult:
+      type: object
+      description: Field keuangan hanya untuk peran berizin; hasil accept kasir menyertakan total/dibayar/sisa
+      required: [order_id, order_number, operational_status, version]
+      properties:
+        order_id: {$ref: '#/components/schemas/PublicId'}
+        order_number: {type: string, maxLength: 64}
+        operational_status: {type: string, enum: [draft, accepted, in_progress, partially_ready, ready, partially_handed_over, completed, cancelled]}
+        invoice_status: {type: string, enum: [unpaid, partially_paid, paid]}
+        total_rupiah: {$ref: '#/components/schemas/Money'}
+        paid_rupiah: {$ref: '#/components/schemas/Money'}
+        balance_due_rupiah: {type: integer, format: int64, description: Nilai negatif adalah pengecualian overallocated; tidak di-clamp}
+        version: {type: integer, format: int64, minimum: 1}
+    Meta:
+      type: object
+      required: [correlation_id]
+      properties:
+        correlation_id: {type: string, maxLength: 100}
+        idempotent_replay: {type: boolean}
+    PageMeta:
+      allOf:
+        - {$ref: '#/components/schemas/Meta'}
+        - type: object
+          required: [per_page, next_cursor]
+          properties:
+            per_page: {type: integer, minimum: 1, maximum: 100}
+            next_cursor: {type: string, nullable: true}
+            watermark: {type: string, nullable: true}
+    ErrorEnvelope:
+      type: object
+      required: [error, meta]
+      properties:
+        error:
+          type: object
+          required: [code, message, field_errors]
+          properties:
+            code:
+              type: string
+              description: Katalog minimum berikut tidak menutup kode domain tambahan yang didokumentasikan
+              example: VERSION_CONFLICT
+              x-minimum-codes: [QUOTE_EXPIRED, VERSION_CONFLICT, ALREADY_HANDED_OVER, BAG_IN_TRANSIT, PAYMENT_RECONCILIATION_REQUIRED, ENTITLEMENT_LIMIT_REACHED, IDEMPOTENCY_PAYLOAD_MISMATCH, SYNC_CURSOR_EXPIRED, SYNC_SCOPE_CHANGED]
+            message: {type: string}
+            field_errors: {type: object, additionalProperties: {type: array, items: {type: string}}}
+            current_version: {type: integer, format: int64, nullable: true}
+        meta: {$ref: '#/components/schemas/Meta'}

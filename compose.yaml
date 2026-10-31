@@ -1,0 +1,129 @@
+name: netclean
+
+x-application: &application
+  image: netclean-app:local
+  build:
+    context: .
+    target: app
+  profiles: [runtime]
+  env_file: .env.local
+  environment:
+    DB_HOST: postgres
+    DB_PORT: 5432
+    REDIS_HOST: redis-queue
+    REDIS_PORT: 6379
+    REDIS_CACHE_HOST: redis-cache
+    REDIS_CACHE_PORT: 6379
+    REDIS_QUEUE_HOST: redis-queue
+    REDIS_QUEUE_PORT: 6379
+    AWS_ENDPOINT: http://storage:8333
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis-queue:
+      condition: service_healthy
+    redis-cache:
+      condition: service_healthy
+    storage:
+      condition: service_healthy
+  restart: unless-stopped
+  stop_grace_period: 330s
+
+services:
+  app:
+    <<: *application
+
+  worker:
+    <<: *application
+    command: [php, artisan, horizon]
+
+  scheduler:
+    <<: *application
+    command: [php, artisan, schedule:work]
+
+  web:
+    image: netclean-web:local
+    build:
+      context: .
+      target: web
+    profiles: [runtime]
+    ports:
+      - "127.0.0.1:18080:80"
+    depends_on: [app]
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:18-alpine@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run php artisan project:prepare first}
+      DB_MIGRATION_PASSWORD: ${DB_MIGRATION_PASSWORD:?Run php artisan project:prepare first}
+      DB_RUNTIME_PASSWORD: ${DB_RUNTIME_PASSWORD:?Run php artisan project:prepare first}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-15432}:5432"
+    volumes:
+      - postgres:/var/lib/postgresql
+      - ./database/postgres/initialize.sh:/docker-entrypoint-initdb.d/10-netclean.sh:ro
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U postgres -d netclean_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  redis-queue:
+    image: redis:8-alpine@sha256:21090af93f8324db2f0f0f4f38a7c60369d47d917e000c3423d89d2ae2883537
+    command: [redis-server, --appendonly, "yes", --appendfsync, everysec, --maxmemory-policy, noeviction]
+    ports:
+      - "127.0.0.1:${REDIS_QUEUE_PORT:-16380}:6379"
+    volumes:
+      - redis-queue:/data
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  redis-cache:
+    image: redis:8-alpine@sha256:21090af93f8324db2f0f0f4f38a7c60369d47d917e000c3423d89d2ae2883537
+    command: [redis-server, --maxmemory, 128mb, --maxmemory-policy, allkeys-lru, --save, ""]
+    ports:
+      - "127.0.0.1:${REDIS_CACHE_PORT:-16379}:6379"
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  storage:
+    image: chrislusf/seaweedfs:4.50@sha256:c2658820e763294a9e9de7b36c81e59b879e3459148351aee4e31a126ca64860
+    command:
+      - mini
+      - -dir=/data
+      - -ip=storage
+      - -ip.bind=0.0.0.0
+      - -bucket=netclean-private,netclean-test
+      - -s3.config=/etc/netclean/s3.json
+      - -s3.port.iceberg=0
+      - -s3.port.lance=0
+      - -webdav=false
+      - -admin.ui=false
+      - -master.telemetry=false
+      - -filer.disableDirListing=true
+    ports:
+      - "127.0.0.1:${S3_PORT:-18333}:8333"
+    volumes:
+      - ./storage/app/infrastructure/objects:/data
+      - ./storage/app/infrastructure/s3.json:/etc/netclean/s3.json:ro
+    healthcheck:
+      test: [CMD-SHELL, "wget -q -O /dev/null http://localhost:9333/cluster/status"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+volumes:
+  postgres:
+  redis-queue:

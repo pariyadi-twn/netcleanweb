@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4.27'
+          extensions: pdo_pgsql, intl, bcmath, pcntl, zip
+          coverage: none
+          tools: composer:2.9.3
+      - run: composer install --prefer-dist --no-interaction
+      - run: php artisan project:prepare --no-interaction
+      - run: docker compose --env-file .env.infrastructure up -d --wait
+      - run: composer check
+      - name: Format and verify PHP changes
+        run: |
+          vendor/bin/pint --format agent
+          git diff --exit-code
+      - name: Stop isolated infrastructure
+        if: always()
+        run: docker compose --env-file .env.infrastructure down
+
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm audit
+      - run: npm run lint:api
+      - run: npm run build

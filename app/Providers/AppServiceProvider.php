@@ -97,5 +97,14 @@ class AppServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('mfa', fn (Request $request) => Limit::perMinute(5)->by('mfa:'.($request->user()?->id ?? $request->ip())));
+
+        RateLimiter::for('tracking', function (Request $request): array {
+            $token = (string) $request->route('token');
+
+            return [
+                Limit::perMinute(30)->by('tracking:ip:'.$request->ip()),
+                Limit::perMinute(10)->by('tracking:token:'.hash('sha256', $token)),
+            ];
+        });
     }
 }

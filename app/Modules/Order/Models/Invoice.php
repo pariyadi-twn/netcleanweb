@@ -50,6 +50,11 @@ class Invoice extends TenantModel
         return $this->hasMany(InvoiceLine::class);
     }
 
+    public function adjustments(): HasMany
+    {
+        return $this->hasMany(InvoiceAdjustment::class);
+    }
+
     /** @return array<string, string> */
     protected function casts(): array
     {

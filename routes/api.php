@@ -21,9 +21,13 @@ use App\Http\Controllers\Api\V1\Identity\UpdateMembershipAssignmentsController;
 use App\Http\Controllers\Api\V1\MyContextController;
 use App\Http\Controllers\Api\V1\Operations\BranchCalendarController;
 use App\Http\Controllers\Api\V1\Operations\DeadlinePreviewController;
+use App\Http\Controllers\Api\V1\Order\BagController;
 use App\Http\Controllers\Api\V1\Order\DiscountApprovalController;
 use App\Http\Controllers\Api\V1\Order\OrderController;
+use App\Http\Controllers\Api\V1\Order\OrderRevisionController;
 use App\Http\Controllers\Api\V1\Order\QuoteController;
+use App\Http\Controllers\Api\V1\Order\TrackingTokenController;
+use App\Http\Controllers\Api\V1\PublicTrackingController;
 use App\Http\Controllers\Api\V1\Saas\SubscriptionController;
 use Illuminate\Support\Facades\Route;
 
@@ -31,6 +35,7 @@ Route::prefix('v1')->group(function (): void {
     Route::post('/auth/tokens', [DeviceTokenController::class, 'store'])->middleware('throttle:login');
     Route::post('/auth/password-reset-links', [PasswordResetLinkController::class, 'store'])->middleware('throttle:password-reset');
     Route::post('/auth/password-resets', [PasswordResetController::class, 'store'])->middleware('throttle:password-reset');
+    Route::get('/tracking/{token}', PublicTrackingController::class)->middleware('throttle:tracking');
 
     Route::middleware(['auth:sanctum', 'active'])->group(function (): void {
         Route::get('/auth/tokens', [DeviceTokenController::class, 'index']);
@@ -71,6 +76,13 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/orders/quotes', [QuoteController::class, 'store'])->middleware('tenant');
         Route::post('/orders/quotes/{quote}/discount-approval', DiscountApprovalController::class)->middleware('tenant');
         Route::post('/orders', [OrderController::class, 'store'])->middleware('tenant');
+        Route::post('/orders/{order}/revisions', [OrderRevisionController::class, 'store'])->middleware('tenant');
+        Route::post('/orders/{order}/revisions/{revision}/decision', [OrderRevisionController::class, 'decide'])->middleware('tenant');
+        Route::post('/orders/{order}/tracking-token', [TrackingTokenController::class, 'store'])->middleware('tenant');
+        Route::delete('/orders/{order}/tracking-token', [TrackingTokenController::class, 'destroy'])->middleware('tenant');
+        Route::get('/orders/{order}/bags', [BagController::class, 'index'])->middleware('tenant');
+        Route::get('/orders/{order}/bags/{bag}/label', [BagController::class, 'label'])->middleware('tenant');
+        Route::post('/orders/{order}/repack', [BagController::class, 'repack'])->middleware('tenant');
 
         Route::get('/workflow-templates', [WorkflowTemplateController::class, 'index'])->middleware('tenant');
         Route::post('/workflow-templates', [WorkflowTemplateController::class, 'store'])->middleware('tenant');

@@ -13,5 +13,8 @@ enum AuditAction: string
     case DeadlineRevised = 'deadline.revised';
     case OrderAccepted = 'order.accepted';
     case DiscountApprovalDecided = 'discount.approval_decided';
+    case OrderRevised = 'order.revised';
+    case OrderRevisionDecided = 'order.revision_decided';
+    case BagRepacked = 'bag.repacked';
     case OutboxEventApplied = 'outbox.event_applied';
 }

@@ -1206,6 +1206,210 @@ paths:
         '404': {$ref: '#/components/responses/Error'}
         '409': {$ref: '#/components/responses/Error'}
         '422': {$ref: '#/components/responses/Error'}
+  /orders/{orderId}/bags:
+    parameters:
+      - {name: orderId, in: path, required: true, schema: {$ref: '#/components/schemas/PublicId'}}
+    get:
+      tags: [Production]
+      operationId: listOrderBags
+      x-release-phase: P0
+      security: [{BearerToken: [], TenantContext: []}]
+      summary: Daftar bag satu order beserta isi fisik tanpa PII pelanggan
+      responses:
+        '200':
+          description: Bag dan content milik order dalam tenant
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data: {type: array, items: {$ref: '#/components/schemas/Bag'}}
+                  meta: {$ref: '#/components/schemas/Meta'}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+  /orders/{orderId}/bags/{bagId}/label:
+    parameters:
+      - {name: orderId, in: path, required: true, schema: {$ref: '#/components/schemas/PublicId'}}
+      - {name: bagId, in: path, required: true, schema: {$ref: '#/components/schemas/PublicId'}}
+    get:
+      tags: [Production]
+      operationId: getBagLabel
+      x-release-phase: P0
+      security: [{BearerToken: [], TenantContext: []}]
+      summary: Data label bag; QR hanya memuat label code tanpa PII
+      responses:
+        '200':
+          description: Label unik dan ringkasan fisik
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: {$ref: '#/components/schemas/BagLabel'}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+  /orders/{orderId}/repack:
+    parameters:
+      - {name: orderId, in: path, required: true, schema: {$ref: '#/components/schemas/PublicId'}}
+    post:
+      tags: [Production]
+      operationId: repackBag
+      x-release-phase: P0
+      security: [{BearerToken: [], TenantContext: []}]
+      summary: Pindahkan content ke bag baru atau bag order yang sama; total fisik tetap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RepackBagInput'}
+      responses:
+        '201':
+          description: Bag sumber dan target setelah repack
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: object
+                    required: [source, target]
+                    properties:
+                      source: {$ref: '#/components/schemas/Bag'}
+                      target: {$ref: '#/components/schemas/Bag'}
+                  meta: {$ref: '#/components/schemas/Meta'}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+        '409': {$ref: '#/components/responses/Error'}
+        '422': {$ref: '#/components/responses/Error'}
+  /orders/{orderId}/revisions:
+    parameters:
+      - {name: orderId, in: path, required: true, schema: {$ref: '#/components/schemas/PublicId'}}
+    post:
+      tags: [Order]
+      x-release-phase: P0
+      summary: Ajukan revisi kuantitas/layanan sebelum ready; selisih menjadi debit/credit note
+      operationId: createOrderRevision
+      security: [{BearerToken: [], TenantContext: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/OrderRevisionInput'}
+      responses:
+        '201':
+          description: Revisi langsung diterapkan atau menunggu approval sesuai ambang
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data: {$ref: '#/components/schemas/OrderRevision'}
+                  meta: {$ref: '#/components/schemas/Meta'}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+        '409': {$ref: '#/components/responses/Error'}
+        '422': {$ref: '#/components/responses/Error'}
+  /orders/{orderId}/revisions/{revisionId}/decision:
+    parameters:
+      - {name: orderId, in: path, required: true, schema: {$ref: '#/components/schemas/PublicId'}}
+      - {name: revisionId, in: path, required: true, schema: {$ref: '#/components/schemas/PublicId'}}
+    post:
+      tags: [Order]
+      operationId: decideOrderRevision
+      x-release-phase: P0
+      summary: Setujui atau tolak revisi oleh owner berbeda aktor
+      security: [{BearerToken: [], TenantContext: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/OrderRevisionDecision'}
+      responses:
+        '200':
+          description: Revisi diterapkan atau ditolak; keputusan tercatat
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data: {$ref: '#/components/schemas/OrderRevision'}
+                  meta: {$ref: '#/components/schemas/Meta'}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+        '409': {$ref: '#/components/responses/Error'}
+        '422': {$ref: '#/components/responses/Error'}
+  /orders/{orderId}/tracking-token:
+    parameters:
+      - {name: orderId, in: path, required: true, schema: {$ref: '#/components/schemas/PublicId'}}
+    post:
+      tags: [Order]
+      operationId: issueTrackingToken
+      x-release-phase: P0
+      security: [{BearerToken: [], TenantContext: []}]
+      summary: Terbitkan token tracking baru; token lama dicabut
+      responses:
+        '201':
+          description: Token mentah hanya dikembalikan sekali; server menyimpan hash
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data: {$ref: '#/components/schemas/TrackingToken'}
+                  meta: {$ref: '#/components/schemas/Meta'}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+    delete:
+      tags: [Order]
+      operationId: revokeTrackingToken
+      x-release-phase: P0
+      security: [{BearerToken: [], TenantContext: []}]
+      summary: Cabut token tracking aktif order
+      responses:
+        '200':
+          description: Jumlah token aktif yang dicabut
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: object
+                    required: [revoked]
+                    properties:
+                      revoked: {type: integer, minimum: 0}
+                  meta: {$ref: '#/components/schemas/Meta'}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+  /tracking/{token}:
+    parameters:
+      - {name: token, in: path, required: true, schema: {type: string, minLength: 20, maxLength: 100}}
+    get:
+      tags: [Order]
+      operationId: getPublicTracking
+      x-release-phase: P0
+      security: []
+      summary: Status minimal pelanggan tanpa PII, nominal, foto, atau data order lain
+      responses:
+        '200':
+          description: Status, estimasi tenggat, kontak outlet, dan jumlah bag
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data: {$ref: '#/components/schemas/PublicTracking'}
+                  meta: {$ref: '#/components/schemas/Meta'}
+        '404': {$ref: '#/components/responses/Error'}
+        '429': {$ref: '#/components/responses/RateLimited'}
   /orders:
     post:
       tags: [Order]
@@ -2042,6 +2246,129 @@ components:
         lines: {type: array, minItems: 1, items: {$ref: '#/components/schemas/QuoteLine'}}
         discount_approval: {allOf: [{$ref: '#/components/schemas/DiscountApproval'}], nullable: true}
         created_at: {$ref: '#/components/schemas/UtcTime'}
+    BagContent:
+      type: object
+      required: [order_line_id, service_name, physical_quantity, handed_over_quantity, is_active]
+      properties:
+        order_line_id: {$ref: '#/components/schemas/PublicId'}
+        service_name: {type: string, nullable: true}
+        physical_quantity: {$ref: '#/components/schemas/Quantity'}
+        handed_over_quantity: {$ref: '#/components/schemas/Quantity'}
+        is_active: {type: boolean}
+    Bag:
+      type: object
+      required: [id, order_id, label_code, custody_status, contents, total_physical_quantity, version]
+      properties:
+        id: {$ref: '#/components/schemas/PublicId'}
+        order_id: {$ref: '#/components/schemas/PublicId'}
+        label_code: {type: string, maxLength: 80}
+        custody_status: {type: string}
+        contents: {type: array, items: {$ref: '#/components/schemas/BagContent'}}
+        total_physical_quantity: {type: number, format: float}
+        version: {type: integer, format: int64, minimum: 1}
+    BagLabel:
+      type: object
+      required: [bag_id, label_code, order_id, order_number, qr_payload, contents]
+      properties:
+        bag_id: {$ref: '#/components/schemas/PublicId'}
+        label_code: {type: string, maxLength: 80}
+        order_id: {$ref: '#/components/schemas/PublicId'}
+        order_number: {type: string, maxLength: 64}
+        qr_payload: {type: string, description: Hanya label unik; tidak memuat PII}
+        contents:
+          type: array
+          items:
+            type: object
+            required: [service_name, physical_quantity]
+            properties:
+              service_name: {type: string, nullable: true}
+              physical_quantity: {$ref: '#/components/schemas/Quantity'}
+    RepackBagInput:
+      type: object
+      additionalProperties: false
+      required: [source_bag_id, reason, moves]
+      properties:
+        source_bag_id: {$ref: '#/components/schemas/PublicId'}
+        target_bag_id: {$ref: '#/components/schemas/NullablePublicId'}
+        reason: {type: string, maxLength: 1000}
+        moves:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            required: [order_line_id, quantity]
+            properties:
+              order_line_id: {$ref: '#/components/schemas/PublicId'}
+              quantity: {$ref: '#/components/schemas/Quantity'}
+    TrackingToken:
+      type: object
+      required: [token, expires_at, order_id, tracking_url]
+      properties:
+        token: {type: string}
+        expires_at: {$ref: '#/components/schemas/UtcTime'}
+        order_id: {$ref: '#/components/schemas/PublicId'}
+        tracking_url: {type: string, format: uri}
+    PublicTracking:
+      type: object
+      required: [order_number, status, due_at, branch, bag_count]
+      properties:
+        order_number: {type: string, maxLength: 64}
+        status: {type: string}
+        due_at: {$ref: '#/components/schemas/UtcTime'}
+        branch:
+          type: object
+          required: [name, phone]
+          properties:
+            name: {type: string, nullable: true}
+            phone: {type: string, nullable: true}
+        bag_count: {type: integer, minimum: 0}
+    OrderRevisionInput:
+      type: object
+      additionalProperties: false
+      required: [expected_version, reason, lines]
+      properties:
+        expected_version: {type: integer, minimum: 1}
+        reason: {type: string, maxLength: 2000}
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            required: [order_line_id]
+            properties:
+              order_line_id: {$ref: '#/components/schemas/PublicId'}
+              measured_quantity: {$ref: '#/components/schemas/Quantity'}
+              service_id: {$ref: '#/components/schemas/PublicId'}
+              reprice: {type: boolean}
+    OrderRevisionDecision:
+      type: object
+      additionalProperties: false
+      required: [decision, reason]
+      properties:
+        decision: {type: string, enum: [approved, rejected]}
+        reason: {type: string, maxLength: 1000}
+    OrderRevision:
+      type: object
+      required: [id, order_id, status, expected_version, reason, decision_reason, difference_rupiah, current_total_rupiah, new_total_rupiah, requested_by_membership_id, approved_by_membership_id, invoice_adjustment_id, decided_at, applied_at]
+      properties:
+        id: {$ref: '#/components/schemas/PublicId'}
+        order_id: {$ref: '#/components/schemas/PublicId'}
+        status: {type: string, enum: [pending, applied, rejected]}
+        expected_version: {type: integer, minimum: 1}
+        reason: {type: string}
+        decision_reason: {type: string, nullable: true}
+        difference_rupiah: {type: integer, format: int64}
+        current_total_rupiah: {$ref: '#/components/schemas/Money'}
+        new_total_rupiah: {$ref: '#/components/schemas/Money'}
+        requested_by_membership_id: {$ref: '#/components/schemas/PublicId'}
+        approved_by_membership_id: {$ref: '#/components/schemas/NullablePublicId'}
+        invoice_adjustment_id: {$ref: '#/components/schemas/NullablePublicId'}
+        decided_at: {allOf: [{$ref: '#/components/schemas/UtcTime'}], nullable: true}
+        applied_at: {allOf: [{$ref: '#/components/schemas/UtcTime'}], nullable: true}
     OrderLineResult:
       type: object
       required: [id, service_id, service_name, unit, measured_quantity, billable_quantity, unit_price_rupiah, line_total_rupiah]
@@ -2123,7 +2450,7 @@ components:
               type: string
               description: Katalog minimum berikut tidak menutup kode domain tambahan yang didokumentasikan
               example: VERSION_CONFLICT
-              x-minimum-codes: [QUOTE_EXPIRED, QUOTE_CONSUMED, QUOTE_PAYLOAD_MISMATCH, QUOTE_TOTAL_MISMATCH, QUOTE_SERVICE_UNAVAILABLE, DISCOUNT_NOT_ALLOWED, DISCOUNT_APPROVAL_REQUIRED, DISCOUNT_APPROVAL_CONFLICT, DISCOUNT_APPROVAL_DECIDED, VERSION_CONFLICT, ALREADY_HANDED_OVER, BAG_IN_TRANSIT, PAYMENT_RECONCILIATION_REQUIRED, ENTITLEMENT_LIMIT_REACHED, IDEMPOTENCY_PAYLOAD_MISMATCH, SYNC_CURSOR_EXPIRED, SYNC_SCOPE_CHANGED]
+              x-minimum-codes: [QUOTE_EXPIRED, ORDER_REVISION_DECIDED, ORDER_REVISION_APPROVAL_CONFLICT, QUOTE_CONSUMED, QUOTE_PAYLOAD_MISMATCH, QUOTE_TOTAL_MISMATCH, QUOTE_SERVICE_UNAVAILABLE, DISCOUNT_NOT_ALLOWED, DISCOUNT_APPROVAL_REQUIRED, DISCOUNT_APPROVAL_CONFLICT, DISCOUNT_APPROVAL_DECIDED, VERSION_CONFLICT, ALREADY_HANDED_OVER, BAG_IN_TRANSIT, PAYMENT_RECONCILIATION_REQUIRED, ENTITLEMENT_LIMIT_REACHED, IDEMPOTENCY_PAYLOAD_MISMATCH, SYNC_CURSOR_EXPIRED, SYNC_SCOPE_CHANGED]
             message: {type: string}
             field_errors: {type: object, additionalProperties: {type: array, items: {type: string}}}
             current_version: {type: integer, format: int64, nullable: true}

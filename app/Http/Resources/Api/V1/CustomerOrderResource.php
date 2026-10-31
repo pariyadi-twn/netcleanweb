@@ -12,7 +12,7 @@ class CustomerOrderResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $total = $this->invoice?->original_total_rupiah ?? 0;
+        $total = ($this->invoice?->original_total_rupiah ?? 0) + ($this->invoice?->adjustments?->sum('amount_rupiah') ?? 0);
 
         return [
             'order_id' => $this->public_id,

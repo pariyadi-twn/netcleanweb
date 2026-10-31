@@ -39,4 +39,15 @@ class OrderPolicy
         return $user->id === $this->context->userId
             && $this->context->can(PermissionCode::OrdersManage);
     }
+
+    public function revise(User $user, Order $order): bool
+    {
+        return $this->view($user, $order)
+            && $this->context->can(PermissionCode::OrdersManage);
+    }
+
+    public function manageTracking(User $user, Order $order): bool
+    {
+        return $this->revise($user, $order);
+    }
 }

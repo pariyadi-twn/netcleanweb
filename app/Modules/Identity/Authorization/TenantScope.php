@@ -18,6 +18,14 @@ final class TenantScope
         ], $callback);
     }
 
+    public function publicTracking(string $tokenHash, Closure $callback, ?string $connection = null): mixed
+    {
+        return $this->run($connection, [
+            'app.tracking_token_hash' => $tokenHash,
+            'app.tenant_id' => '',
+        ], $callback);
+    }
+
     public function forTenant(Tenant $tenant, User $user, Closure $callback, ?string $connection = null): mixed
     {
         return $this->forTenantId($tenant->id, $user->id, $callback, $connection);

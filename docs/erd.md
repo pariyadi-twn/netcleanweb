@@ -287,7 +287,11 @@ Fase **P0** · Kelas kolom **L**.
 
 **Constraint dan relasi:** Append only; keadaan terbaru diturunkan dari histori. Penarikan promosi tidak menghapus bukti transaksi.
 
-**Catatan implementasi T030 tahap diskon:** `discount_approvals` menyimpan requester, approver, persentase, status, alasan, dan waktu keputusan per quote; RLS tenant dan unique quote. Diskon ≤10% dapat auto-approved sesuai permission standar, sedangkan >10% memerlukan approver berbeda dengan permission override. Acceptance quote menolak approval pending/rejected.
+**Catatan implementasi T027:** `bag_repack_events` append-only menyimpan source/target bag, actor, snapshot alokasi, dan reason. Repack mengurangi content sumber dan menambah content target; content sumber yang kosong menjadi tidak aktif dengan quantity nol. Label bag unik per tenant dan QR hanya membawa label code. Total aktif per order line tetap sama dengan measured quantity.
+
+**Catatan implementasi T076:** `order_tracking_tokens` menyimpan hash token unik, expiry, revoked_at, last_used_at, dan pembuat. Satu token aktif per order; regenerasi mencabut token lama. RLS publik hanya membuka baris saat `app.tracking_token_hash` cocok, belum revoked, dan belum expired; halaman publik tidak memakai customer snapshot atau nominal.
+
+**Catatan implementasi T030:** `discount_approvals` menyimpan requester, approver, persentase, status, alasan, dan waktu keputusan per quote; RLS tenant dan unique quote. Diskon ≤10% dapat auto-approved sesuai permission standar, sedangkan >10% memerlukan approver berbeda dengan permission override. Acceptance quote menolak approval pending/rejected. `order_revisions` menyimpan payload lama/baru, expected version, selisih, dan approver; `invoice_adjustments` append-only menyimpan debit/credit note bertanda. Revisi yang diterapkan memperbarui order line dan version, menulis order event, audit, serta outbox; invoice asli tidak diubah.
 
 **Catatan implementasi T024:** `customer_consents` memakai RLS tenant, FK gabungan customer, enum purpose `service_contact`/`marketing`, channel `email`/`whatsapp`/`push`, dan decision `granted`/`withdrawn`. Runtime hanya dapat SELECT/INSERT; koreksi dilakukan dengan event baru. API consent mengembalikan keadaan terbaru per pasangan purpose+channel, sedangkan histori order pelanggan memakai cursor `(created_at,id)` dan permission pelanggan serta order.
 

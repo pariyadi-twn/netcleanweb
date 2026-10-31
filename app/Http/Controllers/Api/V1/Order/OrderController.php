@@ -76,7 +76,7 @@ class OrderController extends Controller
                 $order = Order::query()
                     ->where('tenant_id', $context->tenantId)
                     ->where('public_id', $receipt->result_public_id)
-                    ->with(['invoice', 'lines', 'salesBranch', 'quote'])
+                    ->with(['invoice.adjustments', 'lines', 'salesBranch', 'quote'])
                     ->firstOrFail();
 
                 return $this->resultFor($order);
@@ -94,7 +94,7 @@ class OrderController extends Controller
 
     private function resultFor(Order $order): CommandResult
     {
-        $order->loadMissing(['invoice', 'lines', 'salesBranch', 'quote']);
+        $order->loadMissing(['invoice.adjustments', 'lines', 'salesBranch', 'quote']);
 
         return new CommandResult(
             resourceType: 'order',

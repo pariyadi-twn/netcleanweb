@@ -33,6 +33,11 @@ class Bag extends TenantModel
         return $this->hasMany(BagContent::class);
     }
 
+    public function repackEvents(): HasMany
+    {
+        return $this->hasMany(BagRepackEvent::class, 'source_bag_id');
+    }
+
     /** @return array<string, string> */
     protected function casts(): array
     {

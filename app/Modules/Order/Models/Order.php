@@ -87,6 +87,16 @@ class Order extends TenantModel
         return $this->hasMany(Bag::class);
     }
 
+    public function revisions(): HasMany
+    {
+        return $this->hasMany(OrderRevision::class);
+    }
+
+    public function trackingTokens(): HasMany
+    {
+        return $this->hasMany(OrderTrackingToken::class);
+    }
+
     /** @return array<string, string> */
     protected function casts(): array
     {

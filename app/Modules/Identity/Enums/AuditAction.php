@@ -7,5 +7,10 @@ enum AuditAction: string
     case MembershipAssignmentsUpdated = 'membership.assignments_updated';
     case RolePermissionsUpdated = 'role.permissions_updated';
     case BranchConfigurationUpdated = 'branch.configuration_updated';
+    case BranchCalendarUpdated = 'branch.calendar_updated';
+    case ServicePublicationChanged = 'service.publication_changed';
+    case DeadlinePromiseRecorded = 'deadline.promise_recorded';
+    case DeadlineRevised = 'deadline.revised';
+    case OrderAccepted = 'order.accepted';
     case OutboxEventApplied = 'outbox.event_applied';
 }

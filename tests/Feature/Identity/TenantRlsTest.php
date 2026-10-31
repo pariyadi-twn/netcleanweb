@@ -3,12 +3,19 @@
 namespace Tests\Feature\Identity;
 
 use App\Models\User;
+use App\Modules\Catalog\Models\PriceBook;
+use App\Modules\Catalog\Models\PriceEntry;
+use App\Modules\Catalog\Models\Service;
+use App\Modules\Catalog\Models\WorkflowStep;
+use App\Modules\Catalog\Models\WorkflowTemplate;
 use App\Modules\Identity\Actions\IssueDeviceToken;
 use App\Modules\Identity\Actions\UpdateMembershipAssignments;
 use App\Modules\Identity\Audit\AuditRecorder;
+use App\Modules\Identity\Authorization\ProvisioningScope;
 use App\Modules\Identity\Authorization\TenantScope;
 use App\Modules\Identity\Enums\AuditAction;
 use App\Modules\Identity\Enums\PermissionCode;
+use App\Modules\Identity\Enums\TenantStatus;
 use App\Modules\Identity\Models\AuditLog;
 use App\Modules\Identity\Models\Branch;
 use App\Modules\Identity\Models\Location;
@@ -16,9 +23,17 @@ use App\Modules\Identity\Models\Permission;
 use App\Modules\Identity\Models\Role;
 use App\Modules\Identity\Models\Tenant;
 use App\Modules\Identity\Models\TenantMembership;
+use App\Modules\Operations\Models\BranchCalendar;
 use App\Modules\Operations\Models\CommandReceipt;
 use App\Modules\Operations\Models\OutboxEvent;
 use App\Modules\Operations\Outbox\OutboxWriter;
+use App\Modules\Order\Models\Order;
+use App\Modules\Order\Models\Quote;
+use App\Modules\Saas\Actions\ConsumeQuota;
+use App\Modules\Saas\Actions\StartSubscription;
+use App\Modules\Saas\Models\SaasPlan;
+use App\Modules\Saas\Models\TenantSubscription;
+use App\Modules\Saas\Models\TenantUsageCounter;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\DB;
@@ -129,6 +144,103 @@ class TenantRlsTest extends TestCase
         $this->assertSame(1, $count);
         $this->assertSame(0, (int) DB::connection('pgsql_runtime')->table('branches')->count());
         $this->assertEmpty(DB::connection('pgsql_runtime')->selectOne("SELECT current_setting('app.tenant_id', true) AS tenant_id")->tenant_id);
+    }
+
+    public function test_runtime_catalog_scope_filters_workflows_steps_and_services(): void
+    {
+        $user = User::factory()->create();
+        $tenantA = Tenant::factory()->create();
+        $tenantB = Tenant::factory()->create();
+        $workflowA = WorkflowTemplate::factory()->for($tenantA)->create(['code' => 'standard-a']);
+        $workflowB = WorkflowTemplate::factory()->for($tenantB)->create(['code' => 'standard-b']);
+        WorkflowStep::factory()->forWorkflow($workflowA)->create(['code' => 'washing']);
+        WorkflowStep::factory()->forWorkflow($workflowB)->create(['code' => 'washing']);
+        $serviceA = Service::factory()->forWorkflow($workflowA)->create(['code' => 'kiloan-a']);
+        $serviceB = Service::factory()->forWorkflow($workflowB)->create(['code' => 'kiloan-b']);
+
+        $visible = app(TenantScope::class)->forTenant($tenantA, $user, fn (): array => [
+            'workflows' => WorkflowTemplate::query()->pluck('public_id')->all(),
+            'steps' => WorkflowStep::query()->pluck('public_id')->all(),
+            'services' => Service::query()->pluck('public_id')->all(),
+        ], 'pgsql_runtime');
+
+        $this->assertSame([$workflowA->public_id], $visible['workflows']);
+        $this->assertCount(1, $visible['steps']);
+        $this->assertSame([$serviceA->public_id], $visible['services']);
+        $this->assertNotContains($workflowB->public_id, $visible['workflows']);
+        $this->assertNotContains($serviceB->public_id, $visible['services']);
+        $this->assertSame(0, DB::connection('pgsql_runtime')->table('services')->count());
+    }
+
+    public function test_runtime_price_book_and_entry_scope_are_isolated(): void
+    {
+        $user = User::factory()->create();
+        $tenantA = Tenant::factory()->create();
+        $tenantB = Tenant::factory()->create();
+        $workflowA = WorkflowTemplate::factory()->for($tenantA)->create();
+        $workflowB = WorkflowTemplate::factory()->for($tenantB)->create();
+        $serviceA = Service::factory()->forWorkflow($workflowA)->create();
+        $serviceB = Service::factory()->forWorkflow($workflowB)->create();
+        $bookA = PriceBook::factory()->for($tenantA)->create();
+        $bookB = PriceBook::factory()->for($tenantB)->create();
+        $entryA = PriceEntry::factory()->forPriceBook($bookA, $serviceA)->create();
+        $entryB = PriceEntry::factory()->forPriceBook($bookB, $serviceB)->create();
+
+        $visible = app(TenantScope::class)->forTenant($tenantA, $user, fn (): array => [
+            'books' => PriceBook::query()->pluck('public_id')->all(),
+            'entries' => PriceEntry::query()->pluck('public_id')->all(),
+        ], 'pgsql_runtime');
+
+        $this->assertSame([$bookA->public_id], $visible['books']);
+        $this->assertSame([$entryA->public_id], $visible['entries']);
+        $this->assertNotContains($bookB->public_id, $visible['books']);
+        $this->assertNotContains($entryB->public_id, $visible['entries']);
+        $this->assertSame(0, DB::connection('pgsql_runtime')->table('price_books')->count());
+        $this->assertSame(0, DB::connection('pgsql_runtime')->table('price_entries')->count());
+    }
+
+    public function test_runtime_branch_calendar_scope_is_isolated(): void
+    {
+        $user = User::factory()->create();
+        $tenantA = Tenant::factory()->create();
+        $tenantB = Tenant::factory()->create();
+        $branchA = Branch::factory()->for($tenantA)->create();
+        $branchB = Branch::factory()->for($tenantB)->create();
+        $calendarA = BranchCalendar::factory()->forBranch($branchA)->create();
+        $calendarB = BranchCalendar::factory()->forBranch($branchB)->create();
+
+        $visible = app(TenantScope::class)->forTenant($tenantA, $user, fn (): array => BranchCalendar::query()->pluck('public_id')->all(), 'pgsql_runtime');
+
+        $this->assertSame([$calendarA->public_id], $visible);
+        $this->assertNotContains($calendarB->public_id, $visible);
+        $this->assertSame(0, DB::connection('pgsql_runtime')->table('branch_calendars')->count());
+    }
+
+    public function test_runtime_quote_and_order_scope_are_isolated(): void
+    {
+        $user = User::factory()->create();
+        $tenantA = Tenant::factory()->create();
+        $tenantB = Tenant::factory()->create();
+        $branchA = Branch::factory()->for($tenantA)->create();
+        $branchB = Branch::factory()->for($tenantB)->create();
+        $membershipA = TenantMembership::factory()->for($tenantA)->for($user)->create(['status' => 'active']);
+        $membershipB = TenantMembership::factory()->for($tenantB)->for($user)->create(['status' => 'active']);
+        $quoteA = $this->quote($tenantA, $branchA);
+        $quoteB = $this->quote($tenantB, $branchB);
+        $orderA = $this->order($tenantA, $branchA, $membershipA, $quoteA, 'ORDER-A');
+        $orderB = $this->order($tenantB, $branchB, $membershipB, $quoteB, 'ORDER-B');
+
+        $visible = app(TenantScope::class)->forTenant($tenantA, $user, fn (): array => [
+            'quotes' => Quote::query()->pluck('public_id')->all(),
+            'orders' => Order::query()->pluck('public_id')->all(),
+        ], 'pgsql_runtime');
+
+        $this->assertSame([$quoteA->public_id], $visible['quotes']);
+        $this->assertSame([$orderA->public_id], $visible['orders']);
+        $this->assertNotContains($quoteB->public_id, $visible['quotes']);
+        $this->assertNotContains($orderB->public_id, $visible['orders']);
+        $this->assertSame(0, DB::connection('pgsql_runtime')->table('quotes')->count());
+        $this->assertSame(0, DB::connection('pgsql_runtime')->table('orders')->count());
     }
 
     public function test_worker_can_scope_explicitly_to_one_tenant(): void
@@ -314,6 +426,61 @@ class TenantRlsTest extends TestCase
         $this->assertTrue(Str::isUuid($event->event_id));
     }
 
+    public function test_saas_subscription_and_usage_require_tenant_context_for_runtime(): void
+    {
+        $user = User::factory()->create();
+        [$tenant] = $this->createTenantFor($user, 'owner');
+
+        $plan = SaasPlan::factory()->create([
+            'features' => ['limits' => ['staff' => 2], 'features' => ['exports' => false]],
+        ]);
+        app(StartSubscription::class)->handle($tenant, $plan);
+        app(ConsumeQuota::class)->handle($tenant->id, 'staff');
+
+        $runtime = DB::connection('pgsql_runtime');
+
+        $this->assertSame(0, $runtime->table('saas_subscriptions')->count());
+        $this->assertSame(0, $runtime->table('tenant_usage_counters')->count());
+        $this->assertSame(1, app(TenantScope::class)->forTenant($tenant, $user, fn (): int => TenantSubscription::query()->count(), 'pgsql_runtime'));
+        $this->assertSame(1, app(TenantScope::class)->forTenant($tenant, $user, fn (): int => TenantUsageCounter::query()->count(), 'pgsql_runtime'));
+    }
+
+    public function test_provisioning_scope_is_required_to_insert_a_tenant_for_runtime(): void
+    {
+        $user = User::factory()->create();
+
+        $tenant = app(ProvisioningScope::class)->run($user, function (): Tenant {
+            $scope = app(ProvisioningScope::class);
+            $tenantId = (int) DB::selectOne("SELECT nextval(pg_get_serial_sequence('tenants', 'id')) AS id")->id;
+            $scope->activateTenant($tenantId);
+
+            DB::table('tenants')->insert([
+                'id' => $tenantId,
+                'name' => 'Runtime Provisioned',
+                'slug' => 'runtime-'.mb_strtolower(Str::random(8)),
+                'timezone' => 'Asia/Jakarta',
+                'status' => TenantStatus::Active->value,
+            ]);
+
+            return Tenant::query()->findOrFail($tenantId);
+        }, 'pgsql_runtime');
+
+        $this->assertTrue(Str::isUuid($tenant->public_id));
+        $this->assertSame(0, DB::connection('pgsql_runtime')->table('tenants')->count());
+
+        try {
+            DB::connection('pgsql_runtime')->table('tenants')->insert([
+                'name' => 'Denied',
+                'slug' => 'denied-'.mb_strtolower(Str::random(8)),
+                'timezone' => 'Asia/Jakarta',
+                'status' => 'active',
+            ]);
+            $this->fail('Runtime role must not insert a tenant without provisioning context.');
+        } catch (QueryException $exception) {
+            $this->assertSame('42501', $exception->errorInfo[0]);
+        }
+    }
+
     /**
      * @return array{Tenant, TenantMembership, Branch, Location, Role}
      */
@@ -347,5 +514,44 @@ class TenantRlsTest extends TestCase
         app(UpdateMembershipAssignments::class)->handle($membership, [$role->id], [$branch->id], [$location->id]);
 
         return [$tenant, $membership, $branch, $location, $role];
+    }
+
+    private function quote(Tenant $tenant, Branch $branch): Quote
+    {
+        $quote = new Quote([
+            'sales_branch_id' => $branch->id,
+            'fulfillment_method' => 'pickup',
+            'pickup_branch_id' => $branch->id,
+            'request_hash' => str_repeat('a', 64),
+            'expires_at' => now()->addMinutes(15),
+            'due_at' => now()->addDay(),
+            'total_rupiah' => 0,
+            'pricing_snapshot' => [],
+        ]);
+        $quote->tenant_id = $tenant->id;
+        $quote->save();
+
+        return $quote;
+    }
+
+    private function order(Tenant $tenant, Branch $branch, TenantMembership $membership, Quote $quote, string $number): Order
+    {
+        $order = new Order([
+            'quote_id' => $quote->id,
+            'sales_branch_id' => $branch->id,
+            'pickup_branch_id' => $branch->id,
+            'accepted_by_membership_id' => $membership->id,
+            'order_number' => $number,
+            'operational_status' => 'accepted',
+            'fulfillment_method' => 'pickup',
+            'due_at_original' => now()->addDay(),
+            'due_at_current' => now()->addDay(),
+            'customer_snapshot' => [],
+            'accepted_at' => now(),
+        ]);
+        $order->tenant_id = $tenant->id;
+        $order->save();
+
+        return $order;
     }
 }

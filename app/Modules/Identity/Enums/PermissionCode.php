@@ -11,5 +11,11 @@ enum PermissionCode: string
     case MembershipsView = 'memberships.view';
     case MembershipsManage = 'memberships.manage';
     case RolesManage = 'roles.manage';
+    case CustomersView = 'customers.view';
+    case CustomersManage = 'customers.manage';
+    case CatalogView = 'catalog.view';
+    case CatalogManage = 'catalog.manage';
+    case OrdersView = 'orders.view';
+    case OrdersManage = 'orders.manage';
     case AuditView = 'audit.view';
 }

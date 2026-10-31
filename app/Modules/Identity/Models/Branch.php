@@ -2,6 +2,7 @@
 
 namespace App\Modules\Identity\Models;
 
+use App\Modules\Operations\Models\BranchCalendar;
 use App\Support\Database\TenantModel;
 use Database\Factories\BranchFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -25,6 +26,11 @@ class Branch extends TenantModel
     public function locations(): HasMany
     {
         return $this->hasMany(Location::class);
+    }
+
+    public function calendars(): HasMany
+    {
+        return $this->hasMany(BranchCalendar::class);
     }
 
     /** @return array<string, string> */

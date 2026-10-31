@@ -105,6 +105,8 @@ Fase **P0** · Kelas kolom **G**.
 
 **Constraint dan relasi:** `slug` unik; tenant tidak mempunyai tenant_id yang menunjuk dirinya sendiri. Penghapusan memerlukan proses retensi, bukan cascade massal.
 
+**Catatan implementasi T009:** `provisioning_requests` adalah tabel control plane dengan unique `(user_id, client_command_id)`, hash payload, status terminal, dan referensi tenant/cabang/membership. RLS membatasi baris ke `app_current_user_id()`. Role runtime tidak dapat menghapus request. Tenant baru dibuat setelah ID dialokasikan dan tenant context diaktifkan, sehingga policy tenant normal tetap berlaku.
+
 ### `users`
 
 Fase **P0** · Kelas kolom **G**.
@@ -251,6 +253,8 @@ Fase **P0** · Kelas kolom **D**.
 
 **Constraint dan relasi:** Index `(tenant_id,normalized_phone)`; telepon bukan unique global dan dapat dipakai satu keluarga. Unique external_ref hanya dalam namespace sumber impor yang ditentukan.
 
+**Catatan implementasi T023:** `customers` memakai metadata tenant UUID/version dan RLS. Nomor dinormalisasi ke format Indonesia berawalan `0`; pencarian memakai nama ILIKE atau normalized_phone, dengan cursor pagination. Duplikat hanya dicari dalam tenant yang sama. Endpoint update/nonaktif, fuzzy ranking, import, dan audit PII belum dibuat.
+
 ### `customer_addresses`
 
 Fase **P0** · Kelas kolom **D**.
@@ -265,6 +269,8 @@ Fase **P0** · Kelas kolom **D**.
 | `is_default` | `boolean` | Alamat bawaan |
 
 **Constraint dan relasi:** FK tenant; koordinat dalam batas valid. Atur paling banyak satu alamat default dengan partial unique index per customer.
+
+**Catatan implementasi T023:** FK gabungan `(tenant_id, customer_id)`, CHECK latitude/longitude, dan partial unique index `(tenant_id, customer_id) WHERE is_default` diterapkan. Alamat pertama otomatis default; penggantian default dilakukan dalam transaksi dengan lock pada customer.
 
 ### `customer_consents`
 
@@ -294,6 +300,9 @@ Fase **P0** · Kelas kolom **D**.
 | `quantity_step` | `numeric(12,3)` | Kelipatan positif |
 | `workflow_template_id` | `bigint` | Workflow bawaan |
 | `is_active` | `boolean` | Publikasi katalog |
+| `sla_mode` | `varchar(16)` | working_days atau elapsed_hours |
+| `regular_turnaround` | `integer` | Hari kerja atau jam sesuai mode |
+| `express_turnaround` | `integer` | Hari kerja atau jam sesuai mode |
 
 **Constraint dan relasi:** Unique kode per tenant; step >0. Unit pcs, pair, package menerima kuantitas integral melalui validasi server.
 
@@ -326,6 +335,8 @@ Fase **P0** · Kelas kolom **D**.
 
 **Constraint dan relasi:** Periode valid; tidak boleh overlap pada book, service, tier yang sama. Gunakan exclusion constraint yang diuji atau lock parent dan pemeriksaan interval dalam seluruh jalur tulis; unique exact start saja tidak cukup.
 
+**Catatan implementasi T022:** `price_books` dan `price_entries` memakai RLS serta FK gabungan tenant. Hanya satu book aktif untuk scope tenant atau cabang; book baru pada scope yang sama menonaktifkan book lama dalam transaksi. Periode entry disimpan sebagai `timestamptz` setengah terbuka dan dilindungi exclusion constraint `btree_gist`, dengan advisory lock per book+layanan+tier. Definisi harga (book, layanan, tier, nominal, awal periode, rules) immutable; update runtime hanya boleh mengubah `effective_until` untuk menutup atau memperpanjang periode. Harga khusus pelanggan belum diaktifkan pada P0.
+
 ### `workflow_templates`
 
 Fase **P0** · Kelas kolom **D**.
@@ -353,6 +364,8 @@ Fase **P0** · Kelas kolom **D**.
 
 **Constraint dan relasi:** Unique template+code dan template+sequence. DAG lanjutan memerlukan tabel dependency baru, bukan JSON yang tidak dapat divalidasi.
 
+**Catatan implementasi T021:** Ketiga tabel katalog memakai RLS dan FK parent gabungan tenant. Hanya satu revision workflow aktif per `(tenant_id,code)`. Trigger database melarang perubahan definisi template serta update/delete step; perubahan alur membuat revision baru secara atomik dan menonaktifkan revision sebelumnya. Service baru berstatus draft sampai T022 menyediakan harga efektif valid. Unit diskret `pcs`, `pair`, dan `package` mewajibkan minimum serta step integral.
+
 ### `branch_calendars`
 
 Fase **P0** · Kelas kolom **D**.
@@ -366,6 +379,8 @@ Fase **P0** · Kelas kolom **D**.
 | `rules` | `jsonb` | Jam dan semantik elapsed atau business time |
 
 **Constraint dan relasi:** Validasi kombinasi kind dan date atau weekday. Due_at yang sudah dijanjikan disimpan pada order, bukan dihitung ulang dari kalender terbaru.
+
+**Catatan implementasi T025:** `branch_calendars` menyimpan tujuh baris `weekly_hours`, satu baris `cutoff`, dan nol atau lebih `holiday`; unique parsial menjaga satu jadwal per weekday, satu holiday per tanggal, dan satu cutoff per cabang. Perubahan kalender mengganti konfigurasi secara atomik, menaikkan version cabang, dan menulis audit. Layanan menyimpan `sla_mode` serta turnaround reguler/express; `working_days` memakai kalender dan cut-off, sedangkan `elapsed_hours` memakai waktu dinding. Janji awal dan revisi tenggat dicatat append-only melalui audit subject `deadline_promise`; T026 menyimpan due snapshot pada order dan order event accepted.
 
 ## 6 Kamus pesanan dan unit fisik
 
@@ -384,6 +399,8 @@ Fase **P0** · Kelas kolom **D**.
 | `consumed_at` | `timestamptz null` | Waktu diterima menjadi order |
 
 **Constraint dan relasi:** Quote dikunci saat digunakan. Order menyimpan quote_id unik per tenant; tidak dapat dikonsumsi dua kali oleh command berbeda.
+
+**Catatan implementasi T026:** `quotes` menyimpan `request_hash` dan `pricing_snapshot` berisi input ternormalisasi, line, sumber harga, total, customer snapshot, dan aturan diskon/express/antar. Acceptance mengunci quote `FOR UPDATE`, memeriksa hash payload, expiry, dan `consumed_at`; unique `(tenant_id,quote_id)` pada order menjadi pertahanan terakhir single-use. Replay command yang sudah completed mengembalikan order tersimpan tanpa memeriksa expiry lama.
 
 ### `orders`
 
@@ -423,6 +440,8 @@ Fase **P0** · Kelas kolom **D**.
 | `status` | `varchar(24)` | active atau cancelled |
 
 **Constraint dan relasi:** Kuantitas >0 untuk line aktif yang diterima; tidak menggunakan float. Tambahkan unique `(tenant_id,order_id,id)` untuk FK yang memaksa hubungan satu pesanan.
+
+**Catatan implementasi T026:** `line_total_rupiah` adalah nilai final setelah alokasi diskon dan express; `service_snapshot` menyimpan base, diskon, surcharge, sumber harga, workflow, dan due line. Satu bag awal dibuat per order dengan satu `bag_contents` per order line memakai measured quantity. Nomor order dan invoice berasal dari `number_counters` yang di-upsert atomik per tenant+cabang+jenis+periode. Order, line, invoice, bag, contents, event accepted, audit, dan outbox ditulis dalam transaksi acceptance yang sama.
 
 ### `order_events`
 
@@ -1121,6 +1140,8 @@ Fase **P0** · Kelas kolom **G**.
 
 **Constraint dan relasi:** Unique code+revision; paket lama tetap menjelaskan kontrak langganan yang sedang berjalan.
 
+**Catatan implementasi T015:** Plan global hanya dapat dibaca runtime; nilai final harga menunggu DEC08/T078. Subscription menyalin `features` plan ke `entitlements_snapshot` agar perubahan plan tidak mengubah kontrak berjalan.
+
 ### `saas_subscriptions`
 
 Fase **P0** · Kelas kolom **C**.
@@ -1135,6 +1156,8 @@ Fase **P0** · Kelas kolom **C**.
 | `grace_until` | `timestamptz null` | Masa tenggang |
 
 **Constraint dan relasi:** Paling banyak satu subscription efektif per tenant sesuai kebijakan; perubahan periode dan aktivasi idempoten.
+
+**Catatan implementasi T015:** Partial unique index mencegah lebih dari satu subscription non-cancelled per tenant. Status trial/active/grace memberi entitlement; read_only/cancelled ditolak. Runtime tidak dapat menghapus subscription.
 
 ### `saas_subscription_invoices`
 
@@ -1217,6 +1240,8 @@ Tabel berikut melengkapi kamus inti. Tipe umum D, L, C, J mengikuti Bagian 1. Da
 | `platform_audit_logs` | P0 G append only | platform_actor_id, action, target_tenant_id nullable FK, redacted_changes, case_reference; role platform terbatas |
 | `security_events` | P0 G append only | event_type, pseudonymous actor, request_ref, severity; tidak menerima body gagal yang berisi secret |
 | `tenant_usage_counters` | P0 C | metric_code, period, used bigint, reserved bigint; unique tenant+metric+period dan atomic quota |
+
+**Catatan implementasi T015:** `tenant_usage_counters` memakai RLS tenant dan CHECK non-negatif. Kuota dikonsumsi dengan satu `UPDATE ... WHERE used + amount <= limit RETURNING used`, sehingga permintaan bersamaan tidak dapat melewati batas; `reserved` disediakan tetapi belum dipakai alur reserve/commit terpisah.
 | `inventory_items` | P1 D | code, name, base_unit, reorder_point numeric; unique tenant+code |
 | `inventory_balances` | P1 D | item_id FK, location_id FK, quantity numeric; unique tenant+item+location; projection di bawah lock |
 | `stock_movements` | P1 L | item_id, location_id, signed quantity, kind, reference, actor; koreksi melalui reversal |

@@ -1,6 +1,6 @@
 # Backlog Pelaksanaan Pengembangan Laundry SaaS
 
-Versi 2.1 · 31 Oktober 2026 · Fondasi identitas, otorisasi, RLS, audit, idempotensi, outbox, dan konfigurasi cabang terverifikasi
+Versi 2.9 · 31 Oktober 2026 · Fondasi platform, katalog, harga, tenggat, dan acceptance order terverifikasi
 
 [PRD](prd.md) · [TRD](trd.md) · [Database](erd.md) · [UI UX](ui_guidelines.md) · [Aturan AI](agents.md) · [Keamanan](security.md) · [Rencana](todo.md)
 
@@ -123,8 +123,12 @@ Untuk fitur backend yang dipakai Flutter/web, task baru selesai setelah kontrak 
 
   Bukti 31 Oktober 2026: Pengguna menyetujui baseline DEC01 dan merchant tenant DEC02 melalui pertanyaan sesi implementasi. SOP enam langkah dan status keputusan dicatat pada PRD bagian 11; sesuai BR01, TR01, serta batas uang laundry/platform pada ERD. Penerima keputusan: pengguna/pemilik produk. Tidak memerlukan test aplikasi karena task ini menetapkan keputusan bisnis.
 
-- [ ] **T002 Tetapkan aturan harga dan kalender**
+- [x] **T002 Tetapkan aturan harga dan kalender**
   Rujukan: FR07 FR08 FR11 DEC03. Dependensi: T001. Selesai jika: Contoh minimum, kelipatan, express, harga cabang, cut off, libur, dan masa berlaku quote menjadi fixture acceptance.
+
+  Status selesai 31 Oktober 2026, disetujui pengguna/pemilik produk. Fixture machine-readable berada pada [fixtures/pricing-calendar.json](fixtures/pricing-calendar.json). Nilai yang disahkan: rupiah integer dan tanpa pajak untuk P0; kiloan minimum 3 kg, step 0,1 kg, default Rp8.000/kg; bed cover Rp25.000/potong; override cabang Rp9.000/kg dengan periode efektif dan konflik periode ditolak; express +50% dari subtotal layanan setelah diskon; diskon contoh 10% hanya layanan; antar Rp5.000 tidak didiskon dan tidak kena express; quote 15 menit; cabang buka Senin–Sabtu 08.00–20.00, cut-off 15.00, tutup Minggu/libur; reguler 2 hari kerja dan express 1 hari kerja, dengan hari libur dilewati dan tenggat pukul 20.00 waktu cabang. Contoh BR05 menghasilkan total Rp71.600, DP Rp30.000, sisa Rp41.600; contoh express menghasilkan Rp104.900.
+
+  Verifikasi: `PricingCalendarFixtureTest` lulus **9 test/22 assertion** untuk aritmetika BR05, express, pembulatan kuantitas, dan enam skenario tenggat termasuk cut-off dan libur. Seluruh suite lulus **112 test/593 assertion** saat T002 ditutup. Aktivasi pajak dan harga kontrak pelanggan tetap memerlukan keputusan lanjutan; harga tenant/cabang sudah diimplementasikan pada T022.
 
 - [ ] **T003 Tetapkan aturan uang kas dan kompensasi**
   Rujukan: FR31 FR33 FR34 FR35 DEC04 DEC06. Dependensi: T001. Selesai jika: Alur DP, refund, setoran, kembalian, piutang, penyerahan, dan maker checker mempunyai contoh angka serta penyetuju.
@@ -167,7 +171,7 @@ Untuk fitur backend yang dipakai Flutter/web, task baru selesai setelah kontrak 
 - [x] **T073 Susun kontrak OpenAPI dan protokol API v1**
   Rujukan: ADR05 TR03 TR15 SEC05 NFR04. Prioritas: P0. Dependensi: T007. Selesai jika: Kontrak dapat divalidasi dan menjadi acuan backend, Flutter, serta web; contoh dan test kontrak tersedia saat endpoint diimplementasikan.
 
-  Status selesai: [openapi.yaml](openapi.yaml) mendefinisikan 26 path/29 operasi dengan penanda P0/P1, autentikasi/konteks, perangkat, MFA, reset password, assignment membership idempoten, konfigurasi cabang, request mutasi, replay, pagination, tipe data, error, dan fase rilis. `npm run lint:api` lulus memakai Swagger Parser 13.1.0; audit npm bersih dan validasi kontrak ditambahkan ke CI. Kontrak menandai endpoint sebagai rancangan; test kontrak terhadap endpoint nyata dilengkapi saat modulnya dibuat.
+  Status selesai: [openapi.yaml](openapi.yaml) mendefinisikan 43 path/52 operasi dengan penanda P0/P1, autentikasi/konteks, perangkat, MFA, reset password, provisioning tenant, entitlement/langganan, assignment membership idempoten, konfigurasi cabang, kalender cabang, preview tenggat, pelanggan/alamat, katalog layanan/workflow, price book bertanggal, resolusi harga, publikasi layanan, request mutasi, replay, pagination, tipe data, error, dan fase rilis. `npm run lint:api` lulus memakai Swagger Parser 13.1.0; audit npm bersih dan validasi kontrak ditambahkan ke CI. Kontrak menandai endpoint sebagai rancangan; test kontrak terhadap endpoint nyata dilengkapi saat modulnya dibuat.
 
   - [x] **T073.1 Bentuk data dan scope:** Dokumentasikan `/api/v1`, UUID publik, integer rupiah, decimal string, waktu UTC, header konteks, pagination default 25/maksimum 100, dan batas sync batch usulan 50.
   - [x] **T073.2 Mutasi dan error:** Tetapkan `Idempotency-Key`/`client_command_id`, expected version, 201 baru/200 replay/202 asynchronous, 401/403/404/409/422/429, `Retry-After`, correlation ID, dan seluruh kode domain minimum TR03.
@@ -178,8 +182,16 @@ Untuk fitur backend yang dipakai Flutter/web, task baru selesai setelah kontrak 
 
   Status selesai: Tiga migration menambah public UUID/status/field MFA/version pengguna, tenants/branches/locations, membership/roles/permissions, serta empat join assignment/permission. Model domain berada pada `app/Modules/Identity`, identitas login tetap `app/Models/User`; tersedia factory, enum canonical, seeder permission yang idempoten, dan action reparent lokasi dengan lock/version/penolakan siklus. `IdentitySchemaTest` lulus 17 test/36 assertion pada PostgreSQL 18; rollback tiga migration dan migrate ulang juga berhasil pada `netclean_test` dengan koneksi migration. Backfill mempertahankan identitas/password dan waktu UTC pengguna lama. Ini bukan bukti authorization API atau RLS; T010/T011/T013 tetap terbuka.
 
-- [ ] **T009 Implementasikan provisioning tenant**
+- [x] **T009 Implementasikan provisioning tenant**
   Rujukan: FR01 TR01. Dependensi: T008, T073. Selesai jika: Request ulang menghasilkan tenant, cabang awal, membership pemilik, serta onboarding yang sama; proses terputus dapat dilanjutkan. Karena tenant belum tersedia saat awal pendaftaran, deduplikasi provisioning memakai scope identitas/control plane yang terbatas, bukan mensyaratkan command receipt tenant T017 dan membentuk dependensi melingkar. Trial serta entitlement diintegrasikan pada T015.
+
+  Status selesai 31 Oktober 2026, pelaksana coding agent sesuai keputusan pengguna: pemilik sudah login lalu membuat organisasi. Endpoint `POST /api/v1/provisioning/tenants` memakai `Idempotency-Key` yang harus sama dengan `client_command_id`. `provisioning_requests` menyimpan unique `(user_id, client_command_id)`, hash payload, status, referensi tenant/cabang/membership, error code, dan RLS berbasis user; runtime tidak dapat menghapus.
+
+  `ProvisioningScope` membuka transaksi control-plane dengan user context dan menetapkan tenant context setelah ID tenant dialokasikan, sehingga role runtime dapat membuat tenant tanpa melonggarkan policy SELECT lintas tenant. Service membuat tenant aktif, cabang awal, role `owner` sistem dengan seluruh permission saat ini, membership owner aktif, role assignment, dan branch assignment. Request replay mengembalikan tenant/cabang/membership yang sama; payload berbeda pada key sama menghasilkan 409 `IDEMPOTENCY_PAYLOAD_MISMATCH`; key yang sama untuk user berbeda menghasilkan tenant terpisah.
+
+  Verifikasi: `ProvisioningTest` lulus **4 test/39 assertion** untuk provisioning + replay, konflik payload, scope key per pemilik, header tidak cocok, dan request tanpa autentikasi. `TenantRlsTest` membuktikan role runtime hanya dapat membuat tenant di dalam provisioning context. Seluruh suite lulus **97 test/544 assertion**; OpenAPI valid untuk 30 path/34 operasi; rollback dan migrate ulang migration provisioning berhasil.
+
+  Gap: trial, entitlement, dan batas jumlah tenant menunggu T015; onboarding profil usaha/step terputus belum dipersist sebagai state terpisah; slug memakai suffix acak untuk menghindari tabrakan; belum ada rate limit khusus provisioning; token owner yang sudah terbit tidak dicabut saat menjadi owner sehingga kewajiban MFA baru berlaku pada login berikutnya; alur platform admin belum dibuat.
 
 - [x] **T010 Implementasikan login MFA dan perangkat**
   Rujukan: FR03 TR05 SEC02 SEC04. Dependensi: T007, T008, T073. Selesai jika: Token mobile per perangkat mempunyai expiry eksplisit, hash server, daftar sesi, dan revocation yang berlaku pada request berikutnya; login/reset tidak membocorkan keberadaan akun; MFA pemilik/admin beserta recovery diuji. Session web menggunakan CSRF dan cookie aman; tidak mengasumsikan Sanctum menyediakan refresh token OAuth bawaan.
@@ -240,8 +252,16 @@ Untuk fitur backend yang dipakai Flutter/web, task baru selesai setelah kontrak 
 
   Gap: event login/MFA/reset belum dicatat sebagai audit tenant; `platform_audit_logs` dan role retensi terpisah belum dibuat; action di luar `TenantScope` pada role runtime akan gagal karena audit insert ditolak RLS; alasan tindakan sensitif belum diwajibkan oleh action.
 
-- [ ] **T015 Implementasikan paket dan kuota atomik**
+- [x] **T015 Implementasikan paket dan kuota atomik**
   Rujukan: FR37. Dependensi: T009, T011, T013. Selesai jika: Dua permintaan untuk slot terakhir hanya mengaktifkan satu; fitur berbayar dicek server.
+
+  Status selesai 31 Oktober 2026, pelaksana coding agent sesuai instruksi pengguna. Schema `saas_plans` versioned per code+revision, `saas_subscriptions` tenant-scoped dengan snapshot entitlement, serta `tenant_usage_counters` tenant+metric+period. Plan global hanya dapat dibaca runtime; subscription dan counter memakai RLS tenant, satu subscription efektif per tenant, dan runtime tanpa DELETE.
+
+  `StartSubscription` memvalidasi limits non-negatif dan feature flag boolean lalu menyalin snapshot plan. `SubscriptionEntitlements` membaca snapshot aktif (trial/active/grace) dan menolak fitur berbayar dengan `FEATURE_NOT_AVAILABLE`; status read_only/cancelled ditolak `SUBSCRIPTION_INACTIVE`. `ConsumeQuota` memakai satu UPDATE bersyarat `used + amount <= limit` dengan `RETURNING`, sehingga dua permintaan slot terakhir hanya satu yang berhasil; release mengembalikan kuota dan transaksi pembungkus membatalkan increment bila callback gagal. Endpoint `GET /api/v1/me/subscription` mengekspos limit/fitur efektif untuk klien.
+
+  Verifikasi: `SubscriptionQuotaTest` lulus **5 test/23 assertion** untuk snapshot, kuota slot terakhir + release, fitur berbayar, subscription nonaktif, dan validasi fitur plan. `TenantRlsTest` membuktikan subscription/counter memerlukan tenant context pada role runtime. Seluruh suite lulus **103 test/571 assertion**; OpenAPI valid untuk 31 path/35 operasi; Pint lulus.
+
+  Gap: belum ada alur platform admin untuk membuat plan/assign subscription, harga final menunggu DEC08/T078, trial default belum diintegrasikan ke provisioning, integrasi pemakaian slot staf ke pembuatan membership menunggu task staf, dan uji dua proses nyata tetap menjadi T047. Kolom `reserved` tersedia tetapi alur reserve/commit terpisah belum dipakai.
 
 - [ ] **T016 Implementasikan tagihan SaaS awal**
   Rujukan: FR38. Dependensi: T003, T015. Selesai jika: Pembayaran langganan manual tervalidasi mengaktifkan tepat sekali dan tidak masuk kas laundry.
@@ -278,23 +298,61 @@ Untuk fitur backend yang dipakai Flutter/web, task baru selesai setelah kontrak 
 
 **Rentang usulan:** Minggu 5 sampai 7. **Hasil:** Pesanan dan invoice dapat diterima dengan harga benar serta draft lokal aman.
 
-- [ ] **T021 Bangun katalog layanan dan workflow**
+- [x] **T021 Bangun katalog layanan dan workflow**
   Rujukan: FR07. Dependensi: T002, T012, T013. Selesai jika: Unit, minimum, step, template, dan versi workflow tervalidasi; perubahan tidak mengubah snapshot lama.
 
-- [ ] **T022 Bangun daftar harga bertanggal**
+  Status selesai 31 Oktober 2026, pelaksana coding agent sesuai instruksi pengguna. Schema `workflow_templates`, `workflow_steps`, dan `services` memakai UUID/version, FK gabungan tenant, RLS, unique kode/revisi/urutan, CHECK unit/minimum/step, serta integer-only untuk `pcs`, `pair`, dan `package`. Permission `catalog.view` dan `catalog.manage` ditambahkan ke enum dan seeder idempoten.
+
+  Endpoint `GET/POST /api/v1/workflow-templates`, `GET /api/v1/workflow-templates/{id}`, `GET/POST /api/v1/services`, serta `GET/PATCH /api/v1/services/{id}` terisolasi tenant dan memakai cursor pagination. Revision workflow dibuat atomik, revision aktif lama dinonaktifkan, definisi template dan step lama dilindungi trigger immutable, dan `CaptureServiceSnapshot` menghasilkan salinan nama/unit/aturan/workflow/step untuk T026. Layanan baru selalu draft; field aktivasi ditolak sampai T022 menyediakan harga efektif valid sesuai FR07.
+
+  Verifikasi: `CatalogTest` dan `CatalogAuthorizationTest` lulus **6 test/80 assertion** untuk CRUD terkontrol, unit diskret, step positif, revision, snapshot lama, trigger immutable, autentikasi, permission, dan isolasi tenant. `TenantRlsTest` menambah **1 test/6 assertion** untuk workflow/step/service pada role runtime. Rollback/migrate ulang berhasil; seluruh suite lulus **119 test/679 assertion**; OpenAPI valid untuk **35 path/42 operasi**; tujuh route katalog terdaftar.
+
+  Gap lanjutan: publikasi layanan dan validasi tarif efektif dikerjakan T022; kalkulasi tenggat tersedia pada T025; snapshot dikonsumsi secara atomik saat order pada T026. Penghapusan katalog tidak dibuka agar referensi historis tetap aman.
+
+- [x] **T022 Bangun daftar harga bertanggal**
   Rujukan: FR08. Dependensi: T002, T021. Selesai jika: Tenant default dan override cabang deterministik; periode ambigu ditolak pada request serentak.
 
-- [ ] **T023 Bangun pelanggan alamat dan pencarian**
+  Status selesai 31 Oktober 2026, pelaksana coding agent sesuai instruksi pengguna. Schema `price_books` dan `price_entries` memakai RLS, UUID/version, FK gabungan tenant, serta unique parsial satu book aktif per scope tenant/cabang. Entry harga memakai periode `[effective_from,effective_until)`, tier regular/express, dan exclusion constraint `btree_gist` yang menolak overlap per book+layanan+tier; advisory transaction lock membuat pemeriksaan dan insert/penutupan periode berurutan. Definisi harga immutable; hanya `effective_until` yang dapat diubah untuk menutup atau memperpanjang periode tanpa mengubah snapshot transaksi lama.
+
+  Endpoint `GET/POST /api/v1/price-books`, `GET /api/v1/price-books/{id}`, `POST /api/v1/price-books/{id}/entries`, `PATCH /api/v1/price-entries/{id}`, `GET /api/v1/prices/resolve`, dan `PATCH /api/v1/services/{id}/publication` berjalan dengan cursor pagination, permission katalog, dan tenant context. Resolusi memilih price book cabang aktif lebih dulu, lalu tenant; respons menjelaskan `source`, price book, dan entry yang dipakai. Publikasi layanan mensyaratkan workflow revision aktif dan tarif regular tenant yang efektif pada waktu sekarang, serta dicatat ke audit dengan alasan.
+
+  Verifikasi: `PriceBookTest` lulus **7 test/74 assertion** untuk prioritas cabang lalu fallback tenant, transisi periode override, aktivasi layanan, penolakan periode overlap, penutupan dan perpanjangan entry, exclusion constraint bypass action, unique book aktif, isolasi tenant, dan permission. `PricePolicyTest` lulus **1 test/14 assertion**; `TenantRlsTest` menambah **1 test/6 assertion** untuk price book/entry runtime. Rollback/migrate ulang berhasil; seluruh suite lulus **128 test/773 assertion**; OpenAPI valid untuk **41 path/49 operasi**; enam route price book/resolusi dan satu route publikasi terdaftar.
+
+  Gap lanjutan: harga khusus pelanggan (customer price book) tetap P1; quote dan snapshot harga dikonsumsi T026; perubahan tarif tidak otomatis menonaktifkan layanan ketika tarif tenant kedaluwarsa; UI katalog/harga menyusul T075.
+
+- [x] **T023 Bangun pelanggan alamat dan pencarian**
   Rujukan: FR09. Dependensi: T011, T013. Selesai jika: Nomor ternormalisasi, kandidat duplikat per tenant, pagination, dan isolasi hasil diuji.
+
+  Status selesai 31 Oktober 2026, pelaksana coding agent sesuai instruksi pengguna. Schema `customers` dan `customer_addresses` memakai RLS tenant, metadata UUID/version, FK gabungan tenant, index pencarian telepon, serta partial unique index satu alamat default per pelanggan. Nomor telepon dinormalisasi dari format `+62`, `62`, atau `8...` menjadi nomor Indonesia berawalan `0`; input tidak valid ditolak 422.
+
+  Endpoint `GET/POST /api/v1/customers`, `GET /api/v1/customers/{customerId}`, `POST /api/v1/customers/{customerId}/addresses`, dan `GET /api/v1/customers/duplicates` berjalan dalam tenant context dengan permission `customers.view`/`customers.manage`. Pencarian nama dan telepon memakai cursor pagination default 25/maksimum 100. Duplikat dibatasi tenant dan tidak pernah membaca data tenant lain. Alamat pertama otomatis default; alamat default baru melepas default lama dalam transaksi dengan row lock.
+
+  Verifikasi: `CustomerTest` lulus **5 test/37 assertion** untuk normalisasi telepon, alamat default, pencarian nama/telepon, cursor pagination, kandidat duplikat lintas tenant, isolasi detail/alamat, penolakan nomor tidak valid, dan viewer tanpa izin manage. Seluruh suite lulus **92 test/502 assertion**; OpenAPI valid untuk 29 path/33 operasi; Pint lulus.
+
+  Gap: belum ada endpoint update/nonaktif pelanggan; pencarian masih substring sederhana tanpa trigram/fuzzy ranking; deteksi duplikat hanya nomor/nama persis, bukan skor kemiripan; import `external_ref` menyusul T043; consent pelanggan T024; perubahan PII belum diaudit karena kebijakan retensi/redaksi menunggu T005.
 
 - [ ] **T024 Bangun histori dan consent**
   Rujukan: FR10. Dependensi: T005, T023, T026. Selesai jika: Histori pesanan pelanggan dipaginasi dan dibatasi permission/tenant; consent tujuan dan kanal terpisah; penolakan marketing tidak menghilangkan nota layanan.
 
-- [ ] **T025 Bangun kalkulasi tenggat**
+- [x] **T025 Bangun kalkulasi tenggat**
   Rujukan: FR11. Dependensi: T002, T012, T021. Selesai jika: Elapsed time berbeda dari hari kerja; janji awal dan revisi dapat ditelusuri.
 
-- [ ] **T026 Bangun quote dan acceptance atomik**
+  Status selesai 31 Oktober 2026, pelaksana coding agent sesuai instruksi pengguna. Schema `branch_calendars` memakai RLS, FK gabungan tenant, tujuh baris jadwal mingguan, satu cut-off, dan hari libur; unique parsial mencegah duplikasi jadwal/tanggal. Layanan mendapat `sla_mode` (`working_days` atau `elapsed_hours`) serta turnaround reguler/express dengan CHECK sesuai mode. Endpoint `GET/PUT /api/v1/branches/{id}/calendar` dan `POST /api/v1/deadlines/preview` berjalan dalam tenant/branch scope; perubahan kalender atomik, menaikkan version cabang, dan menulis audit.
+
+  `CalculateDeadline` membedakan tenggat berbasis hari kerja dari elapsed wall-clock. Mode hari kerja memakai cut-off, jadwal mingguan, dan libur; mode elapsed memakai jam tanpa cut-off sehingga layanan 24 jam tidak dianggap satu hari kerja. `RecordDeadlinePromise`, `ReviseDeadlinePromise`, dan `GetDeadlinePromise` menyimpan janji awal serta revisi append-only pada audit dengan actor, alasan, correlation ID, waktu lama/baru; T026 akan memakai promise ID ini saat membuat order.
+
+  Verifikasi: `DeadlineTest` lulus **5 test/72 assertion** untuk konfigurasi/audit kalender, cut-off, libur, express, elapsed, validasi, isolasi tenant, dan permission. `DeadlinePromiseTest` lulus **2 test/19 assertion** untuk trace janji awal/revisi, stale revision, promise tidak ditemukan, dan alasan wajib. `TenantRlsTest` menambah **1 test/3 assertion** untuk kalender runtime. Rollback/migrate dua migration berhasil; seluruh suite lulus **137 test/884 assertion**; OpenAPI valid untuk **43 path/52 operasi**; tiga route kalender/tenggat terdaftar.
+
+  Gap lanjutan: kapasitas produksi jaringan, appointment pickup, dan perubahan janji berbasis order/audit UI tetap T040/T075; T026 menyimpan due snapshot pada order/order event, sedangkan promise trace audit belum diekspos sebagai endpoint publik.
+
+- [x] **T026 Bangun quote dan acceptance atomik**
   Rujukan: FR13 FR16 BR02 BR04 BR05 BR08 TR03 TR04. Dependensi: T017, T018, T021, T022, T023, T025, T073. Selesai jika: Harga dihitung server memakai decimal dan half up, measured/billable terpisah, quote cocok dengan payload dan dikunci agar hanya dikonsumsi sekali. Order, line, invoice, unit fisik awal, nomor atomik, snapshot harga/workflow/tenggat, audit, outbox, dan hasil receipt commit bersama. Contoh BR05 menghasilkan Rp71.600; retry sesudah commit mengembalikan hasil yang sama tanpa memvalidasi ulang expiry quote lama. DP merupakan command terpisah pada T038.
+
+  Status selesai 31 Oktober 2026, pelaksana coding agent sesuai instruksi pengguna. `POST /api/v1/orders/quotes` menghitung ulang harga server dari price book aktif, minimum/step, tier, diskon layanan, express, dan antar; quote menyimpan hash input, pricing snapshot, expiry 15 menit, due_at, dan sumber harga. `POST /api/v1/orders` memakai `Idempotency-Key`/`client_command_id`, mengunci quote `FOR UPDATE`, memeriksa hash payload dan expiry, lalu membuat order, order line, invoice, invoice line, bag awal, bag content, order event accepted, nomor atomik, audit, dan outbox dalam satu transaksi. Unique quote pada order dan `consumed_at` mencegah konsumsi ganda.
+
+  Verifikasi: `OrderAcceptanceTest` lulus **5 test/80 assertion** untuk BR05 Rp71.600, measured/billable 2.300/3.000, invoice lines, bag contents, replay setelah expiry, single-use quote, payload mismatch, expiry, permission, branch scope, dan idempotency header. `OrderPolicyTest` lulus **1 test/8 assertion**; `TenantRlsTest` menambah **1 test/6 assertion** untuk quote/order runtime. Rollback/migrate migration order berhasil; seluruh suite lulus **144 test/978 assertion**; OpenAPI valid untuk **43 path/52 operasi**.
+
+  Gap lanjutan: DP/payment T038, dokumen nota/cetak T029, endpoint daftar/detail order, revisi jadwal T040, serta label/repack T027. Diskon saat ini berupa input server-validated yang masuk snapshot; kebijakan otorisasi promo menunggu T028.
 
 - [ ] **T027 Bangun bag content label dan repack**
   Rujukan: FR12. Dependensi: T004, T026. Selesai jika: Label unik, satu bag satu order, total fisik sesuai measured quantity, dan repack menjaga jumlah.

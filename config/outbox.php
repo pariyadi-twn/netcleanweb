@@ -7,6 +7,7 @@ return [
 
     'event_types' => [
         'membership.assignments_updated',
+        'order.accepted',
     ],
 
     'consumers' => [

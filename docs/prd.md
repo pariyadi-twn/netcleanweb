@@ -614,7 +614,7 @@ Akuntansi umum lengkap, payroll, pengurusan pajak, marketplace lintas tenant, do
 |---|---|---|---|
 | DEC01 | Satu badan usaha per tenant; cabang dan pusat produksi milik badan usaha tersebut berada dalam tenant yang sama; waralaba independen memakai tenant terpisah | Pemilik produk/pengguna, dikonfirmasi dalam sesi implementasi 31 Oktober 2026 | Disetujui untuk fondasi P0 |
 | DEC02 | Dana laundry langsung ke merchant tenant; merchant platform hanya menerima langganan SaaS | Pemilik produk/pengguna, dikonfirmasi dalam sesi implementasi 31 Oktober 2026 | Disetujui; adapter gateway tetap P1 |
-| DEC03 | Pajak, minimum, pembulatan, dan aturan diskon | Operasional sebelum acceptance pricing | Terbuka |
+| DEC03 | Pajak, minimum, pembulatan, dan aturan diskon | Operasional sebelum acceptance pricing; disahkan pengguna 31 Oktober 2026 | Disetujui untuk fixture P0; pajak nonaktif sampai keputusan aktivasi |
 | DEC04 | Penyerahan dengan piutang dan batas kredit | Pemilik usaha sebelum pilot | Terbuka |
 | DEC05 | Printer, scanner, Android, dan kebutuhan iOS | Operasional sebelum pembelian perangkat | Terbuka |
 | DEC06 | Kebijakan kompensasi dan bukti kondisi awal | Operasional sebelum UAT | Terbuka |

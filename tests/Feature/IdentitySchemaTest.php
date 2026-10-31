@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Modules\Identity\Actions\ReparentLocation;
+use App\Modules\Identity\Enums\PermissionCode;
 use App\Modules\Identity\Models\Branch;
 use App\Modules\Identity\Models\Location;
 use App\Modules\Identity\Models\Permission;
@@ -192,7 +193,7 @@ class IdentitySchemaTest extends TestCase
 
         $this->seed(IdentityPermissionSeeder::class);
 
-        $this->assertSame(8, Permission::query()->count());
+        $this->assertSame(count(PermissionCode::cases()), Permission::query()->count());
         $this->assertSame($firstIds, Permission::query()->orderBy('code')->pluck('public_id')->all());
     }
 

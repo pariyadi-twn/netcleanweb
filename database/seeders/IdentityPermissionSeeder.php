@@ -20,6 +20,12 @@ class IdentityPermissionSeeder extends Seeder
             'memberships.view' => 'Lihat staf organisasi',
             'memberships.manage' => 'Kelola keanggotaan dan penugasan',
             'roles.manage' => 'Kelola peran dan izin',
+            'customers.view' => 'Lihat dan cari pelanggan tenant',
+            'customers.manage' => 'Buat dan ubah pelanggan serta alamat',
+            'catalog.view' => 'Lihat layanan dan workflow tenant',
+            'catalog.manage' => 'Kelola layanan dan revisi workflow',
+            'orders.view' => 'Lihat quote dan order tenant',
+            'orders.manage' => 'Buat quote dan terima order',
             'audit.view' => 'Lihat jejak audit',
         ];
 

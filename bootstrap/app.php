@@ -4,6 +4,7 @@ use App\Exceptions\ApiException;
 use App\Http\Middleware\AssignCorrelationId;
 use App\Http\Middleware\EnsureMfaIsConfirmed;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\RecordRequestMetrics;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\UseTenantContext;
 use App\Support\Http\ApiError;
@@ -27,7 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->append([AssignCorrelationId::class, SecurityHeaders::class]);
+        $middleware->append([AssignCorrelationId::class, SecurityHeaders::class, RecordRequestMetrics::class]);
         $middleware->alias([
             'active' => EnsureUserIsActive::class,
             'mfa.confirmed' => EnsureMfaIsConfirmed::class,

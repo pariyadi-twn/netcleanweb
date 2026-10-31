@@ -21,8 +21,11 @@ use App\Http\Controllers\Api\V1\Identity\UpdateMembershipAssignmentsController;
 use App\Http\Controllers\Api\V1\MyContextController;
 use App\Http\Controllers\Api\V1\Operations\BranchCalendarController;
 use App\Http\Controllers\Api\V1\Operations\DeadlinePreviewController;
+use App\Http\Controllers\Api\V1\Ops\HealthController;
+use App\Http\Controllers\Api\V1\Ops\MetricsController;
 use App\Http\Controllers\Api\V1\Order\BagController;
 use App\Http\Controllers\Api\V1\Order\DiscountApprovalController;
+use App\Http\Controllers\Api\V1\Order\OrderConditionController;
 use App\Http\Controllers\Api\V1\Order\OrderController;
 use App\Http\Controllers\Api\V1\Order\OrderRevisionController;
 use App\Http\Controllers\Api\V1\Order\QuoteController;
@@ -39,6 +42,8 @@ Route::prefix('v1')->group(function (): void {
     Route::post('/auth/password-reset-links', [PasswordResetLinkController::class, 'store'])->middleware('throttle:password-reset');
     Route::post('/auth/password-resets', [PasswordResetController::class, 'store'])->middleware('throttle:password-reset');
     Route::get('/tracking/{token}', PublicTrackingController::class)->middleware('throttle:tracking');
+    Route::get('/health', HealthController::class)->middleware('throttle:60,1');
+    Route::get('/ops/metrics', MetricsController::class);
 
     Route::middleware(['auth:sanctum', 'active'])->group(function (): void {
         Route::get('/auth/tokens', [DeviceTokenController::class, 'index']);
@@ -88,6 +93,8 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/orders/{order}/repack', [BagController::class, 'repack'])->middleware('tenant');
         Route::post('/orders/{order}/receipt', [ReceiptController::class, 'show'])->middleware('tenant');
         Route::post('/orders/{order}/receipt-prints', [ReceiptController::class, 'print'])->middleware('tenant');
+        Route::get('/orders/{order}/condition', [OrderConditionController::class, 'show'])->middleware('tenant');
+        Route::post('/orders/{order}/condition', [OrderConditionController::class, 'store'])->middleware('tenant');
         Route::get('/orders/{order}/attachments', [OrderAttachmentController::class, 'index'])->middleware('tenant');
         Route::post('/orders/{order}/attachments', [OrderAttachmentController::class, 'store'])->middleware('tenant');
 

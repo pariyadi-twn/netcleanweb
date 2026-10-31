@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\V1\Order\DiscountApprovalController;
 use App\Http\Controllers\Api\V1\Order\OrderController;
 use App\Http\Controllers\Api\V1\Order\OrderRevisionController;
 use App\Http\Controllers\Api\V1\Order\QuoteController;
+use App\Http\Controllers\Api\V1\Order\ReceiptController;
 use App\Http\Controllers\Api\V1\Order\TrackingTokenController;
 use App\Http\Controllers\Api\V1\PublicTrackingController;
 use App\Http\Controllers\Api\V1\Saas\SubscriptionController;
@@ -83,6 +84,8 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/orders/{order}/bags', [BagController::class, 'index'])->middleware('tenant');
         Route::get('/orders/{order}/bags/{bag}/label', [BagController::class, 'label'])->middleware('tenant');
         Route::post('/orders/{order}/repack', [BagController::class, 'repack'])->middleware('tenant');
+        Route::post('/orders/{order}/receipt', [ReceiptController::class, 'show'])->middleware('tenant');
+        Route::post('/orders/{order}/receipt-prints', [ReceiptController::class, 'print'])->middleware('tenant');
 
         Route::get('/workflow-templates', [WorkflowTemplateController::class, 'index'])->middleware('tenant');
         Route::post('/workflow-templates', [WorkflowTemplateController::class, 'store'])->middleware('tenant');

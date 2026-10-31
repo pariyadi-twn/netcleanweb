@@ -97,6 +97,11 @@ class Order extends TenantModel
         return $this->hasMany(OrderTrackingToken::class);
     }
 
+    public function printAttempts(): HasMany
+    {
+        return $this->hasMany(ReceiptPrintAttempt::class);
+    }
+
     /** @return array<string, string> */
     protected function casts(): array
     {

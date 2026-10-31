@@ -22,9 +22,11 @@ final class AuditRecorder
 
     public const SUBJECT_ORDER = 'order';
 
+    public const SUBJECT_QUOTE = 'quote';
+
     public const SUBJECT_OUTBOX_EVENT = 'outbox_event';
 
-    private const ALLOWED_SUBJECTS = [self::SUBJECT_TENANT_MEMBERSHIP, self::SUBJECT_ROLE, self::SUBJECT_BRANCH, self::SUBJECT_SERVICE, self::SUBJECT_DEADLINE_PROMISE, self::SUBJECT_ORDER, self::SUBJECT_OUTBOX_EVENT];
+    private const ALLOWED_SUBJECTS = [self::SUBJECT_TENANT_MEMBERSHIP, self::SUBJECT_ROLE, self::SUBJECT_BRANCH, self::SUBJECT_SERVICE, self::SUBJECT_DEADLINE_PROMISE, self::SUBJECT_ORDER, self::SUBJECT_QUOTE, self::SUBJECT_OUTBOX_EVENT];
 
     private const SENSITIVE_KEY_PATTERN = '/pass(word)?|token|secret|mfa|recovery|authorization|api[_-]?key|credential/i';
 

@@ -58,6 +58,11 @@ class Quote extends TenantModel
         return $this->hasOne(Order::class);
     }
 
+    public function discountApproval(): HasOne
+    {
+        return $this->hasOne(DiscountApproval::class);
+    }
+
     /** @return array<string, string> */
     protected function casts(): array
     {

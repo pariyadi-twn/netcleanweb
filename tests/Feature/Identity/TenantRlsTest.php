@@ -8,6 +8,8 @@ use App\Modules\Catalog\Models\PriceEntry;
 use App\Modules\Catalog\Models\Service;
 use App\Modules\Catalog\Models\WorkflowStep;
 use App\Modules\Catalog\Models\WorkflowTemplate;
+use App\Modules\Customer\Models\Customer;
+use App\Modules\Customer\Models\CustomerConsent;
 use App\Modules\Identity\Actions\IssueDeviceToken;
 use App\Modules\Identity\Actions\UpdateMembershipAssignments;
 use App\Modules\Identity\Audit\AuditRecorder;
@@ -241,6 +243,23 @@ class TenantRlsTest extends TestCase
         $this->assertNotContains($orderB->public_id, $visible['orders']);
         $this->assertSame(0, DB::connection('pgsql_runtime')->table('quotes')->count());
         $this->assertSame(0, DB::connection('pgsql_runtime')->table('orders')->count());
+    }
+
+    public function test_runtime_customer_consent_scope_is_isolated(): void
+    {
+        $user = User::factory()->create();
+        $tenantA = Tenant::factory()->create();
+        $tenantB = Tenant::factory()->create();
+        $customerA = Customer::factory()->for($tenantA)->create();
+        $customerB = Customer::factory()->for($tenantB)->create();
+        $consentA = CustomerConsent::factory()->forCustomer($customerA)->create();
+        $consentB = CustomerConsent::factory()->forCustomer($customerB)->create();
+
+        $visible = app(TenantScope::class)->forTenant($tenantA, $user, fn (): array => CustomerConsent::query()->pluck('public_id')->all(), 'pgsql_runtime');
+
+        $this->assertSame([$consentA->public_id], $visible);
+        $this->assertNotContains($consentB->public_id, $visible);
+        $this->assertSame(0, DB::connection('pgsql_runtime')->table('customer_consents')->count());
     }
 
     public function test_worker_can_scope_explicitly_to_one_tenant(): void

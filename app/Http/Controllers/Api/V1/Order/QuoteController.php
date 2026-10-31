@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Order\StoreQuoteRequest;
 use App\Http\Resources\Api\V1\QuoteResource;
 use App\Modules\Identity\Authorization\TenantContext;
+use App\Modules\Identity\Enums\PermissionCode;
 use App\Modules\Identity\Models\Branch;
 use App\Modules\Order\Actions\CreateQuote;
 use App\Modules\Order\Models\Order;
@@ -27,9 +28,15 @@ class QuoteController extends Controller
 
         abort_unless($context->canAccessBranch($branch), 403);
 
-        $quote = $create->handle($context->tenantId, $request->validated());
+        $quote = $create->handle(
+            $context->tenantId,
+            $request->validated(),
+            $context->membershipId,
+            $context->can(PermissionCode::DiscountsStandard),
+            $context->can(PermissionCode::DiscountsOverride),
+        );
 
-        return QuoteResource::make($quote->load(['salesBranch', 'pickupBranch', 'customer']))
+        return QuoteResource::make($quote->load(['salesBranch', 'pickupBranch', 'customer', 'discountApproval']))
             ->additional(['meta' => ['correlation_id' => CorrelationId::current()]])
             ->response()
             ->setStatusCode(201);

@@ -11,14 +11,17 @@ use App\Http\Controllers\Api\V1\Catalog\ServiceController;
 use App\Http\Controllers\Api\V1\Catalog\ServicePublicationController;
 use App\Http\Controllers\Api\V1\Catalog\WorkflowTemplateController;
 use App\Http\Controllers\Api\V1\Customer\CustomerAddressController;
+use App\Http\Controllers\Api\V1\Customer\CustomerConsentController;
 use App\Http\Controllers\Api\V1\Customer\CustomerController;
 use App\Http\Controllers\Api\V1\Customer\CustomerDuplicateController;
+use App\Http\Controllers\Api\V1\Customer\CustomerOrderController;
 use App\Http\Controllers\Api\V1\Identity\BranchController;
 use App\Http\Controllers\Api\V1\Identity\ProvisionTenantController;
 use App\Http\Controllers\Api\V1\Identity\UpdateMembershipAssignmentsController;
 use App\Http\Controllers\Api\V1\MyContextController;
 use App\Http\Controllers\Api\V1\Operations\BranchCalendarController;
 use App\Http\Controllers\Api\V1\Operations\DeadlinePreviewController;
+use App\Http\Controllers\Api\V1\Order\DiscountApprovalController;
 use App\Http\Controllers\Api\V1\Order\OrderController;
 use App\Http\Controllers\Api\V1\Order\QuoteController;
 use App\Http\Controllers\Api\V1\Saas\SubscriptionController;
@@ -48,6 +51,9 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/customers/duplicates', CustomerDuplicateController::class)->middleware('tenant');
         Route::get('/customers/{customer}', [CustomerController::class, 'show'])->middleware('tenant');
         Route::post('/customers/{customer}/addresses', [CustomerAddressController::class, 'store'])->middleware('tenant');
+        Route::get('/customers/{customer}/orders', CustomerOrderController::class)->middleware('tenant');
+        Route::get('/customers/{customer}/consents', [CustomerConsentController::class, 'index'])->middleware('tenant');
+        Route::post('/customers/{customer}/consents', [CustomerConsentController::class, 'store'])->middleware('tenant');
 
         Route::get('/services', [ServiceController::class, 'index'])->middleware('tenant');
         Route::post('/services', [ServiceController::class, 'store'])->middleware('tenant');
@@ -63,6 +69,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/prices/resolve', PriceResolutionController::class)->middleware('tenant');
 
         Route::post('/orders/quotes', [QuoteController::class, 'store'])->middleware('tenant');
+        Route::post('/orders/quotes/{quote}/discount-approval', DiscountApprovalController::class)->middleware('tenant');
         Route::post('/orders', [OrderController::class, 'store'])->middleware('tenant');
 
         Route::get('/workflow-templates', [WorkflowTemplateController::class, 'index'])->middleware('tenant');

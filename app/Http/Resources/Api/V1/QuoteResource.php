@@ -26,6 +26,12 @@ class QuoteResource extends JsonResource
             'total_rupiah' => $this->total_rupiah,
             'totals' => $snapshot['totals'] ?? [],
             'lines' => $snapshot['lines'] ?? [],
+            'discount_approval' => $this->whenLoaded('discountApproval', fn (): ?array => $this->discountApproval === null ? null : [
+                'status' => $this->discountApproval->status->value,
+                'percent' => $this->discountApproval->percent,
+                'reason' => $this->discountApproval->reason,
+                'decided_at' => $this->discountApproval->decided_at?->utc()->format('Y-m-d\TH:i:s\Z'),
+            ]),
             'created_at' => $this->created_at?->utc()->format('Y-m-d\TH:i:s\Z'),
         ];
     }

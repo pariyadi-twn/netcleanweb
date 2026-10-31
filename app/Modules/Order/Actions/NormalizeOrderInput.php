@@ -28,6 +28,7 @@ final class NormalizeOrderInput
             'pickup_branch_id' => $pickupBranchId,
             'instructions' => $this->nullableTrimmed($input['instructions'] ?? null),
             'service_discount_percent' => (int) ($input['service_discount_percent'] ?? 0),
+            'discount_reason' => $this->nullableTrimmed($input['discount_reason'] ?? null),
             'lines' => array_map(fn (array $line): array => [
                 'service_id' => Str::lower((string) $line['service_id']),
                 'measured_quantity' => $this->quantity((string) $line['measured_quantity']),

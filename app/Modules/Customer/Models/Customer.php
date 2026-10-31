@@ -28,6 +28,11 @@ class Customer extends TenantModel
         return $this->hasMany(CustomerAddress::class);
     }
 
+    public function consents(): HasMany
+    {
+        return $this->hasMany(CustomerConsent::class);
+    }
+
     /** @return array<string, string> */
     protected function casts(): array
     {

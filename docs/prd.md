@@ -616,10 +616,16 @@ Akuntansi umum lengkap, payroll, pengurusan pajak, marketplace lintas tenant, do
 | DEC02 | Dana laundry langsung ke merchant tenant; merchant platform hanya menerima langganan SaaS | Pemilik produk/pengguna, dikonfirmasi dalam sesi implementasi 31 Oktober 2026 | Disetujui; adapter gateway tetap P1 |
 | DEC03 | Pajak, minimum, pembulatan, dan aturan diskon | Operasional sebelum acceptance pricing; disahkan pengguna 31 Oktober 2026 | Disetujui untuk fixture P0; pajak nonaktif sampai keputusan aktivasi |
 | DEC04 | Penyerahan dengan piutang dan batas kredit | Pemilik usaha; disetujui 31 Oktober 2026 | Disetujui: piutang default Rp0 per pelanggan, limit dan jatuh tempo 7 hari ditetapkan owner; penyerahan diblokir bila outstanding melewati limit |
-| DEC05 | Printer, scanner, Android, dan kebutuhan iOS | Operasional; arah disetujui 31 Oktober 2026 | Disetujui arah: ESC/POS 80 mm dengan fallback 58 mm, Bluetooth/USB/LAN, Android 10+ target API 35 RAM 4 GB, kamera + scanner Bluetooth, iOS tidak masuk P0. Model printer dan identitas pilot masih perlu dicatat |
+| DEC05 | Printer, scanner, Android, dan kebutuhan iOS | Operasional; disetujui 31 Oktober 2026 | Disetujui: Eppos 80 mm, portable Smartcom 80 mm, dan Eppos 58 mm; nota 80 mm dengan fallback 58 mm; label bag 50 × 30 mm; Android 10+ target API 35 RAM 4 GB; kamera + scanner Bluetooth; iOS tidak masuk P0; pilot Karya Laundry 1 cabang + 1 produksi, arsitektur tetap mendukung banyak cabang + satu pusat produksi |
 | DEC06 | Kebijakan kompensasi dan bukti kondisi awal | Operasional; disetujui 31 Oktober 2026 | Disetujui: rewash/penggantian didahulukan; kompensasi tunai per kasus dengan bukti kondisi awal dan persetujuan owner; tanpa formula otomatis pada P0 |
 | DEC07 | Retensi, consent, lokasi hosting, dan dukungan | Product owner; disetujui 31 Oktober 2026 | Disetujui: consent per tujuan/kanal, WhatsApp resmi + email fallback, hosting Indonesia dengan DB/object privat, retensi pada SEC16, grant support maksimum 24 jam |
 | DEC08 | Harga paket dan biaya add on | Bisnis setelah biaya pilot tersedia | Terbuka |
+
+### Keputusan implementasi T030 dan T076
+
+- **T030 diskon:** hanya diskon persentase pada subtotal layanan; biaya antar tidak didiskon; nominal tetap masuk P1. Batas peran: kasir 0%, supervisor maksimum 10%, owner sampai 100%. Diskon di atas 10% memerlukan persetujuan owner yang berbeda dari pemohon, alasan wajib, dan approval terikat pada quote serta kedaluwarsa bersama quote.
+- **T030 revisi:** revisi kuantitas atau penggantian layanan hanya sebelum status `ready`; tarif baru dihitung server dari katalog saat revisi, bukan nominal bebas. Setelah `ready`/handover, koreksi hanya melalui debit/credit note. Revisi memakai `expected_version` dan menyimpan snapshot lama; selisih invoice menjadi adjustment. Adjustment di atas Rp100.000 atau selisih di atas 10% memerlukan owner berbeda aktor.
+- **T076 tracking:** token acak disimpan sebagai hash, berlaku 30 hari setelah handover, dicabut saat order dibatalkan atau token dibuat ulang. Rate limit 30/menit per IP dan 10/menit per token. Halaman hanya menampilkan status, estimasi tenggat, kontak outlet, dan jumlah bag; tanpa PII, nominal, foto, atau order lain.
 
 ### SOP organisasi dan merchant untuk T001
 

@@ -17,5 +17,7 @@ enum PermissionCode: string
     case CatalogManage = 'catalog.manage';
     case OrdersView = 'orders.view';
     case OrdersManage = 'orders.manage';
+    case DiscountsStandard = 'discounts.standard';
+    case DiscountsOverride = 'discounts.override';
     case AuditView = 'audit.view';
 }

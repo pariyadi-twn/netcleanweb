@@ -10,11 +10,13 @@ use App\Modules\Identity\Enums\AuditAction;
 use App\Modules\Identity\Models\Branch;
 use App\Modules\Operations\Actions\EnsureBranchAcceptsOrders;
 use App\Modules\Operations\Outbox\OutboxWriter;
+use App\Modules\Order\Enums\DiscountApprovalStatus;
 use App\Modules\Order\Enums\FulfillmentMethod;
 use App\Modules\Order\Enums\InvoiceDocumentStatus;
 use App\Modules\Order\Enums\OrderStatus;
 use App\Modules\Order\Models\Bag;
 use App\Modules\Order\Models\BagContent;
+use App\Modules\Order\Models\DiscountApproval;
 use App\Modules\Order\Models\Invoice;
 use App\Modules\Order\Models\InvoiceLine;
 use App\Modules\Order\Models\Order;
@@ -58,6 +60,8 @@ final class AcceptOrder
             if ($locked->request_hash !== $this->normalizer->requestHash($normalized)) {
                 throw new ApiException('QUOTE_PAYLOAD_MISMATCH', 'The request does not match the quote payload.', 422);
             }
+
+            $this->ensureDiscountApproved($locked);
 
             $branch = Branch::query()
                 ->where('tenant_id', $locked->tenant_id)
@@ -217,6 +221,28 @@ final class AcceptOrder
 
             return $order->refresh()->load(['lines', 'invoice.lines', 'bags.contents', 'events']);
         });
+    }
+
+    private function ensureDiscountApproved(Quote $quote): void
+    {
+        $percent = (int) ($quote->pricing_snapshot['input']['service_discount_percent'] ?? 0);
+
+        if ($percent === 0) {
+            return;
+        }
+
+        $approval = DiscountApproval::query()
+            ->where('tenant_id', $quote->tenant_id)
+            ->where('quote_id', $quote->id)
+            ->first();
+
+        if ($approval === null || $approval->status === DiscountApprovalStatus::Rejected) {
+            throw new ApiException('DISCOUNT_APPROVAL_REQUIRED', 'The quote discount has not been approved.', 409);
+        }
+
+        if ($approval->status !== DiscountApprovalStatus::Approved) {
+            throw new ApiException('DISCOUNT_APPROVAL_REQUIRED', 'The quote discount is awaiting approval.', 409);
+        }
     }
 
     /**

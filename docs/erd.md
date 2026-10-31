@@ -287,6 +287,10 @@ Fase **P0** · Kelas kolom **L**.
 
 **Constraint dan relasi:** Append only; keadaan terbaru diturunkan dari histori. Penarikan promosi tidak menghapus bukti transaksi.
 
+**Catatan implementasi T030 tahap diskon:** `discount_approvals` menyimpan requester, approver, persentase, status, alasan, dan waktu keputusan per quote; RLS tenant dan unique quote. Diskon ≤10% dapat auto-approved sesuai permission standar, sedangkan >10% memerlukan approver berbeda dengan permission override. Acceptance quote menolak approval pending/rejected.
+
+**Catatan implementasi T024:** `customer_consents` memakai RLS tenant, FK gabungan customer, enum purpose `service_contact`/`marketing`, channel `email`/`whatsapp`/`push`, dan decision `granted`/`withdrawn`. Runtime hanya dapat SELECT/INSERT; koreksi dilakukan dengan event baru. API consent mengembalikan keadaan terbaru per pasangan purpose+channel, sedangkan histori order pelanggan memakai cursor `(created_at,id)` dan permission pelanggan serta order.
+
 ### `services`
 
 Fase **P0** · Kelas kolom **D**.

@@ -1,6 +1,6 @@
 # Backlog Pelaksanaan Pengembangan Laundry SaaS
 
-Versi 2.9 · 31 Oktober 2026 · Fondasi platform, katalog, harga, tenggat, dan acceptance order terverifikasi
+Versi 3.1 · 31 Oktober 2026 · Fondasi platform, order, histori/consent, dan approval diskon terverifikasi
 
 [PRD](prd.md) · [TRD](trd.md) · [Database](erd.md) · [UI UX](ui_guidelines.md) · [Aturan AI](agents.md) · [Keamanan](security.md) · [Rencana](todo.md)
 
@@ -135,10 +135,10 @@ Untuk fitur backend yang dipakai Flutter/web, task baru selesai setelah kontrak 
 
   Status selesai 31 Oktober 2026, disetujui pemilik usaha. DP boleh bertahap; contoh BR05 tagihan Rp71.600, DP Rp30.000, sisa Rp41.600. Metode P0 tunai dan transfer manual; gateway tetap P1. Piutang default Rp0 per pelanggan; owner dapat menetapkan limit per pelanggan dengan jatuh tempo 7 hari, dan penyerahan diblokir bila outstanding melewati limit. Refund hanya terhadap payment asal; contoh invoice Rp100.000, refund Rp20.000, sisa refundable Rp80.000. Refund dan kompensasi memerlukan owner; tindakan di atas Rp100.000 atau diskon di atas 10% memerlukan aktor berbeda. Shift memakai kas awal, ledger, setoran, kas fisik, dan selisih; contoh kas awal Rp200.000 + penjualan tunai Rp500.000 - biaya Rp50.000 = Rp650.000, fisik Rp648.000, selisih -Rp2.000 masih dalam toleransi Rp5.000. Selisih di atas toleransi dan reopen shift memerlukan alasan serta persetujuan owner. Kompensasi barang hilang/rusak memakai rewash atau penggantian lebih dahulu; kompensasi tunai dinilai per kasus dengan bukti kondisi awal dan persetujuan owner. Batas diskon: kasir 0%, supervisor maksimum 10%, owner sampai 100%, semuanya diaudit.
 
-- [ ] **T004 Pilih perangkat serta lokasi pilot**
+- [x] **T004 Pilih perangkat serta lokasi pilot**
   Rujukan: FR12 FR15 DEC05. Dependensi: T001. Selesai jika: Model printer, koneksi, ukuran nota, Android sasaran, dan minimal satu calon jaringan tiga cabang dicatat.
 
-  Status 31 Oktober 2026, disetujui arah operasional: printer ESC/POS 80 mm dengan fallback 58 mm, koneksi Bluetooth/USB/LAN, Android 10+ target API 35 RAM 4 GB, kamera + scanner Bluetooth keyboard-wedge, iOS tidak masuk P0, dan calon pilot berupa satu jaringan tiga cabang + pusat produksi. Belum selesai: model printer aktual, ukuran nota final, nama/lokasi calon jaringan pilot. Task tetap terbuka sampai tiga detail itu dicatat.
+  Status selesai 31 Oktober 2026, disetujui operasional. Printer: Eppos 80 mm, portable Smartcom 80 mm, dan Eppos 58 mm; koneksi Bluetooth/USB/LAN; nota final 80 mm dengan fallback 58 mm; label bag 50 × 30 mm; Android 10+ target API 35 RAM 4 GB; kamera + scanner Bluetooth keyboard-wedge; iOS tidak masuk P0. Pilot aktual: Karya Laundry dengan 1 cabang + 1 pusat produksi. Acceptance tiga cabang pada teks awal diganti oleh pemilik; arsitektur dan data tetap mendukung banyak cabang + satu pusat produksi.
 
 - [x] **T005 Sahkan kebijakan data dan dukungan**
   Rujukan: SEC04 SEC09 SEC10 SEC16 DEC07. Dependensi: T001. Selesai jika: Tujuan data, consent per kanal, kanal notifikasi layanan pilot, lokasi hosting, retensi, akses bantuan, ekspor, penghapusan, serta perlindungan cache perangkat mempunyai pemilik keputusan dan kebijakan yang dicatat. Nilai usulan pada security.md tidak dianggap kebijakan final tanpa keputusan.
@@ -177,7 +177,7 @@ Untuk fitur backend yang dipakai Flutter/web, task baru selesai setelah kontrak 
 - [x] **T073 Susun kontrak OpenAPI dan protokol API v1**
   Rujukan: ADR05 TR03 TR15 SEC05 NFR04. Prioritas: P0. Dependensi: T007. Selesai jika: Kontrak dapat divalidasi dan menjadi acuan backend, Flutter, serta web; contoh dan test kontrak tersedia saat endpoint diimplementasikan.
 
-  Status selesai: [openapi.yaml](openapi.yaml) mendefinisikan 43 path/52 operasi dengan penanda P0/P1, autentikasi/konteks, perangkat, MFA, reset password, provisioning tenant, entitlement/langganan, assignment membership idempoten, konfigurasi cabang, kalender cabang, preview tenggat, pelanggan/alamat, katalog layanan/workflow, price book bertanggal, resolusi harga, publikasi layanan, request mutasi, replay, pagination, tipe data, error, dan fase rilis. `npm run lint:api` lulus memakai Swagger Parser 13.1.0; audit npm bersih dan validasi kontrak ditambahkan ke CI. Kontrak menandai endpoint sebagai rancangan; test kontrak terhadap endpoint nyata dilengkapi saat modulnya dibuat.
+  Status selesai: [openapi.yaml](openapi.yaml) mendefinisikan 46 path/56 operasi dengan penanda P0/P1, autentikasi/konteks, perangkat, MFA, reset password, provisioning tenant, entitlement/langganan, assignment membership idempoten, konfigurasi cabang, kalender cabang, preview tenggat, pelanggan/alamat, histori pelanggan, consent, katalog layanan/workflow, price book bertanggal, resolusi harga, publikasi layanan, request mutasi, replay, pagination, tipe data, error, dan fase rilis. `npm run lint:api` lulus memakai Swagger Parser 13.1.0; audit npm bersih dan validasi kontrak ditambahkan ke CI. Kontrak menandai endpoint sebagai rancangan; test kontrak terhadap endpoint nyata dilengkapi saat modulnya dibuat.
 
   - [x] **T073.1 Bentuk data dan scope:** Dokumentasikan `/api/v1`, UUID publik, integer rupiah, decimal string, waktu UTC, header konteks, pagination default 25/maksimum 100, dan batas sync batch usulan 50.
   - [x] **T073.2 Mutasi dan error:** Tetapkan `Idempotency-Key`/`client_command_id`, expected version, 201 baru/200 replay/202 asynchronous, 401/403/404/409/422/429, `Retry-After`, correlation ID, dan seluruh kode domain minimum TR03.
@@ -337,8 +337,14 @@ Untuk fitur backend yang dipakai Flutter/web, task baru selesai setelah kontrak 
 
   Gap: belum ada endpoint update/nonaktif pelanggan; pencarian masih substring sederhana tanpa trigram/fuzzy ranking; deteksi duplikat hanya nomor/nama persis, bukan skor kemiripan; import `external_ref` menyusul T043; consent pelanggan T024; perubahan PII belum diaudit karena kebijakan retensi/redaksi menunggu T005.
 
-- [ ] **T024 Bangun histori dan consent**
+- [x] **T024 Bangun histori dan consent**
   Rujukan: FR10. Dependensi: T005, T023, T026. Selesai jika: Histori pesanan pelanggan dipaginasi dan dibatasi permission/tenant; consent tujuan dan kanal terpisah; penolakan marketing tidak menghilangkan nota layanan.
+
+  Status selesai 31 Oktober 2026, pelaksana coding agent sesuai instruksi pengguna. Schema `customer_consents` append-only memakai RLS, FK gabungan tenant, enum purpose/channel/decision, index histori, dan grant runtime hanya SELECT/INSERT. Endpoint `GET /customers/{id}/orders` memakai cursor pagination `(created_at,id)` dan mensyaratkan `customers.view` + `orders.view`, sehingga histori tidak terbuka bagi pemilik izin pelanggan saja. Endpoint `GET/POST /customers/{id}/consents` mengembalikan keadaan terbaru per purpose+channel dan mencatat event baru dengan sumber/waktu; marketing dan service_contact terpisah sehingga penarikan marketing tidak menghapus akses nota layanan.
+
+  Verifikasi: `CustomerHistoryConsentTest` lulus **3 test/28 assertion** untuk pagination lintas halaman, isolasi pelanggan/tenant, consent per tujuan/kanal, penarikan marketing, histori tetap tersedia, permission viewer, dan validasi. `TenantRlsTest` menambah **1 test/3 assertion** untuk customer consent runtime. Seluruh suite lulus **148 test/1009 assertion**; OpenAPI valid untuk **45 path/55 operasi**; tiga route histori/consent terdaftar.
+
+  Gap lanjutan: endpoint saat ini menampilkan keadaan consent terbaru, bukan seluruh riwayat event; pengiriman notifikasi memakai consent ini baru di T077; ekspor/penghapusan mengikuti T045/T046; consent kanal push belum diaktifkan di pilot.
 
 - [x] **T025 Bangun kalkulasi tenggat**
   Rujukan: FR11. Dependensi: T002, T012, T021. Selesai jika: Elapsed time berbeda dari hari kerja; janji awal dan revisi dapat ditelusuri.
@@ -369,11 +375,17 @@ Untuk fitur backend yang dipakai Flutter/web, task baru selesai setelah kontrak 
 - [ ] **T076 Bangun tracking pelanggan minimal dan token publik**
   Rujukan: FR12 FR15 TR11 SEC02 SEC09; UI bagian 2. Prioritas: P0. Dependensi: T013, T026, T073. Selesai jika: Nota dapat merujuk halaman tracking dengan token acak yang disimpan sebagai hash, mempunyai expiry/revocation, dan dilindungi rate limit. Halaman hanya menampilkan status minimal, perkiraan pengambilan, serta kontak outlet; tidak menampilkan telepon/alamat pelanggan, foto kondisi, rincian uang, atau data pesanan lain. Token tidak valid/dicabut dan manipulasi ID diuji; QR mentah tidak memuat PII. Ini bukan aplikasi pelanggan P2.
 
+  Keputusan disetujui 31 Oktober 2026: token 30 hari setelah handover; rate limit 30/menit per IP dan 10/menit per token; halaman hanya status, estimasi tenggat, kontak outlet, dan jumlah bag; revoke saat order dibatalkan atau token dibuat ulang.
+
 - [ ] **T029 Bangun nota digital dan cetak ulang**
   Rujukan: FR15 TR11. Dependensi: T004, T026, T027, T076. Selesai jika: DTO nota berasal dari transaksi tersimpan dengan nomor, total, pembayaran, sisa, tenggat, dan tracking yang konsisten. Digital/cetak sama; print attempt dan retry terpisah dari command order/payment. Printer gagal tidak menciptakan order kedua; satu konfigurasi cetak yang disepakati dicoba pada perangkat fisik. Matrix printer/koneksi/ukuran kertas lengkap dinilai pada T048 tanpa menjadikan T048 prasyarat task ini.
 
 - [ ] **T030 Bangun diskon revisi dan persetujuan**
   Rujukan: FR16. Dependensi: T003, T011, T026. Selesai jika: Batas diskon server, versi lama, alasan, persetujuan, dan adjustment tersedia.
+
+  Keputusan disetujui 31 Oktober 2026: diskon persentase layanan saja, delivery tidak didiskon; kasir 0%, supervisor maksimum 10%, owner sampai 100%; diskon >10% memerlukan owner berbeda aktor, alasan, dan approval terikat quote. Revisi kuantitas/layanan hanya sebelum `ready`, tarif dihitung server, snapshot lama disimpan, selisih menjadi adjustment; setelah ready/handover hanya debit/credit note. Adjustment >Rp100.000 atau >10% memerlukan owner berbeda aktor dan `expected_version`.
+
+  Progres 31 Oktober 2026: permission `discounts.standard`/`discounts.override`, tabel `discount_approvals`, auto-approval diskon ≤10%, approval owner berbeda aktor untuk >10%, dan blokir acceptance tanpa approval sudah diimplementasikan. `DiscountApprovalTest` lulus **4 test/19 assertion**; seluruh suite lulus **152 test/1028 assertion**; OpenAPI **46 path/56 operasi**. Belum selesai: endpoint revisi kuantitas/layanan/tarif, `expected_version`, snapshot lama di order event, dan debit/credit note.
 
 - [ ] **T031 Bangun pembatalan terkontrol**
   Rujukan: FR17. Dependensi: T003, T026, T027, T030, T039. Selesai jika: Uang dan barang tetap tertelusur; status produksi membatasi pembatalan dan refund memakai modulnya.

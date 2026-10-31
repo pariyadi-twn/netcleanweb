@@ -26,6 +26,8 @@ class IdentityPermissionSeeder extends Seeder
             'catalog.manage' => 'Kelola layanan dan revisi workflow',
             'orders.view' => 'Lihat quote dan order tenant',
             'orders.manage' => 'Buat quote dan terima order',
+            'discounts.standard' => 'Berikan diskon layanan sampai batas standar',
+            'discounts.override' => 'Menyetujui diskon di atas batas standar',
             'audit.view' => 'Lihat jejak audit',
         ];
 

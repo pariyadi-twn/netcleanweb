@@ -712,6 +712,78 @@ paths:
         '403': {$ref: '#/components/responses/Error'}
         '404': {$ref: '#/components/responses/Error'}
         '422': {$ref: '#/components/responses/Error'}
+  /customers/{customerId}/orders:
+    get:
+      tags: [Customer]
+      operationId: listCustomerOrders
+      x-release-phase: P0
+      security: [{BearerToken: [], TenantContext: []}]
+      summary: Histori order pelanggan dalam tenant dan scope izin
+      parameters:
+        - {name: customerId, in: path, required: true, schema: {$ref: '#/components/schemas/PublicId'}}
+        - {$ref: '#/components/parameters/PageSize'}
+        - {$ref: '#/components/parameters/Cursor'}
+      responses:
+        '200':
+          description: Histori ringkas dipaginasi; bukan seluruh tenant
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data: {type: array, maxItems: 100, items: {$ref: '#/components/schemas/CustomerOrderHistory'}}
+                  meta: {$ref: '#/components/schemas/PageMeta'}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+        '422': {$ref: '#/components/responses/Error'}
+  /customers/{customerId}/consents:
+    parameters:
+      - {name: customerId, in: path, required: true, schema: {$ref: '#/components/schemas/PublicId'}}
+    get:
+      tags: [Customer]
+      operationId: listCustomerConsents
+      x-release-phase: P0
+      security: [{BearerToken: [], TenantContext: []}]
+      summary: Keadaan consent terbaru per tujuan dan kanal
+      responses:
+        '200':
+          description: Consent tujuan dan kanal terpisah; marketing tidak menimpa layanan
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data: {type: array, items: {$ref: '#/components/schemas/CustomerConsent'}}
+                  meta: {$ref: '#/components/schemas/Meta'}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+    post:
+      tags: [Customer]
+      operationId: recordCustomerConsent
+      x-release-phase: P0
+      security: [{BearerToken: [], TenantContext: []}]
+      summary: Catat consent append-only dengan sumber dan waktu keputusan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CustomerConsentInput'}
+      responses:
+        '201':
+          description: Event consent baru; riwayat lama tidak diubah
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data: {$ref: '#/components/schemas/CustomerConsent'}
+                  meta: {$ref: '#/components/schemas/Meta'}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+        '422': {$ref: '#/components/responses/Error'}
   /customers/duplicates:
     get:
       tags: [Customer]
@@ -1105,6 +1177,35 @@ paths:
                   data: {$ref: '#/components/schemas/Quote'}
                   meta: {$ref: '#/components/schemas/Meta'}
         default: {$ref: '#/components/responses/Error'}
+  /orders/quotes/{quoteId}/discount-approval:
+    parameters:
+      - {name: quoteId, in: path, required: true, schema: {$ref: '#/components/schemas/PublicId'}}
+    post:
+      tags: [Order]
+      operationId: decideQuoteDiscountApproval
+      x-release-phase: P0
+      security: [{BearerToken: [], TenantContext: []}]
+      summary: Setujui atau tolak diskon quote di atas batas standar oleh aktor berbeda
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/DiscountApprovalDecision'}
+      responses:
+        '200':
+          description: Keputusan approval tercatat; quote yang sudah diputus tidak dapat diputus ulang
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data: {$ref: '#/components/schemas/DiscountApproval'}
+                  meta: {$ref: '#/components/schemas/Meta'}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+        '409': {$ref: '#/components/responses/Error'}
+        '422': {$ref: '#/components/responses/Error'}
   /orders:
     post:
       tags: [Order]
@@ -1678,6 +1779,45 @@ components:
       properties:
         is_active: {type: boolean}
         reason: {type: string, nullable: true, maxLength: 1000}
+    CustomerConsentInput:
+      type: object
+      additionalProperties: false
+      required: [purpose, channel, decision, source]
+      properties:
+        purpose: {type: string, enum: [service_contact, marketing]}
+        channel: {type: string, enum: [email, whatsapp, push]}
+        decision: {type: string, enum: [granted, withdrawn]}
+        source: {type: string, maxLength: 80}
+        occurred_at: {type: string, format: date-time, nullable: true}
+    CustomerConsent:
+      type: object
+      required: [id, customer_id, purpose, channel, decision, source, occurred_at, recorded_at]
+      properties:
+        id: {$ref: '#/components/schemas/PublicId'}
+        customer_id: {$ref: '#/components/schemas/PublicId'}
+        purpose: {type: string, enum: [service_contact, marketing]}
+        channel: {type: string, enum: [email, whatsapp, push]}
+        decision: {type: string, enum: [granted, withdrawn]}
+        source: {type: string, maxLength: 80}
+        occurred_at: {$ref: '#/components/schemas/UtcTime'}
+        recorded_at: {$ref: '#/components/schemas/UtcTime'}
+    CustomerOrderHistory:
+      type: object
+      required: [order_id, order_number, operational_status, invoice_status, invoice_number, total_rupiah, paid_rupiah, balance_due_rupiah, due_at_original, due_at_current, accepted_at, branch_id, created_at]
+      properties:
+        order_id: {$ref: '#/components/schemas/PublicId'}
+        order_number: {type: string, maxLength: 64}
+        operational_status: {type: string}
+        invoice_status: {type: string, enum: [unpaid, partially_paid, paid]}
+        invoice_number: {type: string, nullable: true, maxLength: 64}
+        total_rupiah: {$ref: '#/components/schemas/Money'}
+        paid_rupiah: {$ref: '#/components/schemas/Money'}
+        balance_due_rupiah: {type: integer, format: int64}
+        due_at_original: {$ref: '#/components/schemas/UtcTime'}
+        due_at_current: {$ref: '#/components/schemas/UtcTime'}
+        accepted_at: {$ref: '#/components/schemas/UtcTime'}
+        branch_id: {$ref: '#/components/schemas/PublicId'}
+        created_at: {$ref: '#/components/schemas/UtcTime'}
     CustomerAddressInput:
       type: object
       additionalProperties: false
@@ -1828,6 +1968,26 @@ components:
       maxItems: 100
       uniqueItems: true
       items: {$ref: '#/components/schemas/PublicId'}
+    DiscountApprovalDecision:
+      type: object
+      additionalProperties: false
+      required: [decision, reason]
+      properties:
+        decision: {type: string, enum: [approved, rejected]}
+        reason: {type: string, maxLength: 1000}
+    DiscountApproval:
+      type: object
+      required: [id, quote_id, percent, status, requested_by_membership_id, approved_by_membership_id, reason, decision_reason, decided_at]
+      properties:
+        id: {$ref: '#/components/schemas/PublicId'}
+        quote_id: {$ref: '#/components/schemas/PublicId'}
+        percent: {type: integer, minimum: 1, maximum: 100}
+        status: {type: string, enum: [pending, approved, rejected]}
+        requested_by_membership_id: {$ref: '#/components/schemas/PublicId'}
+        approved_by_membership_id: {$ref: '#/components/schemas/NullablePublicId'}
+        reason: {type: string, nullable: true}
+        decision_reason: {type: string, nullable: true}
+        decided_at: {allOf: [{$ref: '#/components/schemas/UtcTime'}], nullable: true}
     QuoteLine:
       type: object
       required: [service_id, service_code, service_name, unit, tier, measured_quantity, billable_quantity, unit_price_rupiah, base_total_rupiah, discount_rupiah, express_surcharge_rupiah, line_total_rupiah, due_at]
@@ -1880,6 +2040,7 @@ components:
             delivery_fee_rupiah: {$ref: '#/components/schemas/Money'}
             total_rupiah: {$ref: '#/components/schemas/Money'}
         lines: {type: array, minItems: 1, items: {$ref: '#/components/schemas/QuoteLine'}}
+        discount_approval: {allOf: [{$ref: '#/components/schemas/DiscountApproval'}], nullable: true}
         created_at: {$ref: '#/components/schemas/UtcTime'}
     OrderLineResult:
       type: object
@@ -1903,6 +2064,7 @@ components:
         pickup_branch_id: {$ref: '#/components/schemas/NullablePublicId'}
         instructions: {type: string, nullable: true, maxLength: 2000}
         service_discount_percent: {type: integer, minimum: 0, maximum: 100, default: 0}
+        discount_reason: {type: string, nullable: true, maxLength: 1000}
         lines:
           type: array
           minItems: 1
@@ -1961,7 +2123,7 @@ components:
               type: string
               description: Katalog minimum berikut tidak menutup kode domain tambahan yang didokumentasikan
               example: VERSION_CONFLICT
-              x-minimum-codes: [QUOTE_EXPIRED, QUOTE_CONSUMED, QUOTE_PAYLOAD_MISMATCH, QUOTE_TOTAL_MISMATCH, QUOTE_SERVICE_UNAVAILABLE, VERSION_CONFLICT, ALREADY_HANDED_OVER, BAG_IN_TRANSIT, PAYMENT_RECONCILIATION_REQUIRED, ENTITLEMENT_LIMIT_REACHED, IDEMPOTENCY_PAYLOAD_MISMATCH, SYNC_CURSOR_EXPIRED, SYNC_SCOPE_CHANGED]
+              x-minimum-codes: [QUOTE_EXPIRED, QUOTE_CONSUMED, QUOTE_PAYLOAD_MISMATCH, QUOTE_TOTAL_MISMATCH, QUOTE_SERVICE_UNAVAILABLE, DISCOUNT_NOT_ALLOWED, DISCOUNT_APPROVAL_REQUIRED, DISCOUNT_APPROVAL_CONFLICT, DISCOUNT_APPROVAL_DECIDED, VERSION_CONFLICT, ALREADY_HANDED_OVER, BAG_IN_TRANSIT, PAYMENT_RECONCILIATION_REQUIRED, ENTITLEMENT_LIMIT_REACHED, IDEMPOTENCY_PAYLOAD_MISMATCH, SYNC_CURSOR_EXPIRED, SYNC_SCOPE_CHANGED]
             message: {type: string}
             field_errors: {type: object, additionalProperties: {type: array, items: {type: string}}}
             current_version: {type: integer, format: int64, nullable: true}

@@ -283,7 +283,7 @@ class OrderAcceptanceTest extends TestCase
         $role = Role::factory()->for($tenant)->create(['code' => 'order-admin', 'name' => 'Order admin']);
         $branch = Branch::factory()->for($tenant)->create(['code' => 'JBI01']);
 
-        $permissionIds = collect([PermissionCode::OrdersView, PermissionCode::OrdersManage])
+        $permissionIds = collect([PermissionCode::OrdersView, PermissionCode::OrdersManage, PermissionCode::DiscountsStandard])
             ->map(fn (PermissionCode $code): int => Permission::query()->firstOrCreate(
                 ['code' => $code->value],
                 ['description' => $code->name],

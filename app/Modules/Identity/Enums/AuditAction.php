@@ -12,5 +12,6 @@ enum AuditAction: string
     case DeadlinePromiseRecorded = 'deadline.promise_recorded';
     case DeadlineRevised = 'deadline.revised';
     case OrderAccepted = 'order.accepted';
+    case DiscountApprovalDecided = 'discount.approval_decided';
     case OutboxEventApplied = 'outbox.event_applied';
 }

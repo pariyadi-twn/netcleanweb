@@ -30,6 +30,8 @@ use App\Http\Controllers\Api\V1\Order\ReceiptController;
 use App\Http\Controllers\Api\V1\Order\TrackingTokenController;
 use App\Http\Controllers\Api\V1\PublicTrackingController;
 use App\Http\Controllers\Api\V1\Saas\SubscriptionController;
+use App\Http\Controllers\Api\V1\Uploads\AttachmentController;
+use App\Http\Controllers\Api\V1\Uploads\OrderAttachmentController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
@@ -86,6 +88,13 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/orders/{order}/repack', [BagController::class, 'repack'])->middleware('tenant');
         Route::post('/orders/{order}/receipt', [ReceiptController::class, 'show'])->middleware('tenant');
         Route::post('/orders/{order}/receipt-prints', [ReceiptController::class, 'print'])->middleware('tenant');
+        Route::get('/orders/{order}/attachments', [OrderAttachmentController::class, 'index'])->middleware('tenant');
+        Route::post('/orders/{order}/attachments', [OrderAttachmentController::class, 'store'])->middleware('tenant');
+
+        Route::post('/attachments/uploads', [AttachmentController::class, 'store'])->middleware('tenant');
+        Route::put('/attachments/{attachment}/content', [AttachmentController::class, 'transfer'])->middleware('tenant');
+        Route::post('/attachments/{attachment}/finalize', [AttachmentController::class, 'finalize'])->middleware('tenant');
+        Route::get('/attachments/{attachment}/url', [AttachmentController::class, 'url'])->middleware('tenant');
 
         Route::get('/workflow-templates', [WorkflowTemplateController::class, 'index'])->middleware('tenant');
         Route::post('/workflow-templates', [WorkflowTemplateController::class, 'store'])->middleware('tenant');

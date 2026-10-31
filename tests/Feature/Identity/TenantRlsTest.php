@@ -36,6 +36,7 @@ use App\Modules\Saas\Actions\StartSubscription;
 use App\Modules\Saas\Models\SaasPlan;
 use App\Modules\Saas\Models\TenantSubscription;
 use App\Modules\Saas\Models\TenantUsageCounter;
+use App\Modules\Uploads\Models\Attachment;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\DB;
@@ -260,6 +261,23 @@ class TenantRlsTest extends TestCase
         $this->assertSame([$consentA->public_id], $visible);
         $this->assertNotContains($consentB->public_id, $visible);
         $this->assertSame(0, DB::connection('pgsql_runtime')->table('customer_consents')->count());
+    }
+
+    public function test_runtime_attachment_scope_is_isolated(): void
+    {
+        $user = User::factory()->create();
+        $tenantA = Tenant::factory()->create();
+        $tenantB = Tenant::factory()->create();
+        $membershipA = TenantMembership::factory()->for($tenantA)->for($user)->create(['status' => 'active']);
+        $membershipB = TenantMembership::factory()->for($tenantB)->for($user)->create(['status' => 'active']);
+        $attachmentA = Attachment::factory()->create(['uploaded_by_membership_id' => $membershipA->id]);
+        $attachmentB = Attachment::factory()->create(['uploaded_by_membership_id' => $membershipB->id]);
+
+        $visible = app(TenantScope::class)->forTenant($tenantA, $user, fn (): array => Attachment::query()->pluck('public_id')->all(), 'pgsql_runtime');
+
+        $this->assertSame([$attachmentA->public_id], $visible);
+        $this->assertNotContains($attachmentB->public_id, $visible);
+        $this->assertSame(0, DB::connection('pgsql_runtime')->table('attachments')->count());
     }
 
     public function test_worker_can_scope_explicitly_to_one_tenant(): void

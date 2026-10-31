@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\V1\Customer\CustomerConsentController;
 use App\Http\Controllers\Api\V1\Customer\CustomerController;
 use App\Http\Controllers\Api\V1\Customer\CustomerDuplicateController;
 use App\Http\Controllers\Api\V1\Customer\CustomerOrderController;
+use App\Http\Controllers\Api\V1\Customer\DataRequestController;
 use App\Http\Controllers\Api\V1\Identity\BranchController;
 use App\Http\Controllers\Api\V1\Identity\ProvisionTenantController;
 use App\Http\Controllers\Api\V1\Identity\UpdateMembershipAssignmentsController;
@@ -40,6 +41,10 @@ use App\Http\Controllers\Api\V1\Payment\AllocationReversalController;
 use App\Http\Controllers\Api\V1\Payment\CreditApprovalController;
 use App\Http\Controllers\Api\V1\Payment\InvoicePaymentController;
 use App\Http\Controllers\Api\V1\Payment\RefundController;
+use App\Http\Controllers\Api\V1\Platform\PlatformDataRequestController;
+use App\Http\Controllers\Api\V1\Platform\PlatformPlanController;
+use App\Http\Controllers\Api\V1\Platform\PlatformTenantController;
+use App\Http\Controllers\Api\V1\Platform\SubscriptionBillingController;
 use App\Http\Controllers\Api\V1\PublicTrackingController;
 use App\Http\Controllers\Api\V1\Reporting\ImportController;
 use App\Http\Controllers\Api\V1\Reporting\OutletReportController;
@@ -65,6 +70,17 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('/me/context', MyContextController::class);
         Route::get('/support/received-grants', [SupportGrantController::class, 'received']);
+        Route::post('/platform/tenants/{tenant}/subscription-invoices', [SubscriptionBillingController::class, 'store']);
+        Route::post('/platform/subscription-invoices/{invoice}/payments', [SubscriptionBillingController::class, 'verify']);
+        Route::get('/platform/tenants', [PlatformTenantController::class, 'index']);
+        Route::get('/platform/tenants/{tenant}', [PlatformTenantController::class, 'show']);
+        Route::get('/platform/plans', [PlatformPlanController::class, 'index']);
+        Route::post('/platform/plans', [PlatformPlanController::class, 'store']);
+        Route::post('/platform/tenants/{tenant}/subscription', [PlatformPlanController::class, 'assign']);
+        Route::get('/platform/data-requests', [PlatformDataRequestController::class, 'index']);
+        Route::post('/platform/data-requests/{dataRequest}/verify', [PlatformDataRequestController::class, 'verify']);
+        Route::post('/platform/data-requests/{dataRequest}/reject', [PlatformDataRequestController::class, 'reject']);
+        Route::post('/platform/data-requests/{dataRequest}/process', [PlatformDataRequestController::class, 'process']);
         Route::get('/me/subscription', SubscriptionController::class)->middleware('tenant');
         Route::post('/provisioning/tenants', ProvisionTenantController::class);
 
@@ -91,6 +107,8 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/reports/exports/{export}', [ReportExportController::class, 'show'])->middleware('tenant');
         Route::get('/reports/exports/{export}/download', [ReportExportController::class, 'download'])->middleware('tenant');
         Route::get('/reports/outlet', OutletReportController::class)->middleware('tenant');
+        Route::get('/data-requests', [DataRequestController::class, 'index'])->middleware('tenant');
+        Route::post('/data-requests', [DataRequestController::class, 'store'])->middleware('tenant');
         Route::get('/support/grants', [SupportGrantController::class, 'index'])->middleware('tenant');
         Route::post('/support/grants', [SupportGrantController::class, 'store'])->middleware('tenant');
         Route::post('/support/grants/{grant}/revoke', [SupportGrantController::class, 'revoke'])->middleware('tenant');

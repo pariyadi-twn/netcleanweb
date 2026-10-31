@@ -34,5 +34,6 @@ enum PermissionCode: string
     case ReportsExport = 'reports.export';
     case ImportsManage = 'imports.manage';
     case SupportGrant = 'support.grant';
+    case DataRequestsManage = 'data_requests.manage';
     case AuditView = 'audit.view';
 }

@@ -30,6 +30,10 @@ enum AuditAction: string
     case SupportGrantCreated = 'support_grant.created';
     case SupportGrantRevoked = 'support_grant.revoked';
     case SupportAccessUsed = 'support_access.used';
+    case DataRequestCreated = 'data_request.created';
+    case DataRequestVerified = 'data_request.verified';
+    case DataRequestRejected = 'data_request.rejected';
+    case DataRequestCompleted = 'data_request.completed';
     case BagRepacked = 'bag.repacked';
     case OutboxEventApplied = 'outbox.event_applied';
 }

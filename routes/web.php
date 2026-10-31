@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\MfaSetupController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Prototype\CashierPrototypeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -30,6 +31,10 @@ Route::middleware(['auth', 'active'])->group(function (): void {
 
     Route::get('/mfa-setup', [MfaSetupController::class, 'show'])->name('mfa.setup');
     Route::post('/mfa-setup', [MfaSetupController::class, 'confirm'])->middleware('throttle:mfa')->name('mfa.setup.confirm');
+
+    if (! app()->isProduction()) {
+        Route::get('/prototype/kasir', CashierPrototypeController::class)->name('prototype.kasir');
+    }
 
     Route::middleware(['auth.session', 'mfa.confirmed'])->group(function (): void {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');

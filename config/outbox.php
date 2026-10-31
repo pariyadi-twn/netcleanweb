@@ -28,6 +28,8 @@ return [
         'export.ready',
         'support_grant.created',
         'support_grant.revoked',
+        'production.tasks_planned',
+        'production.task_transitioned',
     ],
 
     'consumers' => [

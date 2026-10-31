@@ -34,6 +34,8 @@ enum AuditAction: string
     case DataRequestVerified = 'data_request.verified';
     case DataRequestRejected = 'data_request.rejected';
     case DataRequestCompleted = 'data_request.completed';
+    case ProductionTasksPlanned = 'production.tasks_planned';
+    case ProductionTaskTransitioned = 'production.task_transitioned';
     case BagRepacked = 'bag.repacked';
     case OutboxEventApplied = 'outbox.event_applied';
 }

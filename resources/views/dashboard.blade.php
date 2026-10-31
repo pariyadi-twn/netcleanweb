@@ -28,6 +28,10 @@
 
     <p><a href="{{ route('mfa.setup') }}">Kelola MFA</a></p>
 
+    @if ($user->is_platform_admin)
+        <p><a href="{{ route('platform.dashboard') }}">Buka platform admin</a></p>
+    @endif
+
     <form method="POST" action="{{ route('logout') }}">
         @csrf
         <button type="submit">Keluar</button>

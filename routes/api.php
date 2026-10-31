@@ -45,6 +45,7 @@ use App\Http\Controllers\Api\V1\Platform\PlatformDataRequestController;
 use App\Http\Controllers\Api\V1\Platform\PlatformPlanController;
 use App\Http\Controllers\Api\V1\Platform\PlatformTenantController;
 use App\Http\Controllers\Api\V1\Platform\SubscriptionBillingController;
+use App\Http\Controllers\Api\V1\Production\ProductionTaskController;
 use App\Http\Controllers\Api\V1\PublicTrackingController;
 use App\Http\Controllers\Api\V1\Reporting\ImportController;
 use App\Http\Controllers\Api\V1\Reporting\OutletReportController;
@@ -140,6 +141,9 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/orders/quotes/{quote}/discount-approval', DiscountApprovalController::class)->middleware('tenant');
         Route::post('/orders', [OrderController::class, 'store'])->middleware('tenant');
         Route::post('/orders/{order}/cancel', [CancelOrderController::class, 'store'])->middleware('tenant');
+        Route::get('/production/tasks', [ProductionTaskController::class, 'index'])->middleware('tenant');
+        Route::post('/orders/{order}/production-tasks', [ProductionTaskController::class, 'plan'])->middleware('tenant');
+        Route::post('/production/tasks/{task}/transitions', [ProductionTaskController::class, 'transition'])->middleware('tenant');
         Route::post('/orders/{order}/revisions', [OrderRevisionController::class, 'store'])->middleware('tenant');
         Route::post('/orders/{order}/revisions/{revision}/decision', [OrderRevisionController::class, 'decide'])->middleware('tenant');
         Route::post('/orders/{order}/tracking-token', [TrackingTokenController::class, 'store'])->middleware('tenant');

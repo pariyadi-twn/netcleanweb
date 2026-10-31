@@ -5,6 +5,8 @@ use App\Http\Controllers\Auth\MfaSetupController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Platform\PlatformDashboardController;
+use App\Http\Controllers\Platform\PlatformWebDataRequestController;
 use App\Http\Controllers\Prototype\CashierPrototypeController;
 use Illuminate\Support\Facades\Route;
 
@@ -38,5 +40,12 @@ Route::middleware(['auth', 'active'])->group(function (): void {
 
     Route::middleware(['auth.session', 'mfa.confirmed'])->group(function (): void {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+        Route::middleware('platform.admin')->prefix('platform')->group(function (): void {
+            Route::get('/', PlatformDashboardController::class)->name('platform.dashboard');
+            Route::post('/data-requests/{dataRequest}/verify', [PlatformWebDataRequestController::class, 'verify'])->name('platform.data-requests.verify');
+            Route::post('/data-requests/{dataRequest}/reject', [PlatformWebDataRequestController::class, 'reject'])->name('platform.data-requests.reject');
+            Route::post('/data-requests/{dataRequest}/process', [PlatformWebDataRequestController::class, 'process'])->name('platform.data-requests.process');
+        });
     });
 });

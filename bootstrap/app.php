@@ -3,6 +3,7 @@
 use App\Exceptions\ApiException;
 use App\Http\Middleware\AssignCorrelationId;
 use App\Http\Middleware\EnsureMfaIsConfirmed;
+use App\Http\Middleware\EnsurePlatformAdmin;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\RecordRequestMetrics;
 use App\Http\Middleware\SecurityHeaders;
@@ -33,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'active' => EnsureUserIsActive::class,
             'mfa.confirmed' => EnsureMfaIsConfirmed::class,
             'tenant' => UseTenantContext::class,
+            'platform.admin' => EnsurePlatformAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

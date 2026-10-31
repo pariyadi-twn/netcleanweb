@@ -26,6 +26,8 @@ return [
         'order.cancelled',
         'import.completed',
         'export.ready',
+        'support_grant.created',
+        'support_grant.revoked',
     ],
 
     'consumers' => [

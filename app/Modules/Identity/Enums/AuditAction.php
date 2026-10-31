@@ -27,6 +27,9 @@ enum AuditAction: string
     case OrderCancelled = 'order.cancelled';
     case ImportCompleted = 'import.completed';
     case ExportCompleted = 'export.completed';
+    case SupportGrantCreated = 'support_grant.created';
+    case SupportGrantRevoked = 'support_grant.revoked';
+    case SupportAccessUsed = 'support_access.used';
     case BagRepacked = 'bag.repacked';
     case OutboxEventApplied = 'outbox.event_applied';
 }

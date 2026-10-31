@@ -46,6 +46,7 @@ use App\Http\Controllers\Api\V1\Reporting\OutletReportController;
 use App\Http\Controllers\Api\V1\Reporting\ReceivablesReportController;
 use App\Http\Controllers\Api\V1\Reporting\ReportExportController;
 use App\Http\Controllers\Api\V1\Saas\SubscriptionController;
+use App\Http\Controllers\Api\V1\Support\SupportGrantController;
 use App\Http\Controllers\Api\V1\Uploads\AttachmentController;
 use App\Http\Controllers\Api\V1\Uploads\OrderAttachmentController;
 use Illuminate\Support\Facades\Route;
@@ -63,6 +64,7 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/auth/tokens/{device}', [DeviceTokenController::class, 'destroy']);
 
         Route::get('/me/context', MyContextController::class);
+        Route::get('/support/received-grants', [SupportGrantController::class, 'received']);
         Route::get('/me/subscription', SubscriptionController::class)->middleware('tenant');
         Route::post('/provisioning/tenants', ProvisionTenantController::class);
 
@@ -89,6 +91,9 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/reports/exports/{export}', [ReportExportController::class, 'show'])->middleware('tenant');
         Route::get('/reports/exports/{export}/download', [ReportExportController::class, 'download'])->middleware('tenant');
         Route::get('/reports/outlet', OutletReportController::class)->middleware('tenant');
+        Route::get('/support/grants', [SupportGrantController::class, 'index'])->middleware('tenant');
+        Route::post('/support/grants', [SupportGrantController::class, 'store'])->middleware('tenant');
+        Route::post('/support/grants/{grant}/revoke', [SupportGrantController::class, 'revoke'])->middleware('tenant');
         Route::get('/reports/receivables', ReceivablesReportController::class)->middleware('tenant');
 
         Route::get('/customers', [CustomerController::class, 'index'])->middleware('tenant');

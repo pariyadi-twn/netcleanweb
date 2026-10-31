@@ -33,5 +33,6 @@ enum PermissionCode: string
     case ReportsView = 'reports.view';
     case ReportsExport = 'reports.export';
     case ImportsManage = 'imports.manage';
+    case SupportGrant = 'support.grant';
     case AuditView = 'audit.view';
 }

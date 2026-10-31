@@ -42,6 +42,7 @@ class IdentityPermissionSeeder extends Seeder
             'reports.view' => 'Lihat laporan outlet dan piutang',
             'reports.export' => 'Buat dan unduh ekspor laporan',
             'imports.manage' => 'Impor pelanggan dan katalog',
+            'support.grant' => 'Buat dan cabut grant bantuan sementara',
             'audit.view' => 'Lihat jejak audit',
         ];
 

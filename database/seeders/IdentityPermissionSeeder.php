@@ -47,6 +47,8 @@ class IdentityPermissionSeeder extends Seeder
             'production.view' => 'Lihat antrean produksi',
             'production.manage' => 'Rencanakan dan jalankan tahap produksi',
             'production.qc' => 'Catat hasil quality control',
+            'complaints.manage' => 'Buka, rewash, dan selesaikan komplain',
+            'handovers.manage' => 'Serahkan bag dan catat bukti penerima',
             'audit.view' => 'Lihat jejak audit',
         ];
 

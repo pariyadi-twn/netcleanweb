@@ -41,14 +41,18 @@ final class AssessOrderReadiness
                 ->orderBy('id')
                 ->get();
 
-            $requiredOpen = $tasks
+            $currentAttempt = (int) $tasks->max('attempt_no');
+            $currentTasks = $tasks->where('attempt_no', $currentAttempt);
+            $currentTaskIds = $currentTasks->pluck('id');
+            $requiredOpen = $currentTasks
                 ->where('is_required', true)
                 ->where('status', '!=', 'done')
                 ->isNotEmpty();
-            $qcRequired = $tasks->where('requires_qc', true)->isNotEmpty();
+            $qcRequired = $currentTasks->where('requires_qc', true)->isNotEmpty();
             $latestQc = QcResult::query()
                 ->where('tenant_id', $order->tenant_id)
                 ->where('bag_content_id', $content->id)
+                ->whereIn('production_task_id', $currentTaskIds)
                 ->orderByDesc('id')
                 ->first();
             $qcPassed = ! $qcRequired || ($latestQc !== null && $latestQc->outcome === 'passed');
@@ -65,8 +69,9 @@ final class AssessOrderReadiness
                     'notes' => $latestQc->notes,
                     'recorded_at' => $latestQc->created_at?->utc()->format('Y-m-d\TH:i:s\Z'),
                 ],
-                'task_count' => $tasks->count(),
-                'open_required_tasks' => $tasks->where('is_required', true)->where('status', '!=', 'done')->count(),
+                'attempt_no' => $currentAttempt,
+                'task_count' => $currentTasks->count(),
+                'open_required_tasks' => $currentTasks->where('is_required', true)->where('status', '!=', 'done')->count(),
             ];
         }
 

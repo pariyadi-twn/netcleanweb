@@ -38,6 +38,11 @@ enum AuditAction: string
     case ProductionTaskTransitioned = 'production.task_transitioned';
     case ProductionQcRecorded = 'production.qc_recorded';
     case OrderReadinessChanged = 'order.readiness_changed';
+    case ComplaintCreated = 'complaint.created';
+    case ComplaintResolved = 'complaint.resolved';
+    case ComplaintRejected = 'complaint.rejected';
+    case ComplaintRewashPlanned = 'complaint.rewash_planned';
+    case HandoverCompleted = 'handover.completed';
     case BagRepacked = 'bag.repacked';
     case OutboxEventApplied = 'outbox.event_applied';
 }

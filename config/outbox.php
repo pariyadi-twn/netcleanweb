@@ -32,6 +32,11 @@ return [
         'production.task_transitioned',
         'production.qc_recorded',
         'order.readiness_changed',
+        'complaint.created',
+        'complaint.resolved',
+        'complaint.rejected',
+        'complaint.rewash_planned',
+        'order.handed_over',
     ],
 
     'consumers' => [

@@ -21,6 +21,8 @@ Product Owner is the interim operational owner until a named Platform Ops Lead i
 
 ## Restore drill
 
+If the host PostgreSQL client is older than the server, run `pg_dump`/`pg_restore` from a matching client container; do not treat a dump/restore that fails the major-version preflight as evidence. `ops/restore-drill.sh` checks this before writing evidence.
+
 1. Provision an isolated PostgreSQL host and empty storage target.
 2. Retrieve the base dump and required WAL segments; verify SHA-256 and key availability.
 3. Decrypt the dump with the escrowed key, restore with `pg_restore --clean --if-exists`, and replay WAL to the chosen recovery point.

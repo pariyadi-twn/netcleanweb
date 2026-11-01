@@ -79,4 +79,11 @@ class OpsHealthTest extends TestCase
 
         $this->assertSame(0, $code);
     }
+
+    public function test_restore_drill_script_has_valid_shell_syntax(): void
+    {
+        exec('bash -n '.escapeshellarg(base_path('ops/restore-drill.sh')), $output, $code);
+
+        $this->assertSame(0, $code);
+    }
 }

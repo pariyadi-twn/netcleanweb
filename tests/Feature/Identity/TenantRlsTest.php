@@ -25,6 +25,9 @@ use App\Modules\Identity\Models\Permission;
 use App\Modules\Identity\Models\Role;
 use App\Modules\Identity\Models\Tenant;
 use App\Modules\Identity\Models\TenantMembership;
+use App\Modules\Notifications\Enums\NotificationChannel;
+use App\Modules\Notifications\Enums\NotificationStatus;
+use App\Modules\Notifications\Models\NotificationDelivery;
 use App\Modules\Operations\Models\BranchCalendar;
 use App\Modules\Operations\Models\CommandReceipt;
 use App\Modules\Operations\Models\OutboxEvent;
@@ -521,6 +524,49 @@ class TenantRlsTest extends TestCase
     /**
      * @return array{Tenant, TenantMembership, Branch, Location, Role}
      */
+    public function test_runtime_notification_deliveries_require_tenant_context_and_isolate_tenants(): void
+    {
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+        [$tenantA] = $this->createTenantFor($userA, 'owner');
+        [$tenantB] = $this->createTenantFor($userB, 'owner');
+
+        $delivery = new NotificationDelivery([
+            'event_id' => (string) Str::uuid(),
+            'channel' => NotificationChannel::Email,
+            'business_key' => 'rls:notification',
+            'recipient_ref' => 'rls@example.com',
+            'subject' => 'Nota',
+            'message' => 'Pesan uji',
+            'payload' => [],
+            'status' => NotificationStatus::Queued,
+        ]);
+        $delivery->tenant_id = $tenantA->id;
+        $delivery->save();
+
+        $runtime = DB::connection('pgsql_runtime');
+        $this->assertSame(0, $runtime->table('notification_deliveries')->count());
+        $this->assertSame(0, app(TenantScope::class)->forTenant($tenantB, $userB, fn (): int => NotificationDelivery::query()->count(), 'pgsql_runtime'));
+        $this->assertSame(1, app(TenantScope::class)->forTenant($tenantA, $userA, fn (): int => NotificationDelivery::query()->count(), 'pgsql_runtime'));
+
+        try {
+            $runtime->table('notification_deliveries')->insert([
+                'tenant_id' => $tenantA->id,
+                'event_id' => (string) Str::uuid(),
+                'channel' => 'email',
+                'business_key' => 'rls:denied',
+                'recipient_ref' => 'denied@example.com',
+                'subject' => 'Denied',
+                'message' => 'Denied',
+                'payload' => DB::raw("'{}'::jsonb"),
+                'status' => 'queued',
+            ]);
+            $this->fail('Runtime role must not insert a notification delivery without tenant context.');
+        } catch (QueryException $exception) {
+            $this->assertSame('42501', $exception->errorInfo[0]);
+        }
+    }
+
     private function createTenantFor(User $user, string $roleCode): array
     {
         $tenant = Tenant::factory()->create();

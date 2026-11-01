@@ -74,18 +74,18 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('/me/context', MyContextController::class);
         Route::get('/support/received-grants', [SupportGrantController::class, 'received']);
-        Route::post('/platform/tenants/{tenant}/subscription-invoices', [SubscriptionBillingController::class, 'store']);
-        Route::post('/platform/subscription-invoices/{invoice}/payments', [SubscriptionBillingController::class, 'verify']);
-        Route::get('/platform/tenants', [PlatformTenantController::class, 'index']);
-        Route::get('/platform/tenants/{tenant}', [PlatformTenantController::class, 'show']);
-        Route::get('/platform/plans', [PlatformPlanController::class, 'index']);
-        Route::post('/platform/plans', [PlatformPlanController::class, 'store']);
-        Route::post('/platform/tenants/{tenant}/subscription', [PlatformPlanController::class, 'assign']);
-        Route::get('/platform/data-requests', [PlatformDataRequestController::class, 'index']);
-        Route::post('/platform/data-requests/{dataRequest}/verify', [PlatformDataRequestController::class, 'verify']);
-        Route::post('/platform/data-requests/{dataRequest}/reject', [PlatformDataRequestController::class, 'reject']);
-        Route::post('/platform/data-requests/{dataRequest}/process', [PlatformDataRequestController::class, 'process']);
-        Route::post('/platform/notifications/{delivery}/reconcile', [PlatformNotificationController::class, 'reconcile']);
+        Route::post('/platform/tenants/{tenant}/subscription-invoices', [SubscriptionBillingController::class, 'store'])->middleware('platform.admin');
+        Route::post('/platform/subscription-invoices/{invoice}/payments', [SubscriptionBillingController::class, 'verify'])->middleware('platform.admin');
+        Route::get('/platform/tenants', [PlatformTenantController::class, 'index'])->middleware('platform.admin');
+        Route::get('/platform/tenants/{tenant}', [PlatformTenantController::class, 'show'])->middleware('platform.admin');
+        Route::get('/platform/plans', [PlatformPlanController::class, 'index'])->middleware('platform.admin');
+        Route::post('/platform/plans', [PlatformPlanController::class, 'store'])->middleware('platform.admin');
+        Route::post('/platform/tenants/{tenant}/subscription', [PlatformPlanController::class, 'assign'])->middleware('platform.admin');
+        Route::get('/platform/data-requests', [PlatformDataRequestController::class, 'index'])->middleware('platform.admin');
+        Route::post('/platform/data-requests/{dataRequest}/verify', [PlatformDataRequestController::class, 'verify'])->middleware('platform.admin');
+        Route::post('/platform/data-requests/{dataRequest}/reject', [PlatformDataRequestController::class, 'reject'])->middleware('platform.admin');
+        Route::post('/platform/data-requests/{dataRequest}/process', [PlatformDataRequestController::class, 'process'])->middleware('platform.admin');
+        Route::post('/platform/notifications/{delivery}/reconcile', [PlatformNotificationController::class, 'reconcile'])->middleware('platform.admin');
         Route::get('/me/subscription', SubscriptionController::class)->middleware('tenant');
         Route::post('/provisioning/tenants', ProvisionTenantController::class);
 

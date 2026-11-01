@@ -43,6 +43,7 @@ use App\Http\Controllers\Api\V1\Payment\CreditApprovalController;
 use App\Http\Controllers\Api\V1\Payment\InvoicePaymentController;
 use App\Http\Controllers\Api\V1\Payment\RefundController;
 use App\Http\Controllers\Api\V1\Platform\PlatformDataRequestController;
+use App\Http\Controllers\Api\V1\Platform\PlatformNotificationController;
 use App\Http\Controllers\Api\V1\Platform\PlatformPlanController;
 use App\Http\Controllers\Api\V1\Platform\PlatformTenantController;
 use App\Http\Controllers\Api\V1\Platform\SubscriptionBillingController;
@@ -84,6 +85,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/platform/data-requests/{dataRequest}/verify', [PlatformDataRequestController::class, 'verify']);
         Route::post('/platform/data-requests/{dataRequest}/reject', [PlatformDataRequestController::class, 'reject']);
         Route::post('/platform/data-requests/{dataRequest}/process', [PlatformDataRequestController::class, 'process']);
+        Route::post('/platform/notifications/{delivery}/reconcile', [PlatformNotificationController::class, 'reconcile']);
         Route::get('/me/subscription', SubscriptionController::class)->middleware('tenant');
         Route::post('/provisioning/tenants', ProvisionTenantController::class);
 

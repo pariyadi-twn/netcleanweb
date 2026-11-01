@@ -1,5 +1,7 @@
 <?php
 
+use App\Modules\Notifications\Consumers\NotificationIntentConsumer;
+
 return [
     'lease_seconds' => (int) env('OUTBOX_LEASE_SECONDS', 60),
     'retry_seconds' => (int) env('OUTBOX_RETRY_SECONDS', 30),
@@ -40,10 +42,11 @@ return [
     ],
 
     'consumers' => [
-        // 'audit_trail' => \App\Modules\Operations\Consumers\AuditTrailConsumer::class,
+        'notification_intent' => NotificationIntentConsumer::class,
     ],
 
     'subscriptions' => [
-        // 'membership.assignments_updated' => ['audit_trail'],
+        'order.accepted' => ['notification_intent'],
+        'order.readiness_changed' => ['notification_intent'],
     ],
 ];

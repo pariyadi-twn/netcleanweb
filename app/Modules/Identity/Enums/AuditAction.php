@@ -43,6 +43,7 @@ enum AuditAction: string
     case ComplaintRejected = 'complaint.rejected';
     case ComplaintRewashPlanned = 'complaint.rewash_planned';
     case HandoverCompleted = 'handover.completed';
+    case NotificationReconciled = 'notification.reconciled';
     case BagRepacked = 'bag.repacked';
     case OutboxEventApplied = 'outbox.event_applied';
 }

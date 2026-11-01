@@ -4,6 +4,9 @@ namespace Tests\Feature;
 
 use App\Exceptions\ApiException;
 use App\Models\User;
+use App\Modules\Cash\Actions\CloseCashSession;
+use App\Modules\Cash\Models\CashRegister;
+use App\Modules\Cash\Models\CashSession;
 use App\Modules\Identity\Actions\UpdateMembershipAssignments;
 use App\Modules\Identity\Authorization\MembershipAuthorizer;
 use App\Modules\Identity\Authorization\TenantContext;
@@ -22,7 +25,9 @@ use App\Modules\Order\Models\Invoice;
 use App\Modules\Order\Models\Order;
 use App\Modules\Order\Models\OrderLine;
 use App\Modules\Order\Models\Quote;
+use App\Modules\Payment\Actions\RecordPayment;
 use App\Modules\Payment\Actions\RequestRefund;
+use App\Modules\Payment\Actions\ReverseAllocation;
 use App\Modules\Payment\Models\Payment;
 use App\Modules\Payment\Models\PaymentAllocation;
 use App\Modules\Production\Models\ProductionTask;
@@ -106,6 +111,99 @@ class ConcurrencyLedgerTest extends TestCase
         $this->assertSame(1, collect($result)->where('ok', false)->count());
         $this->assertDatabaseCount('refunds', 1);
         $this->assertSame(60000, (int) DB::table('refunds')->where('tenant_id', $tenant->id)->sum('amount_rupiah'));
+    }
+
+    public function test_concurrent_shift_close_has_one_terminal_winner(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = User::factory()->create();
+        $membership = TenantMembership::factory()->for($tenant)->for($user)->create(['status' => 'active']);
+        $branch = Branch::factory()->for($tenant)->create();
+        $register = CashRegister::factory()->create(['tenant_id' => $tenant->id, 'branch_id' => $branch->id]);
+        $session = CashSession::factory()->create([
+            'tenant_id' => $tenant->id,
+            'cash_register_id' => $register->id,
+            'cashier_membership_id' => $membership->id,
+            'opening_rupiah' => 200000,
+            'status' => 'open',
+        ]);
+        app(UpdateMembershipAssignments::class)->handle($membership, [], [$branch->id], [], $user, 'Concurrency shift');
+
+        $result = $this->runConcurrently([
+            fn (): mixed => $this->withTenant($tenant, $user, fn () => app(CloseCashSession::class)->handle($session, 200000, null, $membership->id)->status->value),
+            fn (): mixed => $this->withTenant($tenant, $user, fn () => app(CloseCashSession::class)->handle($session, 200000, null, $membership->id)->status->value),
+        ]);
+
+        $this->assertSame(1, collect($result)->where('ok', true)->count());
+        $this->assertSame(1, collect($result)->where('ok', false)->count());
+        $this->assertDatabaseHas('cash_sessions', ['id' => $session->id, 'status' => 'closed']);
+        $this->assertDatabaseCount('cash_session_events', 1);
+    }
+
+    public function test_two_cash_payments_serialize_allocation_and_keep_change_ledger_consistent(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = User::factory()->create();
+        $membership = TenantMembership::factory()->for($tenant)->for($user)->create(['status' => 'active']);
+        $branch = Branch::factory()->for($tenant)->create();
+        $register = CashRegister::factory()->create(['tenant_id' => $tenant->id, 'branch_id' => $branch->id]);
+        $session = CashSession::factory()->create([
+            'tenant_id' => $tenant->id,
+            'cash_register_id' => $register->id,
+            'cashier_membership_id' => $membership->id,
+            'status' => 'open',
+        ]);
+        $quote = Quote::factory()->create(['tenant_id' => $tenant->id, 'sales_branch_id' => $branch->id]);
+        $order = Order::factory()->create(['tenant_id' => $tenant->id, 'quote_id' => $quote->id, 'sales_branch_id' => $branch->id, 'accepted_by_membership_id' => $membership->id]);
+        $invoice = Invoice::factory()->create(['tenant_id' => $tenant->id, 'order_id' => $order->id, 'sales_branch_id' => $branch->id, 'original_total_rupiah' => 100000]);
+        app(UpdateMembershipAssignments::class)->handle($membership, [], [$branch->id], [], $user, 'Concurrency cash');
+
+        $result = $this->runConcurrently([
+            fn (): mixed => $this->withTenant($tenant, $user, fn () => app(RecordPayment::class)->handle($invoice, [
+                'amount_rupiah' => 80000, 'method' => 'cash',
+                'cash_session_id' => $session->public_id, 'cash_received_rupiah' => 100000,
+            ], $membership->id, $user)->amount_rupiah),
+            fn (): mixed => $this->withTenant($tenant, $user, fn () => app(RecordPayment::class)->handle($invoice, [
+                'amount_rupiah' => 80000, 'method' => 'cash',
+                'cash_session_id' => $session->public_id, 'cash_received_rupiah' => 100000,
+            ], $membership->id, $user)->amount_rupiah),
+        ]);
+
+        $this->assertSame(2, collect($result)->where('ok', true)->count());
+        $this->assertSame(100000, (int) DB::table('payment_allocations')->where('tenant_id', $tenant->id)->sum('amount_rupiah'));
+        $this->assertSame(60000, (int) DB::table('payments')->where('tenant_id', $tenant->id)->sum('unallocated_rupiah'));
+        $this->assertSame(160000, (int) DB::table('cash_entries')->where('tenant_id', $tenant->id)->sum('amount_rupiah'));
+    }
+
+    public function test_two_processes_cannot_reverse_more_than_the_net_allocation(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = User::factory()->create();
+        $membership = TenantMembership::factory()->for($tenant)->for($user)->create(['status' => 'active']);
+        $branch = Branch::factory()->for($tenant)->create();
+        $quote = Quote::factory()->create(['tenant_id' => $tenant->id, 'sales_branch_id' => $branch->id]);
+        $order = Order::factory()->create(['tenant_id' => $tenant->id, 'quote_id' => $quote->id, 'sales_branch_id' => $branch->id, 'accepted_by_membership_id' => $membership->id]);
+        $invoice = Invoice::factory()->create(['tenant_id' => $tenant->id, 'order_id' => $order->id, 'sales_branch_id' => $branch->id, 'original_total_rupiah' => 100000]);
+        $payment = new Payment([
+            'received_branch_id' => $branch->id, 'method' => 'bank_manual', 'amount_rupiah' => 100000,
+            'currency' => 'IDR', 'cash_received_rupiah' => 100000, 'change_rupiah' => 0,
+            'unallocated_rupiah' => 0, 'received_at' => now(), 'received_by_membership_id' => $membership->id,
+        ]);
+        $payment->tenant_id = $tenant->id;
+        $payment->save();
+        $allocation = new PaymentAllocation(['payment_id' => $payment->id, 'invoice_id' => $invoice->id, 'amount_rupiah' => 100000]);
+        $allocation->tenant_id = $tenant->id;
+        $allocation->save();
+        app(UpdateMembershipAssignments::class)->handle($membership, [], [$branch->id], [], $user, 'Concurrency reversal');
+
+        $result = $this->runConcurrently([
+            fn (): mixed => $this->withTenant($tenant, $user, fn () => app(ReverseAllocation::class)->handle($allocation, 60000, 'Bersamaan', $membership->id, $user)->amount_rupiah),
+            fn (): mixed => $this->withTenant($tenant, $user, fn () => app(ReverseAllocation::class)->handle($allocation, 60000, 'Bersamaan', $membership->id, $user)->amount_rupiah),
+        ]);
+
+        $this->assertSame(1, collect($result)->where('ok', true)->count());
+        $this->assertSame(1, collect($result)->where('ok', false)->count());
+        $this->assertSame(60000, (int) DB::table('allocation_reversals')->where('tenant_id', $tenant->id)->sum('amount_rupiah'));
     }
 
     private function handover(Tenant $tenant, User $user, TenantMembership $membership, Order $order, Bag $bag, Location $location): array

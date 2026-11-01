@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Modules\Cash\Actions\CloseCashSession;
 use App\Modules\Cash\Models\CashRegister;
 use App\Modules\Cash\Models\CashSession;
+use App\Modules\Catalog\Models\Service;
+use App\Modules\Catalog\Models\WorkflowTemplate;
 use App\Modules\Identity\Actions\UpdateMembershipAssignments;
 use App\Modules\Identity\Authorization\MembershipAuthorizer;
 use App\Modules\Identity\Authorization\TenantContext;
@@ -19,6 +21,9 @@ use App\Modules\Identity\Models\Role;
 use App\Modules\Identity\Models\Tenant;
 use App\Modules\Identity\Models\TenantMembership;
 use App\Modules\Logistics\Actions\CreateHandover;
+use App\Modules\Order\Actions\AcceptOrder;
+use App\Modules\Order\Actions\NormalizeOrderInput;
+use App\Modules\Order\Actions\RepackBag;
 use App\Modules\Order\Models\Bag;
 use App\Modules\Order\Models\BagContent;
 use App\Modules\Order\Models\Invoice;
@@ -30,11 +35,15 @@ use App\Modules\Payment\Actions\RequestRefund;
 use App\Modules\Payment\Actions\ReverseAllocation;
 use App\Modules\Payment\Models\Payment;
 use App\Modules\Payment\Models\PaymentAllocation;
+use App\Modules\Production\Actions\PlanRewash;
+use App\Modules\Production\Models\Complaint;
 use App\Modules\Production\Models\ProductionTask;
 use App\Modules\Production\Models\QcResult;
 use App\Modules\Saas\Actions\ConsumeQuota;
 use App\Modules\Saas\Actions\StartSubscription;
 use App\Modules\Saas\Models\SaasPlan;
+use App\Support\Idempotency\CommandReceiptService;
+use App\Support\Idempotency\CommandResult;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -111,6 +120,164 @@ class ConcurrencyLedgerTest extends TestCase
         $this->assertSame(1, collect($result)->where('ok', false)->count());
         $this->assertDatabaseCount('refunds', 1);
         $this->assertSame(60000, (int) DB::table('refunds')->where('tenant_id', $tenant->id)->sum('amount_rupiah'));
+    }
+
+    public function test_quote_is_consumed_once_across_processes_with_immutable_snapshot_price(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = User::factory()->create();
+        $membership = TenantMembership::factory()->for($tenant)->for($user)->create(['status' => 'active']);
+        $branch = Branch::factory()->for($tenant)->create(['is_active' => true]);
+        $workflow = WorkflowTemplate::factory()->for($tenant)->create(['code' => 'standard', 'is_active' => true]);
+        $service = Service::factory()->forWorkflow($workflow)->create(['code' => 'kiloan', 'name' => 'Cuci Kiloan']);
+        $input = [
+            'branch_id' => $branch->public_id,
+            'fulfillment_method' => 'pickup',
+            'lines' => [['service_id' => $service->public_id, 'measured_quantity' => '2.3', 'tier' => 'regular']],
+        ];
+        $normalized = app(NormalizeOrderInput::class)->handle($input);
+        $line = [
+            'service_id' => $service->public_id,
+            'unit' => 'kg',
+            'measured_quantity' => '2.300',
+            'billable_quantity' => '3.000',
+            'unit_price_rupiah' => 8000,
+            'line_total_rupiah' => 24000,
+            'base_total_rupiah' => 24000,
+            'discount_rupiah' => 0,
+            'express_surcharge_rupiah' => 0,
+            'pricing' => ['source' => 'tenant'],
+            'service_snapshot' => ['name' => 'Cuci Kiloan', 'workflow' => ['steps' => [['code' => 'washing', 'sequence' => 1, 'is_required' => true, 'requires_qc' => false]]]],
+            'due_at' => now()->addDay()->utc()->format('Y-m-d\TH:i:s\Z'),
+        ];
+        $quote = Quote::factory()->create([
+            'tenant_id' => $tenant->id,
+            'sales_branch_id' => $branch->id,
+            'pickup_branch_id' => $branch->id,
+            'request_hash' => app(NormalizeOrderInput::class)->requestHash($normalized),
+            'expires_at' => now()->addMinutes(15),
+            'due_at' => now()->addDay(),
+            'total_rupiah' => 24000,
+            'pricing_snapshot' => [
+                'input' => ['service_discount_percent' => 0],
+                'customer_snapshot' => ['name' => 'Walk-in'],
+                'lines' => [$line],
+                'totals' => ['service_subtotal_rupiah' => 24000, 'discount_rupiah' => 0, 'express_surcharge_rupiah' => 0, 'delivery_fee_rupiah' => 0, 'total_rupiah' => 24000],
+            ],
+        ]);
+
+        $result = $this->runConcurrently([
+            fn (): mixed => $this->withTenant($tenant, $user, fn () => app(AcceptOrder::class)->handle($quote, $normalized, $user, $membership->id)->invoice->original_total_rupiah),
+            fn (): mixed => $this->withTenant($tenant, $user, fn () => app(AcceptOrder::class)->handle($quote, $normalized, $user, $membership->id)->invoice->original_total_rupiah),
+        ]);
+
+        $this->assertSame(1, collect($result)->where('ok', true)->count());
+        $this->assertSame(1, collect($result)->where('code', 'QUOTE_CONSUMED')->count());
+        $this->assertDatabaseCount('orders', 1);
+        $this->assertDatabaseCount('invoices', 1);
+        $this->assertNotNull($quote->refresh()->consumed_at);
+        $this->assertDatabaseHas('order_lines', ['tenant_id' => $tenant->id, 'unit_price_rupiah' => 8000]);
+        $this->assertDatabaseHas('invoices', ['tenant_id' => $tenant->id, 'original_total_rupiah' => 24000]);
+    }
+
+    public function test_two_repacks_cannot_move_more_than_the_remaining_source_quantity(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = User::factory()->create();
+        $membership = TenantMembership::factory()->for($tenant)->for($user)->create(['status' => 'active']);
+        $branch = Branch::factory()->for($tenant)->create();
+        $quote = Quote::factory()->create(['tenant_id' => $tenant->id, 'sales_branch_id' => $branch->id]);
+        $order = Order::factory()->create(['tenant_id' => $tenant->id, 'quote_id' => $quote->id, 'sales_branch_id' => $branch->id, 'accepted_by_membership_id' => $membership->id]);
+        $line = OrderLine::factory()->create(['tenant_id' => $tenant->id, 'order_id' => $order->id]);
+        $bag = Bag::factory()->create(['tenant_id' => $tenant->id, 'order_id' => $order->id]);
+        $content = BagContent::factory()->create(['tenant_id' => $tenant->id, 'order_id' => $order->id, 'bag_id' => $bag->id, 'order_line_id' => $line->id, 'physical_quantity' => '3.000']);
+        app(UpdateMembershipAssignments::class)->handle($membership, [], [$branch->id], [], $user, 'Concurrency repack');
+
+        $result = $this->runConcurrently([
+            fn (): mixed => $this->withTenant($tenant, $user, fn () => app(RepackBag::class)->handle($order, [
+                'source_bag_id' => $bag->public_id, 'reason' => 'Split', 'moves' => [['order_line_id' => $line->public_id, 'quantity' => '2.0']],
+            ], $membership->id, $user)['source']->contents->sum('physical_quantity')),
+            fn (): mixed => $this->withTenant($tenant, $user, fn () => app(RepackBag::class)->handle($order, [
+                'source_bag_id' => $bag->public_id, 'reason' => 'Split', 'moves' => [['order_line_id' => $line->public_id, 'quantity' => '2.0']],
+            ], $membership->id, $user)['source']->contents->sum('physical_quantity')),
+        ]);
+
+        $this->assertSame(1, collect($result)->where('ok', true)->count());
+        $this->assertSame(1, collect($result)->where('ok', false)->count());
+        $this->assertSame(3.0, (float) DB::table('bag_contents')->where('tenant_id', $tenant->id)->where('order_id', $order->id)->sum('physical_quantity'));
+        $this->assertSame(1, DB::table('bag_repack_events')->where('tenant_id', $tenant->id)->count());
+    }
+
+    public function test_two_rewash_plans_reuse_one_idempotent_attempt(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = User::factory()->create();
+        $membership = TenantMembership::factory()->for($tenant)->for($user)->create(['status' => 'active']);
+        $branch = Branch::factory()->for($tenant)->create();
+        $location = Location::factory()->for($tenant)->create(['branch_id' => $branch->id, 'type' => 'plant']);
+        $quote = Quote::factory()->create(['tenant_id' => $tenant->id, 'sales_branch_id' => $branch->id]);
+        $order = Order::factory()->create(['tenant_id' => $tenant->id, 'quote_id' => $quote->id, 'sales_branch_id' => $branch->id, 'accepted_by_membership_id' => $membership->id]);
+        $line = OrderLine::factory()->create(['tenant_id' => $tenant->id, 'order_id' => $order->id]);
+        $bag = Bag::factory()->create(['tenant_id' => $tenant->id, 'order_id' => $order->id]);
+        $content = BagContent::factory()->create(['tenant_id' => $tenant->id, 'order_id' => $order->id, 'bag_id' => $bag->id, 'order_line_id' => $line->id]);
+        $complaint = new Complaint([
+            'order_id' => $order->id, 'order_line_id' => $line->id, 'kind' => 'rewash',
+            'status' => 'open', 'description' => 'Noda', 'opened_by_membership_id' => $membership->id,
+        ]);
+        $complaint->tenant_id = $tenant->id;
+        $complaint->save();
+        foreach ([['washing', 1, false], ['drying', 2, false], ['qc', 3, true]] as [$code, $sequence, $requiresQc]) {
+            $task = new ProductionTask([
+                'bag_content_id' => $content->id, 'production_location_id' => $location->id,
+                'step_code' => $code, 'sequence' => $sequence, 'is_required' => true,
+                'requires_qc' => $requiresQc, 'attempt_no' => 1, 'status' => 'done',
+                'due_at' => now()->addDay(), 'completed_at' => now(),
+            ]);
+            $task->tenant_id = $tenant->id;
+            $task->save();
+        }
+        app(UpdateMembershipAssignments::class)->handle($membership, [], [$branch->id], [$location->id], $user, 'Concurrency rewash');
+
+        $result = $this->runConcurrently([
+            fn (): mixed => $this->withTenant($tenant, $user, fn () => count(app(PlanRewash::class)->handle($complaint, $membership->id, $user))),
+            fn (): mixed => $this->withTenant($tenant, $user, fn () => count(app(PlanRewash::class)->handle($complaint, $membership->id, $user))),
+        ]);
+
+        $this->assertSame(2, collect($result)->where('ok', true)->count());
+        $this->assertDatabaseCount('production_tasks', 6);
+        $this->assertSame(3, DB::table('production_tasks')->where('tenant_id', $tenant->id)->where('attempt_no', 2)->count());
+        $this->assertDatabaseHas('complaints', ['id' => $complaint->id, 'rewash_attempt_no' => 2]);
+        DB::table('order_events')->delete();
+    }
+
+    public function test_command_receipt_replay_is_single_execution_across_processes(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = User::factory()->create();
+        $membership = TenantMembership::factory()->for($tenant)->for($user)->create(['status' => 'active']);
+        $command = (string) Str::uuid();
+        $resultId = (string) Str::uuid();
+        $payload = ['client_command_id' => $command, 'probe' => 'same'];
+
+        $result = $this->runConcurrently([
+            fn (): mixed => $this->withTenant($tenant, $user, fn () => app(CommandReceiptService::class)->run(
+                $tenant->id, $command, 'probe.command', $payload, $membership->id,
+                fn (): bool => true,
+                fn (): CommandResult => new CommandResult('tenant_membership', $resultId, ['executed' => true]),
+                fn ($receipt): CommandResult => new CommandResult('tenant_membership', $receipt->result_public_id, ['executed' => true]),
+            )->replay),
+            fn (): mixed => $this->withTenant($tenant, $user, fn () => app(CommandReceiptService::class)->run(
+                $tenant->id, $command, 'probe.command', $payload, $membership->id,
+                fn (): bool => true,
+                fn (): CommandResult => new CommandResult('tenant_membership', $resultId, ['executed' => true]),
+                fn ($receipt): CommandResult => new CommandResult('tenant_membership', $receipt->result_public_id, ['executed' => true]),
+            )->replay),
+        ]);
+
+        $this->assertSame(2, collect($result)->where('ok', true)->count());
+        $this->assertSame(1, collect($result)->where('result', false)->count());
+        $this->assertSame(1, collect($result)->where('result', true)->count());
+        $this->assertDatabaseCount('command_receipts', 1);
     }
 
     public function test_concurrent_shift_close_has_one_terminal_winner(): void
@@ -204,6 +371,47 @@ class ConcurrencyLedgerTest extends TestCase
         $this->assertSame(1, collect($result)->where('ok', true)->count());
         $this->assertSame(1, collect($result)->where('ok', false)->count());
         $this->assertSame(60000, (int) DB::table('allocation_reversals')->where('tenant_id', $tenant->id)->sum('amount_rupiah'));
+    }
+
+    public function test_failed_acceptance_rolls_back_order_invoice_and_quote_consumption(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = User::factory()->create();
+        $membership = TenantMembership::factory()->for($tenant)->for($user)->create(['status' => 'active']);
+        $branch = Branch::factory()->for($tenant)->create();
+        $workflow = WorkflowTemplate::factory()->for($tenant)->create(['code' => 'standard', 'is_active' => true]);
+        $service = Service::factory()->forWorkflow($workflow)->create(['code' => 'kiloan', 'name' => 'Cuci Kiloan']);
+        $input = ['branch_id' => $branch->public_id, 'fulfillment_method' => 'pickup', 'lines' => [['service_id' => $service->public_id, 'measured_quantity' => '2.3']]];
+        $normalized = app(NormalizeOrderInput::class)->handle($input);
+        $quote = Quote::factory()->create([
+            'tenant_id' => $tenant->id, 'sales_branch_id' => $branch->id, 'pickup_branch_id' => $branch->id,
+            'request_hash' => app(NormalizeOrderInput::class)->requestHash($normalized),
+            'expires_at' => now()->addMinutes(15), 'due_at' => now()->addDay(), 'total_rupiah' => 25000,
+            'pricing_snapshot' => [
+                'input' => ['service_discount_percent' => 0], 'customer_snapshot' => ['name' => 'Walk-in'],
+                'lines' => [[
+                    'service_id' => $service->public_id, 'unit' => 'kg', 'measured_quantity' => '2.300',
+                    'billable_quantity' => '3.000', 'unit_price_rupiah' => 8000, 'line_total_rupiah' => 24000,
+                    'base_total_rupiah' => 24000, 'discount_rupiah' => 0, 'express_surcharge_rupiah' => 0,
+                    'pricing' => [], 'service_snapshot' => ['name' => 'Cuci Kiloan', 'workflow' => ['steps' => []]],
+                    'due_at' => now()->addDay()->utc()->format('Y-m-d\TH:i:s\Z'),
+                ]],
+                'totals' => ['service_subtotal_rupiah' => 24000, 'discount_rupiah' => 0, 'express_surcharge_rupiah' => 0, 'delivery_fee_rupiah' => 0, 'total_rupiah' => 25000],
+            ],
+        ]);
+
+        try {
+            $this->withTenant($tenant, $user, fn () => app(AcceptOrder::class)->handle($quote, $normalized, $user, $membership->id));
+            $this->fail('Acceptance should have failed.');
+        } catch (ApiException $exception) {
+            $this->assertSame('QUOTE_TOTAL_MISMATCH', $exception->errorCode);
+        }
+
+        $this->assertSame(0, DB::table('orders')->where('tenant_id', $tenant->id)->count());
+        $this->assertSame(0, DB::table('order_lines')->where('tenant_id', $tenant->id)->count());
+        $this->assertSame(0, DB::table('invoices')->where('tenant_id', $tenant->id)->count());
+        $this->assertSame(0, DB::table('bags')->where('tenant_id', $tenant->id)->count());
+        $this->assertNull($quote->refresh()->consumed_at);
     }
 
     private function handover(Tenant $tenant, User $user, TenantMembership $membership, Order $order, Bag $bag, Location $location): array

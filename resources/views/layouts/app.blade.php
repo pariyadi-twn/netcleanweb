@@ -23,6 +23,8 @@
             @isset($tenant)
                 <nav aria-label="Navigasi utama" class="flex gap-1 overflow-x-auto border-t border-divider px-4 py-3 lg:block lg:border-t-0 lg:px-3 lg:py-5">
                     <x-ui.nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">Ringkasan</x-ui.nav-link>
+                    <x-ui.nav-link :href="route('organization.index')" :active="request()->routeIs('organization.*')">Organisasi</x-ui.nav-link>
+                    <x-ui.nav-link :href="route('roles.index')" :active="request()->routeIs('roles.*')">Peran</x-ui.nav-link>
                     <x-ui.nav-link :href="route('branches.index')" :active="request()->routeIs('branches.*')">Cabang</x-ui.nav-link>
                     <x-ui.nav-link :href="route('staff.index')" :active="request()->routeIs('staff.*')">Staf</x-ui.nav-link>
                     <x-ui.nav-link :href="route('catalog.index')" :active="request()->routeIs('catalog.*')">Katalog &amp; harga</x-ui.nav-link>

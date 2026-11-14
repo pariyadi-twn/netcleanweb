@@ -8,6 +8,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Owner\BranchController;
 use App\Http\Controllers\Owner\CatalogController;
 use App\Http\Controllers\Owner\CustomerController;
+use App\Http\Controllers\Owner\OrganizationController;
+use App\Http\Controllers\Owner\RoleController;
 use App\Http\Controllers\Owner\StaffController;
 use App\Http\Controllers\Platform\PlatformDashboardController;
 use App\Http\Controllers\Platform\PlatformWebDataRequestController;
@@ -49,6 +51,14 @@ Route::middleware(['auth', 'active'])->group(function (): void {
 
         Route::middleware('tenant.web')->group(function (): void {
             Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+            Route::get('/organization', [OrganizationController::class, 'index'])->name('organization.index');
+            Route::put('/organization', [OrganizationController::class, 'update'])->name('organization.update');
+
+            Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
+            Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
+            Route::get('/roles/{role}', [RoleController::class, 'edit'])->name('roles.edit');
+            Route::put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
 
             Route::get('/branches', [BranchController::class, 'index'])->name('branches.index');
             Route::get('/branches/{branch}', [BranchController::class, 'edit'])->name('branches.edit');

@@ -31,6 +31,52 @@ class OwnerWebPagesTest extends TestCase
         $this->withoutVite();
     }
 
+    public function test_owner_can_update_organization_profile(): void
+    {
+        [$owner, $tenant] = $this->ownerContext();
+
+        $this->actingAs($owner)->withSession(['tenant.public_id' => $tenant->public_id])
+            ->put('/organization', [
+                'name' => 'Organisasi Diperbarui',
+                'timezone' => 'Asia/Makassar',
+                'reason' => 'Uji profil',
+            ])->assertRedirect(route('organization.index'));
+
+        $this->assertDatabaseHas('tenants', [
+            'id' => $tenant->id,
+            'name' => 'Organisasi Diperbarui',
+            'timezone' => 'Asia/Makassar',
+        ]);
+    }
+
+    public function test_owner_can_create_and_configure_a_role(): void
+    {
+        [$owner, $tenant] = $this->ownerContext();
+
+        $this->actingAs($owner)->withSession(['tenant.public_id' => $tenant->public_id])
+            ->post('/roles', [
+                'code' => 'web-supervisor',
+                'name' => 'Web Supervisor',
+                'reason' => 'Uji peran',
+            ])->assertRedirect(route('roles.index'));
+
+        $role = Role::query()->where('tenant_id', $tenant->id)->where('code', 'web-supervisor')->sole();
+        $permission = Permission::query()->where('code', 'orders.view')->sole();
+
+        $this->put('/roles/'.$role->public_id, [
+            'name' => 'Web Supervisor Diperbarui',
+            'permission_ids' => [$permission->id],
+            'reason' => 'Uji izin',
+        ])->assertRedirect(route('roles.edit', $role));
+
+        $this->assertDatabaseHas('roles', ['id' => $role->id, 'name' => 'Web Supervisor Diperbarui']);
+        $this->assertDatabaseHas('role_permissions', [
+            'tenant_id' => $tenant->id,
+            'role_id' => $role->id,
+            'permission_id' => $permission->id,
+        ]);
+    }
+
     public function test_owner_can_view_and_update_a_branch(): void
     {
         [$owner, $tenant, $branch] = $this->ownerContext();

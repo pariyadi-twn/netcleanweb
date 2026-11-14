@@ -5,7 +5,9 @@ namespace App\Modules\Identity\Enums;
 enum AuditAction: string
 {
     case MembershipAssignmentsUpdated = 'membership.assignments_updated';
+    case RoleCreated = 'role.created';
     case RolePermissionsUpdated = 'role.permissions_updated';
+    case TenantProfileUpdated = 'tenant.profile_updated';
     case BranchConfigurationUpdated = 'branch.configuration_updated';
     case BranchCalendarUpdated = 'branch.calendar_updated';
     case ServicePublicationChanged = 'service.publication_changed';

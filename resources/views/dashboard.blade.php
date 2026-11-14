@@ -31,6 +31,14 @@
     </div>
 
     <div class="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <a href="{{ route('organization.index') }}" class="rounded-container border border-divider bg-white p-5 shadow-sm transition hover:border-brand-600">
+            <p class="font-bold text-ink">Organisasi</p>
+            <p class="mt-1 text-sm text-muted">Nama usaha dan zona waktu.</p>
+        </a>
+        <a href="{{ route('roles.index') }}" class="rounded-container border border-divider bg-white p-5 shadow-sm transition hover:border-brand-600">
+            <p class="font-bold text-ink">Peran</p>
+            <p class="mt-1 text-sm text-muted">Peran dan izin staf.</p>
+        </a>
         <a href="{{ route('branches.index') }}" class="rounded-container border border-divider bg-white p-5 shadow-sm transition hover:border-brand-600">
             <p class="font-bold text-ink">Cabang</p>
             <p class="mt-1 text-sm text-muted">Profil cabang dan lokasi.</p>

@@ -9,7 +9,8 @@ WORKDIR /var/www/html
 FROM php-base AS dependencies
 COPY --from=composer:2.9.3@sha256:c404e6f07bdebf8a8c605be5b5fab88eef737f6e4acfba3651d39c824ce224d4 /usr/bin/composer /usr/local/bin/composer
 COPY . .
-RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+RUN mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+    && composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
 
 FROM node:26.5.0-alpine@sha256:e88a35be04478413b7c71c455cd9865de9b9360e1f43456be5951032d7ac1a66 AS frontend
 WORKDIR /app

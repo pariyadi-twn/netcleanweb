@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Modules\Identity\Authorization\TenantScope;
 use App\Modules\Identity\Enums\MembershipStatus;
 use App\Modules\Identity\Enums\RoleCode;
 use App\Modules\Identity\Enums\TenantStatus;
@@ -45,24 +46,53 @@ class User extends Authenticatable
         return $this->hasMany(MfaRecoveryCode::class);
     }
 
+    /**
+     * Check owner roles across active tenants while preserving the caller's RLS context.
+     */
     public function requiresMfa(): bool
     {
         if ($this->is_platform_admin) {
             return true;
         }
 
-        return $this->memberships()
-            ->where('tenant_memberships.status', MembershipStatus::Active->value)
-            ->whereHas('tenant', fn ($query) => $query->where('status', TenantStatus::Active->value))
-            ->whereExists(function ($query): void {
-                $query->selectRaw('1')
-                    ->from('membership_roles')
-                    ->join('roles', 'roles.id', '=', 'membership_roles.role_id')
-                    ->whereColumn('membership_roles.membership_id', 'tenant_memberships.id')
-                    ->whereColumn('membership_roles.tenant_id', 'tenant_memberships.tenant_id')
-                    ->where('roles.code', RoleCode::Owner->value);
-            })
-            ->exists();
+        $connection = $this->getConnection();
+
+        return $connection->transaction(function () use ($connection): bool {
+            $previous = $connection->selectOne("SELECT current_setting('app.tenant_id', true) AS tenant_id, current_setting('app.user_id', true) AS user_id, current_setting('app.identity_bootstrap', true) AS identity_bootstrap");
+            $scope = app(TenantScope::class);
+            $required = $scope->identity($this, function () use ($scope, $connection): bool {
+                $memberships = $this->memberships()
+                    ->where('tenant_memberships.status', MembershipStatus::Active->value)
+                    ->whereHas('tenant', fn ($query) => $query->where('status', TenantStatus::Active->value))
+                    ->orderBy('tenant_id')
+                    ->get();
+
+                foreach ($memberships as $membership) {
+                    $isOwner = $scope->forTenantId(
+                        $membership->tenant_id,
+                        (int) $this->getKey(),
+                        fn (): bool => $membership->roles()->where('roles.code', RoleCode::Owner->value)->exists(),
+                        $connection->getName(),
+                    );
+
+                    if ($isOwner) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }, $connection->getName());
+
+            foreach ([
+                'app.tenant_id' => $previous->tenant_id,
+                'app.user_id' => $previous->user_id,
+                'app.identity_bootstrap' => $previous->identity_bootstrap,
+            ] as $key => $value) {
+                $connection->select('SELECT set_config(?, ?, true)', [$key, $value ?? '']);
+            }
+
+            return $required;
+        });
     }
 
     public function hasConfirmedMfa(): bool

@@ -45,10 +45,12 @@ use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Tests\Concerns\CreatesIdentityUsers;
 use Tests\TestCase;
 
 class TenantRlsTest extends TestCase
 {
+    use CreatesIdentityUsers;
     use DatabaseTruncation;
 
     protected function tearDown(): void
@@ -79,6 +81,71 @@ class TenantRlsTest extends TestCase
             $this->fail('Runtime role must not insert a branch without tenant context.');
         } catch (QueryException $exception) {
             $this->assertSame('42501', $exception->errorInfo[0]);
+        }
+    }
+
+    public function test_runtime_owner_mfa_lookup_checks_other_tenants_and_preserves_the_callers_scope(): void
+    {
+        $user = User::factory()->create();
+        [$cashierTenant, , $cashierBranch] = $this->createTenantFor($user, 'cashier');
+        $this->createTenantFor($user, 'owner');
+        $runtimeUser = User::on('pgsql_runtime')->findOrFail($user->id);
+        $scope = app(TenantScope::class);
+
+        $this->assertTrue($runtimeUser->requiresMfa());
+        $this->assertSame(0, DB::connection('pgsql_runtime')->table('tenant_memberships')->count());
+
+        $scope->forTenant($cashierTenant, $user, function () use ($runtimeUser, $cashierBranch): void {
+            $this->assertTrue($runtimeUser->requiresMfa());
+            $this->assertSame([$cashierBranch->public_id], Branch::query()->pluck('public_id')->all());
+        }, 'pgsql_runtime');
+
+        $scope->identity($user, function () use ($runtimeUser): void {
+            $this->assertTrue($runtimeUser->requiresMfa());
+            $this->assertSame(2, Tenant::query()->count());
+        }, 'pgsql_runtime');
+
+        $this->assertSame(0, DB::connection('pgsql_runtime')->table('branches')->count());
+    }
+
+    public function test_runtime_api_owner_requires_a_valid_mfa_code_before_issuing_a_token(): void
+    {
+        $user = $this->createOwner(['password' => 'secret-password']);
+        $this->enableMfa($user);
+        $payload = [
+            'email' => $user->email,
+            'password' => 'secret-password',
+            'installation_id' => (string) Str::uuid(),
+            'device_name' => 'Runtime MFA device',
+        ];
+        $previousConnection = DB::getDefaultConnection();
+        DB::setDefaultConnection('pgsql_runtime');
+
+        try {
+            $this->postJson('/api/v1/auth/tokens', $payload)->assertUnauthorized();
+            $this->assertDatabaseCount('personal_access_tokens', 0);
+
+            $this->postJson('/api/v1/auth/tokens', [...$payload, 'mfa_code' => $this->currentMfaCode($user)])
+                ->assertCreated()
+                ->assertJsonStructure(['data' => ['token', 'device_id', 'expires_at']]);
+            $this->assertDatabaseCount('personal_access_tokens', 1);
+        } finally {
+            DB::setDefaultConnection($previousConnection);
+        }
+    }
+
+    public function test_runtime_web_owner_without_mfa_is_redirected_to_enrollment(): void
+    {
+        $owner = $this->createOwner(['password' => 'secret-password']);
+        $previousConnection = DB::getDefaultConnection();
+        DB::setDefaultConnection('pgsql_runtime');
+
+        try {
+            $this->post('/login', ['email' => $owner->email, 'password' => 'secret-password'])
+                ->assertRedirect(route('mfa.setup'));
+            $this->get('/dashboard')->assertRedirect(route('mfa.setup'));
+        } finally {
+            DB::setDefaultConnection($previousConnection);
         }
     }
 

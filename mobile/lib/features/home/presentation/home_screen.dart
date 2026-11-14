@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/auth_session.dart';
 import '../../../core/session/session_controller.dart';
+import '../../../core/ui/formatting.dart';
 import '../../../core/ui/responsive.dart';
 import '../../../core/ui/session_context_bar.dart';
+import '../../customers/presentation/customers_screen.dart';
+import '../../orders/presentation/new_order_screen.dart';
 import '../../sync/presentation/sync_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -109,6 +112,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _content(BuildContext context, double availableWidth) {
+    if (_selectedIndex == 1) {
+      return const CustomersScreen();
+    }
+    if (_selectedIndex == 2) {
+      return const NewOrderScreen();
+    }
     if (_selectedIndex == 3) {
       return const SyncScreen();
     }
@@ -127,10 +136,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 8),
-          Text('Token berakhir: ${widget.session.expiresAt.toLocal()}'),
+          Text('Token berakhir: ${formatDateTime(widget.session.expiresAt)}'),
           const SizedBox(height: 16),
           SessionContextBar(session: widget.session),
           const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () => setState(() => _selectedIndex = 2),
+              icon: const Icon(Icons.add_shopping_cart_outlined),
+              label: const Text('Pesanan baru'),
+            ),
+          ),
+          const SizedBox(height: 16),
           GridView.count(
             crossAxisCount: columns,
             shrinkWrap: true,

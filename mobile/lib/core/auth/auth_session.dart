@@ -8,6 +8,8 @@ class AuthSession {
     required this.deviceId,
     this.tenantId,
     this.membershipId,
+    this.branchIds = const [],
+    this.locationIds = const [],
   });
 
   final String token;
@@ -15,6 +17,8 @@ class AuthSession {
   final String deviceId;
   final String? tenantId;
   final String? membershipId;
+  final List<String> branchIds;
+  final List<String> locationIds;
 
   bool get isExpired => DateTime.now().toUtc().isAfter(expiresAt.toUtc());
 }

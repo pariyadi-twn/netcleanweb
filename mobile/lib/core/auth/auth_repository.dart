@@ -8,7 +8,42 @@ class AuthRepository {
   final ApiClient _api;
   final TokenStore _tokens;
 
-  Future<AuthSession?> restore() => _tokens.readSession();
+  Future<AuthSession?> restore() async {
+    final session = await _tokens.readSession();
+    if (session == null ||
+        session.tenantId == null ||
+        session.branchIds.isNotEmpty) {
+      return session;
+    }
+
+    try {
+      final context = await _api.get('/me/context');
+      final contexts = context['data'];
+      if (contexts is! List) {
+        return session;
+      }
+      for (final item in contexts.whereType<Map<String, dynamic>>()) {
+        if (item['tenant_id'] != session.tenantId) {
+          continue;
+        }
+        final updated = AuthSession(
+          token: session.token,
+          expiresAt: session.expiresAt,
+          deviceId: session.deviceId,
+          tenantId: session.tenantId,
+          membershipId: item['membership_id'] as String?,
+          branchIds: _stringList(item['branch_ids']),
+          locationIds: _stringList(item['location_ids']),
+        );
+        await _tokens.saveSession(updated);
+        return updated;
+      }
+    } catch (_) {
+      return session;
+    }
+
+    return session;
+  }
 
   Future<AuthSession> login({
     required String email,
@@ -47,6 +82,8 @@ class AuthRepository {
         deviceId: session.deviceId,
         tenantId: selected['tenant_id'] as String?,
         membershipId: selected['membership_id'] as String?,
+        branchIds: _stringList(selected['branch_ids']),
+        locationIds: _stringList(selected['location_ids']),
       );
     }
 
@@ -55,4 +92,11 @@ class AuthRepository {
   }
 
   Future<void> logout() => _tokens.clear();
+
+  List<String> _stringList(dynamic value) {
+    if (value is! List) {
+      return const [];
+    }
+    return value.whereType<String>().toList(growable: false);
+  }
 }

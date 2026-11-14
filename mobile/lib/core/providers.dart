@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../features/customers/data/customer_repository.dart';
+import '../features/orders/data/order_repository.dart';
 import 'auth/auth_repository.dart';
 import 'auth/secret_store.dart';
 import 'auth/token_store.dart';
@@ -78,4 +80,12 @@ final commandReplayServiceProvider = Provider<CommandReplayService>((ref) {
     ref.watch(commandQueueProvider),
     ref.watch(commandSenderProvider),
   );
+});
+
+final customerRepositoryProvider = Provider<CustomerRepository>((ref) {
+  return CustomerRepository(ref.watch(apiClientProvider));
+});
+
+final orderRepositoryProvider = Provider<OrderRepository>((ref) {
+  return OrderRepository(ref.watch(apiClientProvider));
 });

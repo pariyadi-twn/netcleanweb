@@ -3,6 +3,17 @@
 namespace App\Console\Commands;
 
 use App\Models\User;
+use App\Modules\Catalog\Actions\CreatePriceBook;
+use App\Modules\Catalog\Actions\CreatePriceEntry;
+use App\Modules\Catalog\Actions\CreateService;
+use App\Modules\Catalog\Actions\CreateWorkflowRevision;
+use App\Modules\Catalog\Actions\SetServicePublication;
+use App\Modules\Catalog\Models\PriceBook;
+use App\Modules\Catalog\Models\PriceEntry;
+use App\Modules\Catalog\Models\Service;
+use App\Modules\Catalog\Models\WorkflowTemplate;
+use App\Modules\Customer\Actions\CreateCustomer;
+use App\Modules\Customer\Models\Customer;
 use App\Modules\Identity\Actions\ProvisionTenant;
 use App\Modules\Identity\Actions\SyncRolePermissions;
 use App\Modules\Identity\Actions\UpdateMembershipAssignments;
@@ -18,6 +29,7 @@ use App\Modules\Identity\Models\Permission;
 use App\Modules\Identity\Models\Role;
 use App\Modules\Identity\Models\Tenant;
 use App\Modules\Identity\Models\TenantMembership;
+use App\Modules\Operations\Actions\UpdateBranchCalendar;
 use Database\Seeders\IdentityPermissionSeeder;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -35,6 +47,13 @@ class ProvisionUatData extends Command
         TenantScope $tenantScope,
         SyncRolePermissions $syncPermissions,
         UpdateMembershipAssignments $updateAssignments,
+        CreateWorkflowRevision $createWorkflow,
+        CreateService $createService,
+        CreatePriceBook $createPriceBook,
+        CreatePriceEntry $createPriceEntry,
+        SetServicePublication $setPublication,
+        CreateCustomer $createCustomer,
+        UpdateBranchCalendar $updateCalendar,
     ): int {
         if (app()->isProduction()) {
             $this->components->error('UAT provisioning is disabled in production.');
@@ -85,10 +104,26 @@ class ProvisionUatData extends Command
             'supervisor' => User::query()->where('email', 'supervisor@uat.netclean.id')->sole(),
         ];
 
-        $tenantScope->forTenantId($tenant->id, $owner->id, function () use ($owner, $staff, $syncPermissions, $tenant, $updateAssignments): void {
+        $tenantScope->forTenantId($tenant->id, $owner->id, function () use ($owner, $staff, $syncPermissions, $tenant, $updateAssignments, $createWorkflow, $createService, $createPriceBook, $createPriceEntry, $setPublication, $createCustomer, $updateCalendar): void {
             $branch = Branch::query()->where('code', 'UAT-MAIN')->firstOrFail();
             $outlet = $this->location($tenant, $branch, 'OUTLET-MAIN', LocationType::Outlet, 'Outlet UAT Utama');
             $plant = $this->location($tenant, null, 'PLANT-MAIN', LocationType::Plant, 'Pusat Produksi UAT');
+
+            if ($branch->calendars()->doesntExist()) {
+                $updateCalendar->handle($branch, [
+                    'weekly_hours' => [
+                        ['weekday' => 0, 'is_open' => false, 'open_time' => null, 'close_time' => null],
+                        ['weekday' => 1, 'is_open' => true, 'open_time' => '08:00', 'close_time' => '20:00'],
+                        ['weekday' => 2, 'is_open' => true, 'open_time' => '08:00', 'close_time' => '20:00'],
+                        ['weekday' => 3, 'is_open' => true, 'open_time' => '08:00', 'close_time' => '20:00'],
+                        ['weekday' => 4, 'is_open' => true, 'open_time' => '08:00', 'close_time' => '20:00'],
+                        ['weekday' => 5, 'is_open' => true, 'open_time' => '08:00', 'close_time' => '20:00'],
+                        ['weekday' => 6, 'is_open' => true, 'open_time' => '08:00', 'close_time' => '20:00'],
+                    ],
+                    'cutoff_time' => '15:00',
+                    'deadline_local_time' => '20:00',
+                ], $owner, 'UAT provisioning');
+            }
 
             $roles = [
                 'cashier' => $this->role(
@@ -96,6 +131,7 @@ class ProvisionUatData extends Command
                     'cashier',
                     'Kasir',
                     [
+                        PermissionCode::BranchesView,
                         PermissionCode::CustomersView,
                         PermissionCode::CustomersManage,
                         PermissionCode::CatalogView,
@@ -165,9 +201,20 @@ class ProvisionUatData extends Command
                 $locationIds = $code === 'production' ? [$plant->id] : [$outlet->id, $plant->id];
                 $this->membership($membership, $roles[$code], [$branch->id], $locationIds, $owner, $updateAssignments);
             }
+
+            $this->catalog(
+                $tenant,
+                $owner,
+                $createWorkflow,
+                $createService,
+                $createPriceBook,
+                $createPriceEntry,
+                $setPublication,
+                $createCustomer,
+            );
         });
 
-        $this->components->info('Synthetic UAT tenant and staff are ready. Existing records were preserved.');
+        $this->components->info('Synthetic UAT tenant, catalog, and staff are ready. Existing records were preserved.');
         $this->line('Tenant ID: '.$tenant->public_id);
 
         if ($credentials !== []) {
@@ -177,6 +224,107 @@ class ProvisionUatData extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    private function catalog(
+        Tenant $tenant,
+        User $owner,
+        CreateWorkflowRevision $createWorkflow,
+        CreateService $createService,
+        CreatePriceBook $createPriceBook,
+        CreatePriceEntry $createPriceEntry,
+        SetServicePublication $setPublication,
+        CreateCustomer $createCustomer,
+    ): void {
+        $workflow = WorkflowTemplate::query()
+            ->where('code', 'standard-uat')
+            ->where('is_active', true)
+            ->first()
+            ?? $createWorkflow->handle($tenant->id, [
+                'code' => 'standard-uat',
+                'name' => 'Alur Produksi UAT',
+                'steps' => [
+                    ['code' => 'washing', 'is_required' => true, 'requires_qc' => false],
+                    ['code' => 'drying', 'is_required' => true, 'requires_qc' => false],
+                    ['code' => 'ironing', 'is_required' => true, 'requires_qc' => false],
+                    ['code' => 'qc', 'is_required' => true, 'requires_qc' => true],
+                ],
+            ]);
+
+        $book = PriceBook::query()
+            ->whereNull('branch_id')
+            ->whereNull('customer_id')
+            ->where('is_active', true)
+            ->first()
+            ?? $createPriceBook->handle($tenant->id, [
+                'name' => 'Harga UAT Tenant',
+            ]);
+
+        $definitions = [
+            [
+                'code' => 'uat-kiloan',
+                'name' => 'Kiloan UAT',
+                'unit' => 'kg',
+                'minimum_quantity' => '3.000',
+                'quantity_step' => '0.100',
+                'unit_price_rupiah' => 8000,
+            ],
+            [
+                'code' => 'uat-bedcover',
+                'name' => 'Bed Cover UAT',
+                'unit' => 'pcs',
+                'minimum_quantity' => '1',
+                'quantity_step' => '1',
+                'unit_price_rupiah' => 25000,
+            ],
+        ];
+
+        foreach ($definitions as $definition) {
+            $service = Service::query()
+                ->where('code', $definition['code'])
+                ->first()
+                ?? $createService->handle($tenant->id, [
+                    'code' => $definition['code'],
+                    'name' => $definition['name'],
+                    'unit' => $definition['unit'],
+                    'minimum_quantity' => $definition['minimum_quantity'],
+                    'quantity_step' => $definition['quantity_step'],
+                    'workflow_template_id' => $workflow->public_id,
+                ]);
+
+            $hasPrice = PriceEntry::query()
+                ->where('price_book_id', $book->id)
+                ->where('service_id', $service->id)
+                ->where('tier', 'regular')
+                ->exists();
+
+            if (! $hasPrice) {
+                $createPriceEntry->handle($book, [
+                    'service_id' => $service->public_id,
+                    'tier' => 'regular',
+                    'unit_price_rupiah' => $definition['unit_price_rupiah'],
+                    'effective_from' => now()->toDateString(),
+                ]);
+            }
+
+            if (! $service->is_active) {
+                $setPublication->handle($service, true, $owner, 'UAT provisioning');
+            }
+        }
+
+        if (! Customer::query()->where('name', 'Pelanggan UAT')->exists()) {
+            $createCustomer->handle($tenant->id, [
+                'name' => 'Pelanggan UAT',
+                'phone' => '081200000051',
+                'addresses' => [
+                    [
+                        'label' => 'Utama',
+                        'address' => 'Jl. Data Sintetis No. 51, Jakarta',
+                        'is_default' => true,
+                    ],
+                ],
+            ], $owner);
+        }
     }
 
     private function findTenant(TenantScope $scope, User $owner, string $name): ?Tenant

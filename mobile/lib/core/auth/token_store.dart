@@ -12,6 +12,8 @@ class TokenStore {
   static const _installationKey = 'installation_id_v1';
   static const _tenantKey = 'auth_tenant_v1';
   static const _membershipKey = 'auth_membership_v1';
+  static const _branchesKey = 'auth_branches_v1';
+  static const _locationsKey = 'auth_locations_v1';
 
   final SecretStore _secrets;
 
@@ -33,6 +35,8 @@ class TokenStore {
       deviceId: await _secrets.read(_deviceKey) ?? '',
       tenantId: await _secrets.read(_tenantKey),
       membershipId: await _secrets.read(_membershipKey),
+      branchIds: await _readList(_branchesKey),
+      locationIds: await _readList(_locationsKey),
     );
   }
 
@@ -49,6 +53,8 @@ class TokenStore {
     if (session.membershipId != null) {
       await _secrets.write(_membershipKey, session.membershipId!);
     }
+    await _writeList(_branchesKey, session.branchIds);
+    await _writeList(_locationsKey, session.locationIds);
   }
 
   Future<String> installationId() async {
@@ -67,5 +73,23 @@ class TokenStore {
     await _secrets.delete(_deviceKey);
     await _secrets.delete(_tenantKey);
     await _secrets.delete(_membershipKey);
+    await _secrets.delete(_branchesKey);
+    await _secrets.delete(_locationsKey);
+  }
+
+  Future<List<String>> _readList(String key) async {
+    final stored = await _secrets.read(key);
+    if (stored == null || stored.isEmpty) {
+      return const [];
+    }
+    return stored.split(',').where((value) => value.isNotEmpty).toList();
+  }
+
+  Future<void> _writeList(String key, List<String> values) async {
+    if (values.isEmpty) {
+      await _secrets.delete(key);
+      return;
+    }
+    await _secrets.write(key, values.join(','));
   }
 }

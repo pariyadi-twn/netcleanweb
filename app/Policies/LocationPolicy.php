@@ -11,6 +11,12 @@ class LocationPolicy
 {
     public function __construct(private readonly TenantContext $context) {}
 
+    public function viewAny(User $user): bool
+    {
+        return $user->id === $this->context->userId
+            && $this->context->can(PermissionCode::LocationsView);
+    }
+
     public function view(User $user, Location $location): bool
     {
         return $user->id === $this->context->userId

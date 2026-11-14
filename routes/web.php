@@ -5,6 +5,10 @@ use App\Http\Controllers\Auth\MfaSetupController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Owner\BranchController;
+use App\Http\Controllers\Owner\CatalogController;
+use App\Http\Controllers\Owner\CustomerController;
+use App\Http\Controllers\Owner\StaffController;
 use App\Http\Controllers\Platform\PlatformDashboardController;
 use App\Http\Controllers\Platform\PlatformWebDataRequestController;
 use App\Http\Controllers\Prototype\CashierPrototypeController;
@@ -45,6 +49,23 @@ Route::middleware(['auth', 'active'])->group(function (): void {
 
         Route::middleware('tenant.web')->group(function (): void {
             Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+            Route::get('/branches', [BranchController::class, 'index'])->name('branches.index');
+            Route::get('/branches/{branch}', [BranchController::class, 'edit'])->name('branches.edit');
+            Route::put('/branches/{branch}', [BranchController::class, 'update'])->name('branches.update');
+
+            Route::get('/staff', [StaffController::class, 'index'])->name('staff.index');
+            Route::get('/staff/{membership}', [StaffController::class, 'edit'])->name('staff.edit');
+            Route::put('/staff/{membership}', [StaffController::class, 'update'])->name('staff.update');
+
+            Route::get('/catalog', [CatalogController::class, 'index'])->name('catalog.index');
+            Route::post('/catalog/services', [CatalogController::class, 'storeService'])->name('catalog.services.store');
+            Route::post('/catalog/services/{service}/publication', [CatalogController::class, 'toggleService'])->name('catalog.services.publication');
+            Route::post('/catalog/price-books', [CatalogController::class, 'storePriceBook'])->name('catalog.price-books.store');
+            Route::post('/catalog/price-books/{priceBook}/entries', [CatalogController::class, 'storePriceEntry'])->name('catalog.price-entries.store');
+
+            Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
+            Route::post('/customers', [CustomerController::class, 'store'])->name('customers.store');
         });
 
         Route::middleware('platform.admin')->prefix('platform')->group(function (): void {

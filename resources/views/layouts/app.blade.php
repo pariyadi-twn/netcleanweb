@@ -22,11 +22,11 @@
 
             @isset($tenant)
                 <nav aria-label="Navigasi utama" class="flex gap-1 overflow-x-auto border-t border-divider px-4 py-3 lg:block lg:border-t-0 lg:px-3 lg:py-5">
-                    <a href="{{ route('dashboard') }}" @class([
-                        'flex min-h-12 items-center rounded-control px-4 text-sm font-semibold',
-                        'bg-brand-50 text-brand-700' => request()->routeIs('dashboard'),
-                        'text-muted hover:bg-slate-100 hover:text-ink' => ! request()->routeIs('dashboard'),
-                    ])>Ringkasan</a>
+                    <x-ui.nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">Ringkasan</x-ui.nav-link>
+                    <x-ui.nav-link :href="route('branches.index')" :active="request()->routeIs('branches.*')">Cabang</x-ui.nav-link>
+                    <x-ui.nav-link :href="route('staff.index')" :active="request()->routeIs('staff.*')">Staf</x-ui.nav-link>
+                    <x-ui.nav-link :href="route('catalog.index')" :active="request()->routeIs('catalog.*')">Katalog &amp; harga</x-ui.nav-link>
+                    <x-ui.nav-link :href="route('customers.index')" :active="request()->routeIs('customers.*')">Pelanggan</x-ui.nav-link>
                     @foreach (['Pesanan', 'Produksi', 'Keuangan', 'Laporan', 'Pengaturan'] as $item)
                         <span aria-disabled="true" class="flex min-h-12 cursor-not-allowed items-center rounded-control px-4 text-sm font-semibold text-slate-400">{{ $item }}</span>
                     @endforeach

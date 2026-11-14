@@ -11,6 +11,18 @@ class MembershipPolicy
 {
     public function __construct(private readonly TenantContext $context) {}
 
+    public function viewAny(User $user): bool
+    {
+        return $user->id === $this->context->userId
+            && $this->context->can(PermissionCode::MembershipsView);
+    }
+
+    public function manageAny(User $user): bool
+    {
+        return $user->id === $this->context->userId
+            && $this->context->can(PermissionCode::MembershipsManage);
+    }
+
     public function view(User $user, TenantMembership $membership): bool
     {
         return $user->id === $this->context->userId

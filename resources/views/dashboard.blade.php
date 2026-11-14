@@ -30,6 +30,25 @@
         </section>
     </div>
 
+    <div class="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <a href="{{ route('branches.index') }}" class="rounded-container border border-divider bg-white p-5 shadow-sm transition hover:border-brand-600">
+            <p class="font-bold text-ink">Cabang</p>
+            <p class="mt-1 text-sm text-muted">Profil cabang dan lokasi.</p>
+        </a>
+        <a href="{{ route('staff.index') }}" class="rounded-container border border-divider bg-white p-5 shadow-sm transition hover:border-brand-600">
+            <p class="font-bold text-ink">Staf</p>
+            <p class="mt-1 text-sm text-muted">Peran, cabang, dan lokasi staf.</p>
+        </a>
+        <a href="{{ route('catalog.index') }}" class="rounded-container border border-divider bg-white p-5 shadow-sm transition hover:border-brand-600">
+            <p class="font-bold text-ink">Katalog &amp; harga</p>
+            <p class="mt-1 text-sm text-muted">Layanan, workflow, dan price book.</p>
+        </a>
+        <a href="{{ route('customers.index') }}" class="rounded-container border border-divider bg-white p-5 shadow-sm transition hover:border-brand-600">
+            <p class="font-bold text-ink">Pelanggan</p>
+            <p class="mt-1 text-sm text-muted">Cari dan tambah pelanggan.</p>
+        </a>
+    </div>
+
     @if ($user->is_platform_admin)
         <a href="{{ route('platform.dashboard') }}" class="mt-8 inline-flex min-h-12 items-center rounded-control bg-brand-600 px-5 font-semibold text-white hover:bg-brand-700">Buka platform admin</a>
     @endif

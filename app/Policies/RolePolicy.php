@@ -11,6 +11,12 @@ class RolePolicy
 {
     public function __construct(private readonly TenantContext $context) {}
 
+    public function viewAny(User $user): bool
+    {
+        return $user->id === $this->context->userId
+            && $this->context->can(PermissionCode::RolesManage);
+    }
+
     public function manage(User $user, Role $role): bool
     {
         return $user->id === $this->context->userId

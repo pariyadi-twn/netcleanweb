@@ -20,6 +20,13 @@ class WebTenantContextTest extends TestCase
     use CreatesIdentityUsers;
     use LazilyRefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutVite();
+    }
+
     public function test_dashboard_redirects_to_tenant_selection_without_a_session_context(): void
     {
         [$owner] = $this->confirmedOwner();

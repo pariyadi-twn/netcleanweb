@@ -1,4 +1,5 @@
 import '../../../core/network/api_client.dart';
+import '../domain/order_history_models.dart';
 import '../domain/order_models.dart';
 
 class OrderRepository {
@@ -115,6 +116,28 @@ class OrderRepository {
         'outcome': outcome,
         if (errorCode != null && errorCode.isNotEmpty) 'error_code': errorCode,
       },
+    );
+  }
+
+  Future<OrderHistoryPage> searchOrders({
+    required String tenantId,
+    String? orderNumber,
+    String? cursor,
+    int perPage = 25,
+  }) async {
+    final page = await _api.getPage(
+      '/orders',
+      query: {
+        if (orderNumber != null && orderNumber.trim().isNotEmpty)
+          'order_number': orderNumber.trim(),
+      },
+      cursor: cursor,
+      perPage: perPage,
+      tenantId: tenantId,
+    );
+    return OrderHistoryPage(
+      items: page.items.map(OrderHistory.fromJson).toList(growable: false),
+      nextCursor: page.nextCursor,
     );
   }
 

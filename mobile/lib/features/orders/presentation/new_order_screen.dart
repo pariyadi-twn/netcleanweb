@@ -15,6 +15,7 @@ import '../../cash/presentation/cash_screen.dart';
 import '../../customers/domain/customer_summary.dart';
 import '../../customers/presentation/customer_form_dialog.dart';
 import '../domain/order_models.dart';
+import 'order_history_screen.dart';
 import 'receipt_screen.dart';
 
 class NewOrderScreen extends ConsumerStatefulWidget {
@@ -581,6 +582,17 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                     ),
                   ],
                 ),
+              ),
+              IconButton(
+                tooltip: 'Riwayat pesanan',
+                onPressed: _busy
+                    ? null
+                    : () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (context) => const OrderHistoryScreen(),
+                        ),
+                      ),
+                icon: const Icon(Icons.history),
               ),
               if (_order != null)
                 TextButton(

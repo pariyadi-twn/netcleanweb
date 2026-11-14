@@ -204,6 +204,65 @@ void main() {
     },
   );
 
+  test('searches order history with lines and bags', () async {
+    final client = MockClient((request) async {
+      expect(request.method, 'GET');
+      expect(request.url.path, '/api/v1/orders');
+      expect(request.url.queryParameters['order_number'], 'ORD-001');
+      expect(request.url.queryParameters['per_page'], '25');
+      return http.Response(
+        jsonEncode({
+          'data': [
+            {
+              'order_id': 'order-1',
+              'order_number': 'ORD-001',
+              'operational_status': 'completed',
+              'invoice_status': 'paid',
+              'invoice_number': 'INV-001',
+              'total_rupiah': 28000,
+              'paid_rupiah': 28000,
+              'balance_due_rupiah': 0,
+              'due_at_current': '2026-11-16T12:00:00Z',
+              'lines': [
+                {
+                  'service_name': 'Kiloan UAT',
+                  'unit': 'kg',
+                  'measured_quantity': '3.500',
+                  'billable_quantity': '3.500',
+                  'line_total_rupiah': 28000,
+                },
+              ],
+              'bags': [
+                {
+                  'id': 'bag-1',
+                  'label_code': 'UAT-BAG-1',
+                  'custody_status': 'handed_over',
+                  'current_location_id': null,
+                },
+              ],
+            },
+          ],
+          'meta': {'next_cursor': 'next-page'},
+        }),
+        200,
+      );
+    });
+    final repository = OrderRepository(
+      ApiClient(client: client, baseUrl: _baseUrl),
+    );
+
+    final page = await repository.searchOrders(
+      tenantId: 'tenant-1',
+      orderNumber: 'ORD-001',
+    );
+
+    expect(page.items.single.orderNumber, 'ORD-001');
+    expect(page.items.single.balanceDueRupiah, 0);
+    expect(page.items.single.lines.single.serviceName, 'Kiloan UAT');
+    expect(page.items.single.bags.single.custodyStatus, 'handed_over');
+    expect(page.nextCursor, 'next-page');
+  });
+
   test('records a simulated receipt print attempt', () async {
     final client = MockClient((request) async {
       expect(request.method, 'POST');

@@ -67,11 +67,14 @@ class OrderRepository {
     return OrderSummary.fromJson(_data(payload));
   }
 
-  Future<PaymentSummary> recordTransferPayment({
+  Future<PaymentSummary> recordPayment({
     required String tenantId,
     required String invoiceId,
     required int amountRupiah,
+    required String method,
     required String commandId,
+    String? cashSessionId,
+    int? cashReceivedRupiah,
   }) async {
     final payload = await _api.post(
       '/invoices/$invoiceId/payments',
@@ -80,7 +83,9 @@ class OrderRepository {
       body: {
         'client_command_id': commandId,
         'amount_rupiah': amountRupiah,
-        'method': 'bank_manual',
+        'method': method,
+        'cash_session_id': ?cashSessionId,
+        'cash_received_rupiah': ?cashReceivedRupiah,
       },
     );
     return PaymentSummary.fromJson(_data(payload));

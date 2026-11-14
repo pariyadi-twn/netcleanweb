@@ -18,6 +18,12 @@ class CashRegisterResource extends JsonResource
             'code' => $this->code,
             'is_active' => $this->is_active,
             'version' => $this->version,
+            'current_session' => $this->when(
+                $this->relationLoaded('currentSession'),
+                fn (): ?CashSessionResource => $this->currentSession === null
+                    ? null
+                    : CashSessionResource::make($this->currentSession),
+            ),
         ];
     }
 }

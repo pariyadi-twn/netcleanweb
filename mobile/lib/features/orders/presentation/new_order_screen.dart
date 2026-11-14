@@ -11,6 +11,7 @@ import '../../../core/session/session_controller.dart';
 import '../../../core/ui/formatting.dart';
 import '../../../core/ui/responsive.dart';
 import '../../../core/ui/theme.dart';
+import '../../cash/presentation/cash_screen.dart';
 import '../../customers/domain/customer_summary.dart';
 import '../../customers/presentation/customer_form_dialog.dart';
 import '../domain/order_models.dart';
@@ -26,6 +27,8 @@ class NewOrderScreen extends ConsumerStatefulWidget {
 class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
   final _customerQuery = TextEditingController();
   final _paymentAmount = TextEditingController();
+  final _cashReceived = TextEditingController();
+  String _paymentMethod = 'bank_manual';
   final _quantities = <String, TextEditingController>{};
 
   Timer? _customerDebounce;
@@ -56,6 +59,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
     _customerDebounce?.cancel();
     _customerQuery.dispose();
     _paymentAmount.dispose();
+    _cashReceived.dispose();
     for (final controller in _quantities.values) {
       controller.dispose();
     }
@@ -136,6 +140,8 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
       _acceptCommandId = null;
       _paymentCommandId = null;
       _paymentAmount.clear();
+      _cashReceived.clear();
+      _paymentMethod = 'bank_manual';
     });
   }
 
@@ -346,6 +352,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
         return;
       }
       _paymentAmount.text = order.balanceDueRupiah.toString();
+      _cashReceived.text = order.balanceDueRupiah.toString();
       setState(() {
         _order = order;
         _quote = null;
@@ -373,25 +380,47 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
     }
     final amount = int.tryParse(_paymentAmount.text.trim());
     if (amount == null || amount <= 0) {
-      _say('Nominal transfer belum valid.');
+      _say('Nominal pembayaran belum valid.');
       return;
     }
+
+    final activeCash = ref.read(activeCashSessionProvider).asData?.value;
+    final method = _paymentMethod == 'cash' && (activeCash?.isOpen ?? false)
+        ? 'cash'
+        : 'bank_manual';
+    String? cashSessionId;
+    int? cashReceived;
+    if (method == 'cash') {
+      cashSessionId = activeCash!.id;
+      cashReceived = int.tryParse(_cashReceived.text.trim());
+      if (cashReceived == null || cashReceived < amount) {
+        _say('Uang tunai diterima tidak boleh kurang dari nominal dibayar.');
+        return;
+      }
+    }
+
     _paymentCommandId ??= const Uuid().v4();
 
     setState(() => _busy = true);
     try {
       final payment = await ref
           .read(orderRepositoryProvider)
-          .recordTransferPayment(
+          .recordPayment(
             tenantId: tenantId,
             invoiceId: order.invoiceId,
             amountRupiah: amount,
+            method: method,
+            cashSessionId: cashSessionId,
+            cashReceivedRupiah: cashReceived,
             commandId: _paymentCommandId!,
           );
       if (!mounted) {
         return;
       }
       _paymentAmount.text = payment.balanceDueRupiah > 0
+          ? payment.balanceDueRupiah.toString()
+          : '';
+      _cashReceived.text = payment.balanceDueRupiah > 0
           ? payment.balanceDueRupiah.toString()
           : '';
       setState(() {
@@ -402,6 +431,10 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
         );
         _paymentCommandId = null;
       });
+      if (method == 'cash') {
+        ref.invalidate(cashRegistersProvider);
+        ref.invalidate(activeCashSessionProvider);
+      }
       _say(
         payment.balanceDueRupiah > 0
             ? 'Pembayaran tercatat. Sisa ${formatRupiah(payment.balanceDueRupiah)}.'
@@ -460,6 +493,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
       controller.clear();
     }
     _paymentAmount.clear();
+    _cashReceived.clear();
     setState(() {
       _quote = null;
       _order = null;
@@ -468,6 +502,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
       _customerResults = const [];
       _acceptCommandId = null;
       _paymentCommandId = null;
+      _paymentMethod = 'bank_manual';
     });
   }
 
@@ -771,6 +806,13 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
   Widget _orderSection(BuildContext context) {
     final order = _order!;
     final paid = order.balanceDueRupiah <= 0;
+    final cashState = ref.watch(activeCashSessionProvider);
+    final cashSession = cashState.asData?.value;
+    final cashAvailable = cashSession?.isOpen ?? false;
+    final method = cashAvailable ? _paymentMethod : 'bank_manual';
+    final amount = int.tryParse(_paymentAmount.text.trim());
+    final received = int.tryParse(_cashReceived.text.trim());
+
     return Column(
       children: [
         _Panel(
@@ -798,27 +840,93 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
         ),
         const SizedBox(height: 16),
         _Panel(
-          title: paid ? 'Pembayaran lunas' : 'Catat transfer',
+          title: paid ? 'Pembayaran lunas' : 'Catat pembayaran',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (!paid) ...[
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    ChoiceChip(
+                      label: const Text('Transfer'),
+                      selected: method == 'bank_manual',
+                      onSelected: _busy
+                          ? null
+                          : (_) => _selectPaymentMethod('bank_manual'),
+                    ),
+                    ChoiceChip(
+                      label: const Text('Tunai'),
+                      selected: method == 'cash',
+                      onSelected: _busy
+                          ? null
+                          : cashAvailable
+                          ? (_) => _selectPaymentMethod('cash')
+                          : null,
+                    ),
+                  ],
+                ),
+                if (!cashAvailable)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Buka shift kas untuk menerima pembayaran tunai.',
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _busy ? null : _openCash,
+                          child: const Text('Buka kas'),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 12),
                 TextField(
                   key: const Key('payment-amount'),
                   controller: _paymentAmount,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  onChanged: (_) => setState(() {}),
                   decoration: InputDecoration(
-                    labelText: 'Nominal transfer',
-                    helperText:
-                        'Pembayaran tunai memerlukan shift kas. Alur ini '
-                        'mencatat transfer manual.',
+                    labelText: method == 'cash'
+                        ? 'Nominal dibayar'
+                        : 'Nominal transfer',
                   ),
                 ),
+                if (method == 'cash') ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    key: const Key('cash-received'),
+                    controller: _cashReceived,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    onChanged: (_) => setState(() {}),
+                    decoration: const InputDecoration(
+                      labelText: 'Uang tunai diterima',
+                      helperText: 'Kembalian dihitung dari nominal dibayar.',
+                    ),
+                  ),
+                  if (amount != null && received != null && received >= amount)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        'Kembalian ${formatRupiah(received - amount)}',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                ],
                 const SizedBox(height: 12),
                 FilledButton(
                   onPressed: _busy ? null : _recordPayment,
-                  child: const Text('Catat transfer'),
+                  child: Text(
+                    method == 'cash'
+                        ? 'Catat pembayaran tunai'
+                        : 'Catat transfer',
+                  ),
                 ),
               ] else
                 const Text('Invoice sudah lunas. Nota dapat diberikan.'),
@@ -840,6 +948,31 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _openCash() async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (context) => const CashScreen()));
+    ref.invalidate(cashRegistersProvider);
+    ref.invalidate(activeCashSessionProvider);
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _selectPaymentMethod(String method) {
+    if (method == 'cash') {
+      final active = ref.read(activeCashSessionProvider).asData?.value;
+      if (active == null || !active.isOpen) {
+        _say('Buka shift kas terlebih dahulu.');
+        return;
+      }
+      if (_cashReceived.text.trim().isEmpty) {
+        _cashReceived.text = _paymentAmount.text;
+      }
+    }
+    setState(() => _paymentMethod = method);
   }
 }
 

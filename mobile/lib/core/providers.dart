@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../features/cash/data/cash_repository.dart';
+import '../features/cash/domain/cash_models.dart';
 import '../features/customers/data/customer_repository.dart';
 import '../features/orders/data/order_repository.dart';
 import 'auth/auth_repository.dart';
@@ -10,6 +12,7 @@ import 'cache/cache_key_store.dart';
 import 'cache/payload_cipher.dart';
 import 'cache/secure_cache.dart';
 import 'network/api_client.dart';
+import 'session/session_controller.dart';
 import 'sync/command_queue.dart';
 import 'sync/command_replay_service.dart';
 import 'sync/draft_store.dart';
@@ -88,4 +91,33 @@ final customerRepositoryProvider = Provider<CustomerRepository>((ref) {
 
 final orderRepositoryProvider = Provider<OrderRepository>((ref) {
   return OrderRepository(ref.watch(apiClientProvider));
+});
+
+final cashRepositoryProvider = Provider<CashRepository>((ref) {
+  return CashRepository(ref.watch(apiClientProvider));
+});
+
+final cashRegistersProvider = FutureProvider<List<CashRegisterSummary>>((
+  ref,
+) async {
+  final session = ref.watch(sessionControllerProvider).asData?.value;
+  final tenantId = session?.tenantId;
+  if (tenantId == null || (session?.branchIds.isEmpty ?? true)) {
+    return const [];
+  }
+  return ref
+      .watch(cashRepositoryProvider)
+      .registers(tenantId: tenantId, branchId: session!.branchIds.first);
+});
+
+final activeCashSessionProvider = FutureProvider<CashSessionSummary?>((
+  ref,
+) async {
+  final registers = await ref.watch(cashRegistersProvider.future);
+  for (final register in registers) {
+    if (register.currentSession?.isOpen ?? false) {
+      return register.currentSession;
+    }
+  }
+  return null;
 });

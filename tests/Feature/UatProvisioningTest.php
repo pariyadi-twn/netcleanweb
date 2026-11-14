@@ -26,6 +26,8 @@ class UatProvisioningTest extends TestCase
         $this->assertDatabaseCount('branches', 1);
         $this->assertDatabaseCount('locations', 2);
         $this->assertDatabaseCount('branch_calendars', 8);
+        $this->assertDatabaseCount('cash_registers', 1);
+        $this->assertDatabaseHas('cash_registers', ['code' => 'KASIR-1']);
         $this->assertDatabaseCount('tenant_memberships', 4);
         $this->assertDatabaseCount('roles', 4);
         $this->assertDatabaseCount('workflow_templates', 1);
@@ -65,6 +67,8 @@ class UatProvisioningTest extends TestCase
         $this->assertDatabaseCount('branches', 1);
         $this->assertDatabaseCount('locations', 2);
         $this->assertDatabaseCount('branch_calendars', 8);
+        $this->assertDatabaseCount('cash_registers', 1);
+        $this->assertDatabaseHas('cash_registers', ['code' => 'KASIR-1']);
         $this->assertDatabaseCount('tenant_memberships', 4);
         $this->assertDatabaseCount('roles', 4);
         $this->assertDatabaseCount('workflow_templates', 1);

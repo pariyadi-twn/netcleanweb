@@ -25,7 +25,7 @@ class CashRegisterController extends Controller
         $registers = CashRegister::query()
             ->where('tenant_id', $branchModel->tenant_id)
             ->where('branch_id', $branchModel->id)
-            ->with('branch')
+            ->with(['branch', 'currentSession.register.branch', 'currentSession.cashier', 'currentSession.entries'])
             ->orderBy('code')
             ->get();
 

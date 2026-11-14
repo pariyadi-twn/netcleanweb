@@ -160,6 +160,50 @@ void main() {
     expect(order.balanceDueRupiah, 28000);
   });
 
+  test(
+    'records a cash payment with the open shift and cash received',
+    () async {
+      final client = MockClient((request) async {
+        expect(request.method, 'POST');
+        expect(request.url.path, '/api/v1/invoices/invoice-1/payments');
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body['method'], 'cash');
+        expect(body['amount_rupiah'], 28000);
+        expect(body['cash_session_id'], 'session-1');
+        expect(body['cash_received_rupiah'], 50000);
+        return http.Response(
+          jsonEncode({
+            'data': {
+              'payment_id': 'payment-2',
+              'invoice_status': 'paid',
+              'total_rupiah': 28000,
+              'paid_rupiah': 28000,
+              'balance_due_rupiah': 0,
+              'change_rupiah': 22000,
+            },
+          }),
+          201,
+        );
+      });
+      final repository = OrderRepository(
+        ApiClient(client: client, baseUrl: _baseUrl),
+      );
+
+      final payment = await repository.recordPayment(
+        tenantId: 'tenant-1',
+        invoiceId: 'invoice-1',
+        amountRupiah: 28000,
+        method: 'cash',
+        cashSessionId: 'session-1',
+        cashReceivedRupiah: 50000,
+        commandId: '33333333-3333-4333-8333-333333333333',
+      );
+
+      expect(payment.invoiceStatus, 'paid');
+      expect(payment.changeRupiah, 22000);
+    },
+  );
+
   test('records a manual transfer payment and builds a receipt', () async {
     final client = MockClient((request) async {
       expect(request.headers['X-Tenant-ID'], 'tenant-1');
@@ -172,6 +216,7 @@ void main() {
         final body = jsonDecode(request.body) as Map<String, dynamic>;
         expect(body['amount_rupiah'], 10000);
         expect(body['method'], 'bank_manual');
+        expect(body.containsKey('cash_session_id'), isFalse);
         return http.Response(
           jsonEncode({
             'data': {
@@ -218,10 +263,11 @@ void main() {
       ApiClient(client: client, baseUrl: _baseUrl),
     );
 
-    final payment = await repository.recordTransferPayment(
+    final payment = await repository.recordPayment(
       tenantId: 'tenant-1',
       invoiceId: 'invoice-1',
       amountRupiah: 10000,
+      method: 'bank_manual',
       commandId: '22222222-2222-4222-8222-222222222222',
     );
     final receipt = await repository.receipt(

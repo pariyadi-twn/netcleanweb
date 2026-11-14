@@ -45,6 +45,13 @@ class CashSessionTest extends TestCase
 
         $sessionId = $session->json('data.id');
 
+        $listedRegister = collect($this->withToken($token)
+            ->withHeader('X-Tenant-ID', $tenant->public_id)
+            ->getJson('/api/v1/branches/'.$branch->public_id.'/cash-registers')
+            ->assertOk()
+            ->json('data'))->firstWhere('id', $registerId);
+        $this->assertSame($sessionId, $listedRegister['current_session']['id']);
+
         $this->withToken($token)
             ->withHeader('X-Tenant-ID', $tenant->public_id)
             ->postJson('/api/v1/cash-registers/'.$registerId.'/sessions', ['opening_rupiah' => 100000])
@@ -87,6 +94,13 @@ class CashSessionTest extends TestCase
             'tenant_id' => $tenant->id,
             'event_type' => 'closed',
         ]);
+
+        $closedRegister = collect($this->withToken($token)
+            ->withHeader('X-Tenant-ID', $tenant->public_id)
+            ->getJson('/api/v1/branches/'.$branch->public_id.'/cash-registers')
+            ->assertOk()
+            ->json('data'))->firstWhere('id', $registerId);
+        $this->assertNull($closedRegister['current_session']);
 
         $this->withToken($token)
             ->withHeader('X-Tenant-ID', $tenant->public_id)
@@ -159,7 +173,7 @@ class CashSessionTest extends TestCase
         $membership = TenantMembership::factory()->for($tenant)->for($user)->create(['status' => 'active']);
         $role = Role::factory()->for($tenant)->create(['code' => 'cash-admin', 'name' => 'Cash admin']);
         $branch = Branch::factory()->for($tenant)->create();
-        $permissions = collect([PermissionCode::CashView, PermissionCode::CashManage, PermissionCode::CashReopen])
+        $permissions = collect([PermissionCode::BranchesView, PermissionCode::CashView, PermissionCode::CashManage, PermissionCode::CashReopen])
             ->map(fn (PermissionCode $code): int => Permission::query()->firstOrCreate(['code' => $code->value], ['description' => $code->name])->id);
         DB::table('role_permissions')->insert($permissions->map(fn (int $id): array => [
             'tenant_id' => $tenant->id, 'role_id' => $role->id, 'permission_id' => $id,

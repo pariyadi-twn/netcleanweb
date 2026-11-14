@@ -3832,6 +3832,7 @@ components:
         code: {type: string, maxLength: 40}
         is_active: {type: boolean}
         version: {type: integer, format: int64, minimum: 1}
+        current_session: {allOf: [{$ref: '#/components/schemas/CashSession'}], nullable: true}
     RefundResult:
       type: object
       required: [refund_id, payment_id, amount_rupiah, status, external_ref, reason, requested_by_membership_id, approved_by_membership_id, cash_session_id, succeeded_at, allocated_refund_rupiah, version]

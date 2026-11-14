@@ -6,6 +6,7 @@ import '../../../core/session/session_controller.dart';
 import '../../../core/ui/formatting.dart';
 import '../../../core/ui/responsive.dart';
 import '../../../core/ui/session_context_bar.dart';
+import '../../cash/presentation/cash_screen.dart';
 import '../../customers/presentation/customers_screen.dart';
 import '../../orders/presentation/new_order_screen.dart';
 import '../../sync/presentation/sync_screen.dart';
@@ -140,13 +141,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           const SizedBox(height: 16),
           SessionContextBar(session: widget.session),
           const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () => setState(() => _selectedIndex = 2),
-              icon: const Icon(Icons.add_shopping_cart_outlined),
-              label: const Text('Pesanan baru'),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () => setState(() => _selectedIndex = 2),
+                  icon: const Icon(Icons.add_shopping_cart_outlined),
+                  label: const Text('Pesanan baru'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (context) => const CashScreen(),
+                    ),
+                  ),
+                  icon: const Icon(Icons.point_of_sale_outlined),
+                  label: const Text('Kas'),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           GridView.count(

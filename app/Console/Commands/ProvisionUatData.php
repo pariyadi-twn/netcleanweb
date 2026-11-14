@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\User;
+use App\Modules\Cash\Models\CashRegister;
 use App\Modules\Catalog\Actions\CreatePriceBook;
 use App\Modules\Catalog\Actions\CreatePriceEntry;
 use App\Modules\Catalog\Actions\CreateService;
@@ -108,6 +109,21 @@ class ProvisionUatData extends Command
             $branch = Branch::query()->where('code', 'UAT-MAIN')->firstOrFail();
             $outlet = $this->location($tenant, $branch, 'OUTLET-MAIN', LocationType::Outlet, 'Outlet UAT Utama');
             $plant = $this->location($tenant, null, 'PLANT-MAIN', LocationType::Plant, 'Pusat Produksi UAT');
+
+            $register = CashRegister::query()
+                ->where('tenant_id', $tenant->id)
+                ->where('code', 'KASIR-1')
+                ->first();
+
+            if ($register === null) {
+                $register = new CashRegister([
+                    'branch_id' => $branch->id,
+                    'code' => 'KASIR-1',
+                    'is_active' => true,
+                ]);
+                $register->tenant_id = $tenant->id;
+                $register->save();
+            }
 
             if ($branch->calendars()->doesntExist()) {
                 $updateCalendar->handle($branch, [

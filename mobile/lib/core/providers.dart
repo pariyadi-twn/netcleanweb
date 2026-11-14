@@ -1,0 +1,81 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'auth/auth_repository.dart';
+import 'auth/secret_store.dart';
+import 'auth/token_store.dart';
+import 'cache/app_database.dart';
+import 'cache/cache_key_store.dart';
+import 'cache/payload_cipher.dart';
+import 'cache/secure_cache.dart';
+import 'network/api_client.dart';
+import 'sync/command_queue.dart';
+import 'sync/command_replay_service.dart';
+import 'sync/draft_store.dart';
+
+final secretStoreProvider = Provider<SecretStore>(
+  (ref) => FlutterSecretStore(),
+);
+
+final tokenStoreProvider = Provider<TokenStore>((ref) {
+  return TokenStore(ref.watch(secretStoreProvider));
+});
+
+final apiClientProvider = Provider<ApiClient>((ref) {
+  final tokens = ref.watch(tokenStoreProvider);
+  return ApiClient(
+    tokenProvider: () async => (await tokens.readSession())?.token,
+  );
+});
+
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  return AuthRepository(
+    ref.watch(apiClientProvider),
+    ref.watch(tokenStoreProvider),
+  );
+});
+
+final databaseProvider = Provider<AppDatabase>((ref) {
+  final database = AppDatabase.open();
+  ref.onDispose(database.close);
+  return database;
+});
+
+final cacheKeyStoreProvider = Provider<CacheKeyStore>((ref) {
+  return CacheKeyStore(ref.watch(secretStoreProvider));
+});
+
+final secureCacheProvider = Provider<SecureCache>((ref) {
+  return SecureCache(
+    ref.watch(databaseProvider),
+    ref.watch(cacheKeyStoreProvider),
+  );
+});
+
+final payloadCipherProvider = Provider<PayloadCipher>((ref) {
+  return PayloadCipher(ref.watch(cacheKeyStoreProvider));
+});
+
+final draftStoreProvider = Provider<DraftStore>((ref) {
+  return DraftStore(
+    ref.watch(databaseProvider),
+    ref.watch(payloadCipherProvider),
+  );
+});
+
+final commandQueueProvider = Provider<CommandQueue>((ref) {
+  return CommandQueue(
+    ref.watch(databaseProvider),
+    ref.watch(payloadCipherProvider),
+  );
+});
+
+final commandSenderProvider = Provider<CommandSender>((ref) {
+  return ApiCommandSender(ref.watch(apiClientProvider));
+});
+
+final commandReplayServiceProvider = Provider<CommandReplayService>((ref) {
+  return CommandReplayService(
+    ref.watch(commandQueueProvider),
+    ref.watch(commandSenderProvider),
+  );
+});

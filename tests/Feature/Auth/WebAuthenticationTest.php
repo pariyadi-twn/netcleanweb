@@ -94,7 +94,8 @@ class WebAuthenticationTest extends TestCase
             ->assertSessionHas('recovery_codes');
 
         $this->assertNotNull($owner->refresh()->mfa_confirmed_at);
-        $this->get('/dashboard')->assertOk()->assertSee('Recovery codes');
+        $this->get('/dashboard')->assertRedirect(route('tenants.select'));
+        $this->get('/tenants/select')->assertOk()->assertSee('Recovery codes');
     }
 
     public function test_secure_and_http_only_session_cookie_flags_are_applied(): void

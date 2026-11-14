@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Platform\PlatformDashboardController;
 use App\Http\Controllers\Platform\PlatformWebDataRequestController;
 use App\Http\Controllers\Prototype\CashierPrototypeController;
+use App\Http\Controllers\TenantSelectionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -39,7 +40,12 @@ Route::middleware(['auth', 'active'])->group(function (): void {
     }
 
     Route::middleware(['auth.session', 'mfa.confirmed'])->group(function (): void {
-        Route::get('/dashboard', DashboardController::class)->name('dashboard');
+        Route::get('/tenants/select', [TenantSelectionController::class, 'index'])->name('tenants.select');
+        Route::post('/tenants/select', [TenantSelectionController::class, 'store'])->name('tenants.store');
+
+        Route::middleware('tenant.web')->group(function (): void {
+            Route::get('/dashboard', DashboardController::class)->name('dashboard');
+        });
 
         Route::middleware('platform.admin')->prefix('platform')->group(function (): void {
             Route::get('/', PlatformDashboardController::class)->name('platform.dashboard');

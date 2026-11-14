@@ -8,6 +8,7 @@ use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\RecordRequestMetrics;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\UseTenantContext;
+use App\Http\Middleware\UseWebTenantContext;
 use App\Support\Http\ApiError;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -34,6 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'active' => EnsureUserIsActive::class,
             'mfa.confirmed' => EnsureMfaIsConfirmed::class,
             'tenant' => UseTenantContext::class,
+            'tenant.web' => UseWebTenantContext::class,
             'platform.admin' => EnsurePlatformAdmin::class,
         ]);
     })

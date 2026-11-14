@@ -46,6 +46,13 @@ class OrderPolicy
             && $this->context->can(PermissionCode::OrdersManage);
     }
 
+    public function receiveBags(User $user, Order $order): bool
+    {
+        return $this->view($user, $order)
+            && ($this->context->can(PermissionCode::HandoversManage)
+                || $this->context->can(PermissionCode::ProductionManage));
+    }
+
     public function manageTracking(User $user, Order $order): bool
     {
         return $this->revise($user, $order);

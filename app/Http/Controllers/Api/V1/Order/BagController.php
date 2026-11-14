@@ -73,7 +73,7 @@ class BagController extends Controller
     public function receive(ReceiveBagRequest $request, string $order, string $bag, ReceiveBag $receive): JsonResponse
     {
         $model = $this->findOrder($order);
-        Gate::authorize('revise', $model);
+        Gate::authorize('receiveBags', $model);
         $result = $receive->handle($model, $bag, $request->validated(), $request->user());
 
         return response()->json([

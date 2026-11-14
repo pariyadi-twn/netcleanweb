@@ -17,7 +17,9 @@ FROM node:26.5.0-alpine@sha256:e88a35be04478413b7c71c455cd9865de9b9360e1f43456be
 WORKDIR /app
 COPY . .
 COPY --from=dependencies /var/www/html/vendor ./vendor
-RUN npm ci --ignore-scripts && npm run build
+RUN npm install -g npm@12.0.1 \
+    && npm ci --ignore-scripts \
+    && npm run build
 
 FROM php-base AS app
 ENV APP_ENV=production APP_DEBUG=false LOG_CHANNEL=stderr

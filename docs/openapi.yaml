@@ -2514,6 +2514,7 @@ paths:
                 location_id: {$ref: '#/components/schemas/PublicId'}
                 recipient_name: {type: string, minLength: 1, maxLength: 150}
                 verification_method: {type: string, enum: [receipt, otp, verified_staff_exception]}
+                evidence_notes: {type: string, nullable: true, maxLength: 2000}
                 credit_approval_id: {$ref: '#/components/schemas/NullablePublicId'}
       responses:
         '201':
@@ -4033,13 +4034,14 @@ components:
           items: {type: object, additionalProperties: true}
     Handover:
       type: object
-      required: [handover_id, order_id, location_id, recipient_name, verification_method, credit_approval_id, completed_at, lines, version]
+      required: [handover_id, order_id, location_id, recipient_name, verification_method, evidence_notes, credit_approval_id, completed_at, lines, version]
       properties:
         handover_id: {$ref: '#/components/schemas/PublicId'}
         order_id: {$ref: '#/components/schemas/PublicId'}
         location_id: {$ref: '#/components/schemas/PublicId'}
         recipient_name: {type: string}
         verification_method: {type: string, enum: [receipt, otp, verified_staff_exception]}
+        evidence_notes: {type: string, nullable: true}
         credit_approval_id: {$ref: '#/components/schemas/NullablePublicId'}
         completed_at: {$ref: '#/components/schemas/UtcTime'}
         lines:

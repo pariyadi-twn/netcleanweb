@@ -6,12 +6,14 @@ class OrderBagSummary {
     required this.id,
     required this.custodyStatus,
     required this.version,
+    this.labelCode,
     this.currentLocationId,
   });
 
   factory OrderBagSummary.fromJson(Map<String, dynamic> json) {
     return OrderBagSummary(
       id: '${json['id']}',
+      labelCode: json['label_code'] as String?,
       custodyStatus: '${json['custody_status']}',
       currentLocationId: json['current_location_id'] as String?,
       version: _asInt(json['version']),
@@ -19,6 +21,7 @@ class OrderBagSummary {
   }
 
   final String id;
+  final String? labelCode;
   final String custodyStatus;
   final String? currentLocationId;
   final int version;
@@ -179,7 +182,11 @@ class OrderReadiness {
 
 @immutable
 class HandoverSummary {
-  const HandoverSummary({required this.handoverId, required this.orderStatus});
+  const HandoverSummary({
+    required this.handoverId,
+    required this.orderStatus,
+    this.evidenceNotes,
+  });
 
   factory HandoverSummary.fromJson(Map<String, dynamic> json) {
     final handover = json['handover'] is Map<String, dynamic>
@@ -191,11 +198,13 @@ class HandoverSummary {
     return HandoverSummary(
       handoverId: '${handover['handover_id']}',
       orderStatus: '${order['operational_status']}',
+      evidenceNotes: handover['evidence_notes'] as String?,
     );
   }
 
   final String handoverId;
   final String orderStatus;
+  final String? evidenceNotes;
 }
 
 int _asInt(dynamic value) {

@@ -56,7 +56,14 @@ class HandoverTest extends TestCase
         $this->postJson('/api/v1/orders/'.$order->public_id.'/handovers', [
             'bag_ids' => [$bag->public_id], 'location_id' => $location->public_id,
             'recipient_name' => 'Penerima UAT', 'verification_method' => 'receipt',
-        ])->assertCreated()->assertJsonPath('data.order.operational_status', 'partially_handed_over');
+            'evidence_notes' => 'Penerima menunjukkan nota fisik; foto disimulasikan.',
+        ])->assertCreated()
+            ->assertJsonPath('data.order.operational_status', 'partially_handed_over')
+            ->assertJsonPath('data.handover.evidence_notes', 'Penerima menunjukkan nota fisik; foto disimulasikan.');
+        $this->assertDatabaseHas('handovers', [
+            'tenant_id' => $tenant->id,
+            'evidence_notes' => 'Penerima menunjukkan nota fisik; foto disimulasikan.',
+        ]);
         $this->assertSame('handed_over', $bag->refresh()->custody_status);
         $this->assertDatabaseCount('custody_events', 2);
         $this->postJson($url, ['location_id' => $location->public_id, 'expected_version' => $bag->version])

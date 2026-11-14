@@ -18,6 +18,7 @@ class HandoverResource extends JsonResource
             'location_id' => $this->location?->public_id,
             'recipient_name' => $this->recipient_name,
             'verification_method' => $this->verification_method,
+            'evidence_notes' => $this->evidence_notes,
             'credit_approval_id' => $this->creditApproval?->public_id,
             'completed_at' => $this->completed_at?->utc()->format('Y-m-d\TH:i:s\Z'),
             'lines' => $this->lines->map(fn ($line): array => [

@@ -124,6 +124,7 @@ class OperationsRepository {
     required String locationId,
     required String recipientName,
     String verificationMethod = 'receipt',
+    String? evidenceNotes,
   }) async {
     final payload = await _api.post(
       '/orders/$orderId/handovers',
@@ -133,6 +134,7 @@ class OperationsRepository {
         'location_id': locationId,
         'recipient_name': recipientName,
         'verification_method': verificationMethod,
+        'evidence_notes': ?evidenceNotes,
       },
     );
     return HandoverSummary.fromJson(_data(payload));

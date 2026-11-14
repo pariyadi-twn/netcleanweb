@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'actor_membership_id',
     'recipient_name',
     'verification_method',
+    'evidence_notes',
     'credit_approval_id',
     'completed_at',
 ])]

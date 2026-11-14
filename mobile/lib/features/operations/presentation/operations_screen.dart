@@ -280,20 +280,26 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
       _say('Periksa kesiapan dan pastikan semua bagian siap.');
       return;
     }
-    final bags = order.bags
+    final readyBags = order.bags
         .where((bag) => bag.currentLocationId == locationId)
-        .map((bag) => bag.id)
         .toList(growable: false);
-    if (bags.isEmpty) {
+    if (readyBags.isEmpty) {
       _say('Tidak ada bag yang siap diserahkan di lokasi ini.');
       return;
     }
 
-    final result = await showDialog<({String name, String method})>(
-      context: context,
-      builder: (context) => const _HandoverDialog(),
-    );
+    final result =
+        await showDialog<
+          ({List<String> bagIds, String name, String method, String? notes})
+        >(
+          context: context,
+          builder: (context) => _HandoverDialog(bags: readyBags),
+        );
     if (result == null || !mounted) {
+      return;
+    }
+    if (result.bagIds.isEmpty) {
+      _say('Pilih minimal satu bag untuk diserahkan.');
       return;
     }
 
@@ -304,10 +310,11 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
           .handover(
             tenantId: tenantId,
             orderId: order.orderId,
-            bagIds: bags,
+            bagIds: result.bagIds,
             locationId: locationId,
             recipientName: result.name,
             verificationMethod: result.method,
+            evidenceNotes: result.notes,
           );
       if (!mounted) {
         return;
@@ -485,9 +492,22 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
                   const SizedBox(height: 16),
                   _Panel(
                     title: 'Serah terima selesai',
-                    child: Text(
-                      'Status order: ${_handover!.orderStatus}. '
-                      'Handover ${_handover!.handoverId.substring(0, 8)}...',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Status order: ${_handover!.orderStatus}. '
+                          'Handover ${_handover!.handoverId.substring(0, 8)}...',
+                        ),
+                        if (_handover!.evidenceNotes != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(
+                              'Bukti: ${_handover!.evidenceNotes}',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ],
@@ -825,7 +845,9 @@ class _QcDialogState extends State<_QcDialog> {
 }
 
 class _HandoverDialog extends StatefulWidget {
-  const _HandoverDialog();
+  const _HandoverDialog({required this.bags});
+
+  final List<OrderBagSummary> bags;
 
   @override
   State<_HandoverDialog> createState() => _HandoverDialogState();
@@ -833,48 +855,92 @@ class _HandoverDialog extends StatefulWidget {
 
 class _HandoverDialogState extends State<_HandoverDialog> {
   final _name = TextEditingController();
+  final _notes = TextEditingController();
+  late final Set<String> _selected = widget.bags.map((bag) => bag.id).toSet();
   String _method = 'receipt';
 
   @override
   void dispose() {
     _name.dispose();
+    _notes.dispose();
     super.dispose();
   }
 
   void _submit() {
-    if (_name.text.trim().isEmpty) {
+    if (_name.text.trim().isEmpty || _selected.isEmpty) {
       return;
     }
-    Navigator.of(context).pop((name: _name.text.trim(), method: _method));
+    Navigator.of(context).pop((
+      bagIds: _selected.toList(growable: false),
+      name: _name.text.trim(),
+      method: _method,
+      notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Serah terima'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _name,
-            autofocus: true,
-            decoration: const InputDecoration(labelText: 'Nama penerima'),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            initialValue: _method,
-            decoration: const InputDecoration(labelText: 'Verifikasi'),
-            items: const [
-              DropdownMenuItem(value: 'receipt', child: Text('Nota')),
-              DropdownMenuItem(value: 'otp', child: Text('OTP')),
-              DropdownMenuItem(
-                value: 'verified_staff_exception',
-                child: Text('Verifikasi staf'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Pilih bag yang diserahkan. Bag lain tetap tersimpan.',
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
-            ],
-            onChanged: (value) => setState(() => _method = value ?? 'receipt'),
-          ),
-        ],
+            ),
+            const SizedBox(height: 8),
+            ...widget.bags.map(
+              (bag) => CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  bag.labelCode ?? 'Bag ${bag.id.substring(0, 8)}...',
+                ),
+                subtitle: Text(bag.custodyStatus),
+                value: _selected.contains(bag.id),
+                onChanged: (value) => setState(() {
+                  if (value ?? false) {
+                    _selected.add(bag.id);
+                  } else {
+                    _selected.remove(bag.id);
+                  }
+                }),
+              ),
+            ),
+            TextField(
+              controller: _name,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'Nama penerima'),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              initialValue: _method,
+              decoration: const InputDecoration(labelText: 'Verifikasi'),
+              items: const [
+                DropdownMenuItem(value: 'receipt', child: Text('Nota')),
+                DropdownMenuItem(value: 'otp', child: Text('OTP')),
+                DropdownMenuItem(
+                  value: 'verified_staff_exception',
+                  child: Text('Verifikasi staf'),
+                ),
+              ],
+              onChanged: (value) =>
+                  setState(() => _method = value ?? 'receipt'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _notes,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'Bukti/catatan penerima (simulasi foto)',
+              ),
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(

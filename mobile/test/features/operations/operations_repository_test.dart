@@ -129,6 +129,7 @@ void main() {
         expect(body['location_id'], 'location-1');
         expect(body['recipient_name'], 'Ani');
         expect(body['verification_method'], 'receipt');
+        expect(body['evidence_notes'], 'Nota fisik ditunjukkan');
         return http.Response(
           jsonEncode({
             'data': {
@@ -192,6 +193,7 @@ void main() {
       bagIds: const ['bag-1'],
       locationId: 'location-1',
       recipientName: 'Ani',
+      evidenceNotes: 'Nota fisik ditunjukkan',
     );
 
     expect(requests, hasLength(6));

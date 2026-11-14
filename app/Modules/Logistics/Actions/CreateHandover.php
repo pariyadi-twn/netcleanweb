@@ -30,7 +30,7 @@ final class CreateHandover
     ) {}
 
     /**
-     * @param  array{bag_ids: array<int, string>, location_id: string, recipient_name: string, verification_method: string, credit_approval_id?: string|null}  $attributes
+     * @param  array{bag_ids: array<int, string>, location_id: string, recipient_name: string, verification_method: string, evidence_notes?: string|null, credit_approval_id?: string|null}  $attributes
      * @return array{handover: Handover, order: Order}
      */
     public function handle(Order $order, array $attributes, int $membershipId, ?User $actor = null): array
@@ -100,6 +100,7 @@ final class CreateHandover
                 'actor_membership_id' => $membershipId,
                 'recipient_name' => $attributes['recipient_name'],
                 'verification_method' => $attributes['verification_method'],
+                'evidence_notes' => $attributes['evidence_notes'] ?? null,
                 'credit_approval_id' => $creditApproval?->id,
                 'completed_at' => now(),
             ]);
@@ -168,6 +169,7 @@ final class CreateHandover
                     'bags' => $bags->pluck('public_id')->all(),
                     'balance_rupiah' => max(0, $balance),
                     'verification_method' => $handover->verification_method,
+                    'has_evidence_notes' => $handover->evidence_notes !== null,
                 ],
                 actor: $actor,
             );

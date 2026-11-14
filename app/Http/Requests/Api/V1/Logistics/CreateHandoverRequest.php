@@ -18,6 +18,7 @@ class CreateHandoverRequest extends ApiRequest
             'location_id' => ['required', 'uuid'],
             'recipient_name' => ['required', 'string', 'max:150'],
             'verification_method' => ['required', Rule::in(['receipt', 'otp', 'verified_staff_exception'])],
+            'evidence_notes' => ['nullable', 'string', 'max:2000'],
             'credit_approval_id' => ['nullable', 'uuid'],
         ];
     }

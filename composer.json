@@ -55,6 +55,7 @@
             "@php artisan test"
         ],
         "check": [
+            "Composer\\Config::disableProcessTimeout",
             "@composer validate --strict",
             "@php artisan test --compact",
             "@composer audit"

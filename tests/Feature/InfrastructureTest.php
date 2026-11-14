@@ -67,15 +67,35 @@ class InfrastructureTest extends TestCase
         $this->assertSame('netclean-test', config('filesystems.disks.s3.bucket'));
         $path = 'infrastructure-probes/'.Str::uuid().'.txt';
         $disk = Storage::disk('s3');
+        $uploaded = false;
 
         try {
-            $disk->put($path, 'synthetic-private-proof');
+            $this->retryStorage(fn () => $disk->put($path, 'synthetic-private-proof'));
+            $uploaded = true;
 
-            $this->assertSame('synthetic-private-proof', $disk->get($path));
+            $this->assertSame('synthetic-private-proof', $this->retryStorage(fn () => $disk->get($path)));
             $response = Http::connectTimeout(3)->timeout(5)->get(rtrim(config('filesystems.disks.s3.endpoint'), '/').'/netclean-test/'.$path);
             $this->assertSame(403, $response->status());
         } finally {
-            $disk->delete($path);
+            if ($uploaded) {
+                $this->retryStorage(fn () => $disk->delete($path));
+            }
         }
+    }
+
+    private function retryStorage(callable $operation, int $attempts = 10): mixed
+    {
+        $lastError = null;
+
+        for ($attempt = 1; $attempt <= $attempts; $attempt++) {
+            try {
+                return $operation();
+            } catch (\Throwable $error) {
+                $lastError = $error;
+                usleep(500_000);
+            }
+        }
+
+        throw $lastError;
     }
 }

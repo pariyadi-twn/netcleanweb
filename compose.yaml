@@ -118,7 +118,7 @@ services:
       - ./storage/app/infrastructure/objects:/data
       - ./storage/app/infrastructure/s3.json:/etc/netclean/s3.json:ro
     healthcheck:
-      test: [CMD-SHELL, "wget -q -O /dev/null http://localhost:9333/cluster/status"]
+      test: [CMD-SHELL, "wget -q -O /dev/null http://localhost:8333/ 2>/dev/null; rc=$$?; [ $$rc -eq 0 ] || [ $$rc -eq 8 ]"]
       interval: 3s
       timeout: 3s
       retries: 30

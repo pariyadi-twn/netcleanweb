@@ -13,6 +13,13 @@ class WebAuthenticationTest extends TestCase
     use CreatesIdentityUsers;
     use LazilyRefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutVite();
+    }
+
     public function test_login_authenticates_the_user_and_rotates_the_session_id(): void
     {
         $user = User::factory()->create(['password' => 'secret-password']);

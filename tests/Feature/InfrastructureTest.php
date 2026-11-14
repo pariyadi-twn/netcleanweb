@@ -83,7 +83,7 @@ class InfrastructureTest extends TestCase
         }
     }
 
-    private function retryStorage(callable $operation, int $attempts = 10): mixed
+    private function retryStorage(callable $operation, int $attempts = 30): mixed
     {
         $lastError = null;
 
@@ -92,7 +92,7 @@ class InfrastructureTest extends TestCase
                 return $operation();
             } catch (\Throwable $error) {
                 $lastError = $error;
-                usleep(500_000);
+                sleep(1);
             }
         }
 

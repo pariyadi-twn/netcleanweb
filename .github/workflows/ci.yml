@@ -27,6 +27,17 @@ jobs:
       - run: composer install --prefer-dist --no-interaction
       - run: php artisan project:prepare --no-interaction
       - run: docker compose --env-file .env.infrastructure up -d --wait
+      - name: Wait for private object storage
+        run: |
+          for attempt in $(seq 1 60); do
+            if (exec 3<>/dev/tcp/127.0.0.1/18333) 2>/dev/null; then
+              exec 3>&-
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "S3 endpoint did not become ready" >&2
+          exit 1
       - run: composer check
       - name: Format and verify PHP changes
         run: |

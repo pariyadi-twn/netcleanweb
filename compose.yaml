@@ -99,7 +99,7 @@ services:
 
   storage:
     image: chrislusf/seaweedfs:4.50@sha256:c2658820e763294a9e9de7b36c81e59b879e3459148351aee4e31a126ca64860
-    user: "0:0"
+    user: "${STORAGE_UID:-1000}:${STORAGE_GID:-1000}"
     command:
       - mini
       - -dir=/data

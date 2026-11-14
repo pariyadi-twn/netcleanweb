@@ -38,6 +38,8 @@ class PrepareProjectEnvironment extends Command
                 'REDIS_CACHE_PORT' => '16379',
                 'REDIS_QUEUE_PORT' => '16380',
                 'S3_PORT' => '18333',
+                'STORAGE_UID' => (string) fileowner(base_path()),
+                'STORAGE_GID' => (string) filegroup(base_path()),
             ];
 
             $this->writeEnvironment($files, $infrastructureFile, $values);

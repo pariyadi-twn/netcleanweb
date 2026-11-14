@@ -61,7 +61,10 @@ class OutboxTest extends TestCase
         $this->assertNotNull($delivery->last_dispatched_at);
         $this->assertNotNull($delivery->lease_until);
 
-        $this->travel((int) config('outbox.lease_seconds', 60) + 1)->seconds();
+        $delivery->forceFill([
+            'lease_until' => now()->subSecond(),
+            'next_attempt_at' => now()->subSecond(),
+        ])->save();
 
         $this->assertSame(1, $dispatcher->dispatch());
         Queue::assertPushed(ProcessOutboxDelivery::class, 2);

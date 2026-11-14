@@ -39,6 +39,12 @@ jobs:
           echo "S3 endpoint did not become ready" >&2
           exit 1
       - run: composer check
+      - name: Storage diagnostics
+        if: failure()
+        run: |
+          docker compose --env-file .env.infrastructure ps
+          docker inspect netclean-storage-1 --format 'status={{.State.Status}} restarts={{.RestartCount}} exit={{.State.ExitCode}}'
+          docker compose --env-file .env.infrastructure logs --tail=200 storage
       - name: Format and verify PHP changes
         run: |
           vendor/bin/pint --format agent

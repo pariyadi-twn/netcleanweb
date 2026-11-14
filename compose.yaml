@@ -99,6 +99,7 @@ services:
 
   storage:
     image: chrislusf/seaweedfs:4.50@sha256:c2658820e763294a9e9de7b36c81e59b879e3459148351aee4e31a126ca64860
+    user: "0:0"
     command:
       - mini
       - -dir=/data
@@ -116,13 +117,19 @@ services:
       - "127.0.0.1:${S3_PORT:-18333}:8333"
     volumes:
       - ./storage/app/infrastructure/objects:/data
-      - ./storage/app/infrastructure/s3.json:/etc/netclean/s3.json:ro
+    configs:
+      - source: s3_config
+        target: /etc/netclean/s3.json
     healthcheck:
       test: [CMD-SHELL, "wget -q -O /dev/null http://localhost:9333/cluster/status"]
       interval: 3s
       timeout: 3s
       retries: 30
     restart: unless-stopped
+
+configs:
+  s3_config:
+    file: ./storage/app/infrastructure/s3.json
 
 volumes:
   postgres:

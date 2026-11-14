@@ -1,7 +1,8 @@
 FROM php:8.4.27-fpm-alpine@sha256:93aa3f61216b73cc6f878235c9772849449f4efc18dfe3d6678eed645076c00d AS php-base
-RUN apk add --no-cache libpq icu-libs libzip \
-    && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS postgresql-dev icu-dev libzip-dev \
-    && docker-php-ext-install pdo_pgsql intl bcmath pcntl zip \
+RUN apk add --no-cache libpq icu-libs libzip libpng libjpeg-turbo libwebp freetype \
+    && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS postgresql-dev icu-dev libzip-dev libpng-dev libjpeg-turbo-dev libwebp-dev freetype-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
+    && docker-php-ext-install pdo_pgsql intl bcmath pcntl zip gd \
     && apk del .build-deps
 COPY resources/runtime/php.ini /usr/local/etc/php/conf.d/netclean.ini
 WORKDIR /var/www/html

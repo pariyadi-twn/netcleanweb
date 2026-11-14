@@ -39,6 +39,7 @@ return [
         'complaint.rejected',
         'complaint.rewash_planned',
         'order.handed_over',
+        'bag.received',
     ],
 
     'consumers' => [

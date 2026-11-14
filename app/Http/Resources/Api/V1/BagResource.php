@@ -25,6 +25,7 @@ class BagResource extends JsonResource
             'order_id' => $this->order?->public_id,
             'label_code' => $this->label_code,
             'custody_status' => $this->custody_status,
+            'current_location_id' => $this->currentLocation?->public_id,
             'contents' => $contents,
             'total_physical_quantity' => $contents->sum(fn (array $content): float => (float) $content['physical_quantity']),
             'version' => $this->version,

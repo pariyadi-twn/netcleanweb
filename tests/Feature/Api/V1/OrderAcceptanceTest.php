@@ -93,6 +93,10 @@ class OrderAcceptanceTest extends TestCase
 
         $order = Order::query()->where('public_id', $orderId)->sole();
         $invoice = Invoice::query()->where('order_id', $order->id)->sole();
+        $this->assertSame($invoice->public_id, $accepted->json('data.invoice_id'));
+        $this->withToken($token)->withHeader('X-Tenant-ID', $tenant->public_id)
+            ->postJson('/api/v1/orders/'.$orderId.'/receipt')
+            ->assertOk()->assertJsonPath('data.invoice_id', $invoice->public_id);
         $this->assertSame(71600, $invoice->original_total_rupiah);
         $this->assertSame(71600, (int) $invoice->lines()->sum('amount_rupiah'));
         $this->assertSame(2, $order->lines()->count());

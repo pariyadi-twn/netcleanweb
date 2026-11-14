@@ -34,6 +34,101 @@ class HandoverTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
+    public function test_an_unlocated_bag_is_received_once_and_can_then_be_handed_over(): void
+    {
+        [$tenant, $token, $order, $location, $bags] = $this->scenario(100000, canReceive: true);
+        $bag = $bags[0];
+        $bag->forceFill(['current_location_id' => null])->save();
+        $url = '/api/v1/orders/'.$order->public_id.'/bags/'.$bag->public_id.'/receive';
+        $payload = ['location_id' => $location->public_id, 'expected_version' => 1];
+
+        $this->withToken($token)->withHeader('X-Tenant-ID', $tenant->public_id)
+            ->postJson($url, $payload)->assertCreated()
+            ->assertJsonPath('data.current_location_id', $location->public_id)
+            ->assertJsonPath('data.version', 2)->assertJsonPath('meta.idempotent_replay', false);
+        $this->postJson($url, $payload)->assertOk()->assertJsonPath('meta.idempotent_replay', true);
+
+        $this->assertDatabaseCount('custody_events', 1);
+        $this->assertDatabaseHas('custody_events', ['bag_id' => $bag->id, 'event_type' => 'received', 'to_location_id' => $location->id]);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'bag.received', 'subject_public_id' => $order->public_id]);
+        $this->assertDatabaseHas('outbox_events', ['event_type' => 'bag.received', 'aggregate_public_id' => $bag->public_id]);
+
+        $this->postJson('/api/v1/orders/'.$order->public_id.'/handovers', [
+            'bag_ids' => [$bag->public_id], 'location_id' => $location->public_id,
+            'recipient_name' => 'Penerima UAT', 'verification_method' => 'receipt',
+        ])->assertCreated()->assertJsonPath('data.order.operational_status', 'partially_handed_over');
+        $this->assertSame('handed_over', $bag->refresh()->custody_status);
+        $this->assertDatabaseCount('custody_events', 2);
+        $this->postJson($url, ['location_id' => $location->public_id, 'expected_version' => $bag->version])
+            ->assertConflict()->assertJsonPath('error.code', 'BAG_NOT_RECEIVABLE');
+    }
+
+    public function test_receiving_requires_order_management_and_an_assigned_location(): void
+    {
+        [$tenant, $token, $order, $location, $bags] = $this->scenario(100000);
+        $bag = $bags[0];
+        $bag->forceFill(['current_location_id' => null])->save();
+        $this->withToken($token)->withHeader('X-Tenant-ID', $tenant->public_id)
+            ->postJson('/api/v1/orders/'.$order->public_id.'/bags/'.$bag->public_id.'/receive', [
+                'location_id' => $location->public_id, 'expected_version' => 1,
+            ])->assertForbidden();
+        $this->assertDatabaseCount('custody_events', 0);
+    }
+
+    public function test_receiving_rejects_unassigned_and_cross_tenant_locations_and_foreign_bags(): void
+    {
+        [$tenant, $token, $order, $location, $bags] = $this->scenario(100000, canReceive: true);
+        $bag = $bags[0];
+        $bag->forceFill(['current_location_id' => null])->save();
+        $unassigned = Location::factory()->for($tenant)->create(['branch_id' => $order->sales_branch_id]);
+        $foreign = Bag::factory()->create();
+        $foreignLocation = Location::factory()->create();
+        $url = '/api/v1/orders/'.$order->public_id.'/bags/'.$bag->public_id.'/receive';
+
+        $this->withToken($token)->withHeader('X-Tenant-ID', $tenant->public_id)
+            ->postJson($url, ['location_id' => $unassigned->public_id, 'expected_version' => 1])->assertForbidden();
+        $this->postJson($url, ['location_id' => $foreignLocation->public_id, 'expected_version' => 1])
+            ->assertUnprocessable()->assertJsonValidationErrors('location_id', 'error.field_errors');
+        $this->postJson('/api/v1/orders/'.$order->public_id.'/bags/'.$foreign->public_id.'/receive', [
+            'location_id' => $location->public_id, 'expected_version' => 1,
+        ])->assertNotFound();
+        $this->assertDatabaseCount('custody_events', 0);
+    }
+
+    public function test_receiving_cannot_move_a_located_bag_and_rejects_a_stale_version(): void
+    {
+        [$tenant, $token, $order, $location, $bags] = $this->scenario(100000, canReceive: true);
+        $bag = $bags[0];
+        $otherLocation = Location::query()->where('tenant_id', $tenant->id)->where('id', '!=', $location->id)->sole();
+        $url = '/api/v1/orders/'.$order->public_id.'/bags/'.$bag->public_id.'/receive';
+        $this->withToken($token)->withHeader('X-Tenant-ID', $tenant->public_id)
+            ->postJson($url, ['location_id' => $otherLocation->public_id, 'expected_version' => 1])
+            ->assertConflict()->assertJsonPath('error.code', 'BAG_ALREADY_LOCATED');
+        $this->assertSame($location->id, $bag->refresh()->current_location_id);
+        $bag->forceFill(['current_location_id' => null])->save();
+        $this->postJson($url, ['location_id' => $location->public_id, 'expected_version' => 99])
+            ->assertConflict()->assertJsonPath('error.code', 'BAG_VERSION_CONFLICT');
+        $this->assertDatabaseCount('custody_events', 0);
+    }
+
+    public function test_receiving_rejects_inactive_locations_empty_bags_and_cancelled_orders(): void
+    {
+        [$tenant, $token, $order, $location, $bags] = $this->scenario(100000, canReceive: true);
+        $bag = $bags[0];
+        $bag->forceFill(['current_location_id' => null])->save();
+        $url = '/api/v1/orders/'.$order->public_id.'/bags/'.$bag->public_id.'/receive';
+        $payload = ['location_id' => $location->public_id, 'expected_version' => 1];
+        $location->update(['is_active' => false]);
+        $this->withToken($token)->withHeader('X-Tenant-ID', $tenant->public_id)
+            ->postJson($url, $payload)->assertUnprocessable()->assertJsonValidationErrors('location_id', 'error.field_errors');
+        $location->update(['is_active' => true]);
+        $bag->contents()->update(['is_active' => false, 'physical_quantity' => '0.000']);
+        $this->postJson($url, $payload)->assertConflict()->assertJsonPath('error.code', 'BAG_EMPTY');
+        $order->update(['operational_status' => 'cancelled']);
+        $this->postJson($url, $payload)->assertConflict()->assertJsonPath('error.code', 'ORDER_NOT_RECEIVABLE');
+        $this->assertDatabaseCount('custody_events', 0);
+    }
+
     public function test_whole_bag_handover_is_partial_then_completed_and_cannot_repeat(): void
     {
         [$tenant, $token, $order, $location, $bags, $membership] = $this->scenario(100000);
@@ -130,7 +225,7 @@ class HandoverTest extends TestCase
     }
 
     /** @return array{Tenant, string, Order, Location, array<int, Bag>, TenantMembership} */
-    private function scenario(int $total, bool $paid = true): array
+    private function scenario(int $total, bool $paid = true, bool $canReceive = false): array
     {
         $tenant = Tenant::factory()->create();
         $user = User::factory()->create();
@@ -139,7 +234,10 @@ class HandoverTest extends TestCase
         $branch = Branch::factory()->for($tenant)->create();
         $location = Location::factory()->for($tenant)->create(['branch_id' => $branch->id, 'type' => 'outlet']);
         $otherLocation = Location::factory()->for($tenant)->create(['branch_id' => $branch->id, 'type' => 'outlet']);
-        $permissions = collect([PermissionCode::HandoversManage, PermissionCode::ProductionView, PermissionCode::ProductionQc])
+        $permissions = collect([
+            PermissionCode::HandoversManage, PermissionCode::ProductionView, PermissionCode::ProductionQc,
+            ...($canReceive ? [PermissionCode::OrdersView, PermissionCode::OrdersManage] : []),
+        ])
             ->map(fn (PermissionCode $code): int => Permission::query()->firstOrCreate(['code' => $code->value], ['description' => $code->name])->id);
         DB::table('role_permissions')->insert($permissions->map(fn (int $id): array => [
             'tenant_id' => $tenant->id, 'role_id' => $role->id, 'permission_id' => $id,

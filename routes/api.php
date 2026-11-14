@@ -161,6 +161,7 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/orders/{order}/tracking-token', [TrackingTokenController::class, 'destroy'])->middleware('tenant');
         Route::get('/orders/{order}/bags', [BagController::class, 'index'])->middleware('tenant');
         Route::get('/orders/{order}/bags/{bag}/label', [BagController::class, 'label'])->middleware('tenant');
+        Route::post('/orders/{order}/bags/{bag}/receive', [BagController::class, 'receive'])->middleware('tenant');
         Route::post('/orders/{order}/repack', [BagController::class, 'repack'])->middleware('tenant');
         Route::post('/invoices/{invoice}/payments', [InvoicePaymentController::class, 'store'])->middleware('tenant');
         Route::post('/invoices/{invoice}/credit-approval', [CreditApprovalController::class, 'store'])->middleware('tenant');

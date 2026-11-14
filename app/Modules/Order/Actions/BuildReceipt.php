@@ -37,6 +37,7 @@ final class BuildReceipt
             'order_id' => $order->public_id,
             'order_number' => $order->order_number,
             'invoice_number' => $invoice?->invoice_number,
+            'invoice_id' => $invoice?->public_id,
             'status' => $order->operational_status->value,
             'accepted_at' => $order->accepted_at?->utc()->format('Y-m-d\TH:i:s\Z'),
             'due_at' => $order->due_at_current?->utc()->format('Y-m-d\TH:i:s\Z'),

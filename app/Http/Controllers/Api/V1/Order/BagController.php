@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api\V1\Order;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Order\ReceiveBagRequest;
 use App\Http\Requests\Api\V1\Order\RepackBagRequest;
 use App\Http\Resources\Api\V1\BagLabelResource;
 use App\Http\Resources\Api\V1\BagResource;
 use App\Modules\Identity\Authorization\TenantContext;
+use App\Modules\Logistics\Actions\ReceiveBag;
 use App\Modules\Order\Actions\RepackBag;
 use App\Modules\Order\Models\Bag;
 use App\Modules\Order\Models\Order;
@@ -23,7 +25,7 @@ class BagController extends Controller
         Gate::authorize('view', $model);
 
         $bags = $model->bags()
-            ->with(['contents.orderLine.service', 'order'])
+            ->with(['contents.orderLine.service', 'order', 'currentLocation'])
             ->orderBy('id')
             ->get();
 
@@ -61,11 +63,23 @@ class BagController extends Controller
 
         return response()->json([
             'data' => [
-                'source' => BagResource::make($result['source']->load(['contents.orderLine.service', 'order']))->resolve(),
-                'target' => BagResource::make($result['target']->load(['contents.orderLine.service', 'order']))->resolve(),
+                'source' => BagResource::make($result['source']->load(['contents.orderLine.service', 'order', 'currentLocation']))->resolve(),
+                'target' => BagResource::make($result['target']->load(['contents.orderLine.service', 'order', 'currentLocation']))->resolve(),
             ],
             'meta' => ['correlation_id' => CorrelationId::current()],
         ], 201);
+    }
+
+    public function receive(ReceiveBagRequest $request, string $order, string $bag, ReceiveBag $receive): JsonResponse
+    {
+        $model = $this->findOrder($order);
+        Gate::authorize('revise', $model);
+        $result = $receive->handle($model, $bag, $request->validated(), $request->user());
+
+        return response()->json([
+            'data' => BagResource::make($result['bag']->load(['contents.orderLine.service', 'order', 'currentLocation']))->resolve(),
+            'meta' => ['idempotent_replay' => $result['replay'], 'correlation_id' => CorrelationId::current()],
+        ], $result['replay'] ? 200 : 201);
     }
 
     private function findOrder(string $publicId): Order

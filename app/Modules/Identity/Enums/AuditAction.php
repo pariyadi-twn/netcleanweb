@@ -45,5 +45,6 @@ enum AuditAction: string
     case HandoverCompleted = 'handover.completed';
     case NotificationReconciled = 'notification.reconciled';
     case BagRepacked = 'bag.repacked';
+    case BagReceived = 'bag.received';
     case OutboxEventApplied = 'outbox.event_applied';
 }

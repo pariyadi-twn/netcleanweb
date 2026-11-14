@@ -25,6 +25,7 @@ class OrderResource extends JsonResource
             'operational_status' => $this->operational_status->value,
             'invoice_status' => $invoiceStatus,
             'invoice_number' => $invoice?->invoice_number,
+            'invoice_id' => $invoice?->public_id,
             'total_rupiah' => $total,
             'paid_rupiah' => $paid,
             'balance_due_rupiah' => $total - $paid,

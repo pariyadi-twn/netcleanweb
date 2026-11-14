@@ -454,6 +454,8 @@ Untuk fitur backend yang dipakai Flutter/web, task baru selesai setelah kontrak 
 
   Mobile kini juga mempunyai layar Kas: daftar laci, buka shift dengan kas awal, tutup shift dengan kas fisik/alasan selisih, dan status shift aktif pada register. Alur pesanan menawarkan Transfer atau Tunai; Tunai memakai shift aktif dan mencatat uang diterima/kembalian. UAT provisioning membuat laci `KASIR-1`. Backend register mengembalikan `current_session`; `CashSessionTest` diperluas dan Flutter lulus **32 test**.
 
+  Staging 14 November 2026 menjalankan image `netclean-app:6a3bfb2811c2`; smoke shift tunai lulus: buka shift Rp200.000, order `UAT-MAIN-20261114-000002` Rp28.000 dibayar tunai Rp28.000 dengan uang Rp50.000 (kembalian Rp22.000), ledger Rp28.000, expected Rp228.000, tutup kas fisik Rp228.000 dengan selisih Rp0, lalu register tanpa shift aktif dan token dicabut. CI remote run `43600194383` hijau untuk backend/frontend/mobile.
+
   Belum selesai: scan kamera/BT dan printer fisik (T048), detail/riwayat pesanan, draft offline, serta halaman web pengelolaan organisasi/cabang/staf/katalog/pelanggan. Karena itu T033 tetap belum dicentang.
 
 ## Fase D Produksi uang dan pengelolaan P0
@@ -510,7 +512,7 @@ Untuk fitur backend yang dipakai Flutter/web, task baru selesai setelah kontrak 
 
   Status selesai 31 Oktober 2026. `cash_registers`, `cash_sessions`, `cash_entries`, dan `cash_session_events` memakai RLS dan FK tenant; partial unique menjaga satu shift terbuka per register. Open mencatat kas awal; close menghitung expected = opening + ledger, menyimpan counted/selisih/alasan, dan event snapshot; reopen memerlukan `cash.reopen`, menolak jika register sudah punya shift terbuka, dan mempertahankan event penutupan lama. Ledger menerima entry bertanda untuk payment/refund/expense/transfer/correction dengan uniqueness sumber.
 
-  Verifikasi diperbarui 14 November 2026: `CashSessionTest` lulus **2 test/38 assertion** untuk open, penolakan open ganda, expected dari ledger, close dengan/tanpa alasan selisih, reopen, event opened/closed/reopened, permission, tenant isolation, serta `current_session` pada daftar register. UAT provisioning membuat laci `KASIR-1`; mobile menyediakan buka/tutup shift dan pembayaran tunai memakai shift aktif. Seluruh suite backend lulus **264 test/2063 assertion**; `npm run lint:api` valid; Flutter lulus **32 test**. Posting payment/refund aktual tetap T038/T039.
+  Verifikasi diperbarui 14 November 2026: `CashSessionTest` lulus **2 test/38 assertion** untuk open, penolakan open ganda, expected dari ledger, close dengan/tanpa alasan selisih, reopen, event opened/closed/reopened, permission, tenant isolation, serta `current_session` pada daftar register. UAT provisioning membuat laci `KASIR-1`; mobile menyediakan buka/tutup shift dan pembayaran tunai memakai shift aktif. Smoke staging image `6a3bfb2811c2`: open Rp200.000, payment tunai Rp28.000 dari uang Rp50.000, kembalian Rp22.000, ledger Rp28.000, expected Rp228.000, close Rp228.000 selisih Rp0, register kembali tanpa shift aktif. Seluruh suite backend lulus **264 test/2063 assertion**; `npm run lint:api` valid; Flutter lulus **32 test**. Posting payment/refund aktual tetap T038/T039.
 
 - [x] **T041 Bangun biaya dan perpindahan kas**
   Rujukan: FR35. Dependensi: T040. Selesai jika: Modal dan setoran bukan omzet; perpindahan internal mempunyai posting berpasangan.

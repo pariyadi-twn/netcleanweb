@@ -108,7 +108,7 @@ class ProvisionUatData extends Command
         $tenantScope->forTenantId($tenant->id, $owner->id, function () use ($owner, $staff, $syncPermissions, $tenant, $updateAssignments, $createWorkflow, $createService, $createPriceBook, $createPriceEntry, $setPublication, $createCustomer, $updateCalendar): void {
             $branch = Branch::query()->where('code', 'UAT-MAIN')->firstOrFail();
             $outlet = $this->location($tenant, $branch, 'OUTLET-MAIN', LocationType::Outlet, 'Outlet UAT Utama');
-            $plant = $this->location($tenant, null, 'PLANT-MAIN', LocationType::Plant, 'Pusat Produksi UAT');
+            $plant = $this->location($tenant, $branch, 'PLANT-MAIN', LocationType::Plant, 'Pusat Produksi UAT');
 
             $register = CashRegister::query()
                 ->where('tenant_id', $tenant->id)

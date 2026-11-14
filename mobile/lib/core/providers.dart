@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/cash/data/cash_repository.dart';
 import '../features/cash/domain/cash_models.dart';
 import '../features/customers/data/customer_repository.dart';
+import '../features/operations/data/operations_repository.dart';
 import '../features/orders/data/order_repository.dart';
 import 'auth/auth_repository.dart';
 import 'auth/secret_store.dart';
@@ -120,4 +121,8 @@ final activeCashSessionProvider = FutureProvider<CashSessionSummary?>((
     }
   }
   return null;
+});
+
+final operationsRepositoryProvider = Provider<OperationsRepository>((ref) {
+  return OperationsRepository(ref.watch(apiClientProvider));
 });

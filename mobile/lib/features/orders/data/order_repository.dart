@@ -102,6 +102,22 @@ class OrderRepository {
     return ReceiptSummary.fromJson(_data(payload));
   }
 
+  Future<void> recordPrintAttempt({
+    required String tenantId,
+    required String orderId,
+    String outcome = 'printed',
+    String? errorCode,
+  }) async {
+    await _api.post(
+      '/orders/$orderId/receipt-prints',
+      tenantId: tenantId,
+      body: {
+        'outcome': outcome,
+        if (errorCode != null && errorCode.isNotEmpty) 'error_code': errorCode,
+      },
+    );
+  }
+
   Map<String, dynamic> _data(Map<String, dynamic> payload) {
     final data = payload['data'];
     if (data is! Map<String, dynamic>) {

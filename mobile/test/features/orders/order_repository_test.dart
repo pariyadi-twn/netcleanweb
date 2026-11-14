@@ -204,6 +204,24 @@ void main() {
     },
   );
 
+  test('records a simulated receipt print attempt', () async {
+    final client = MockClient((request) async {
+      expect(request.method, 'POST');
+      expect(request.url.path, '/api/v1/orders/order-1/receipt-prints');
+      final body = jsonDecode(request.body) as Map<String, dynamic>;
+      expect(body['outcome'], 'printed');
+      return http.Response('{}', 201);
+    });
+    final repository = OrderRepository(
+      ApiClient(client: client, baseUrl: _baseUrl),
+    );
+
+    await repository.recordPrintAttempt(
+      tenantId: 'tenant-1',
+      orderId: 'order-1',
+    );
+  });
+
   test('records a manual transfer payment and builds a receipt', () async {
     final client = MockClient((request) async {
       expect(request.headers['X-Tenant-ID'], 'tenant-1');

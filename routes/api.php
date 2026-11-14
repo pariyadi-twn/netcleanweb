@@ -143,6 +143,7 @@ Route::prefix('v1')->group(function (): void {
 
         Route::post('/orders/quotes', [QuoteController::class, 'store'])->middleware('tenant');
         Route::post('/orders/quotes/{quote}/discount-approval', DiscountApprovalController::class)->middleware('tenant');
+        Route::get('/orders', [OrderController::class, 'index'])->middleware('tenant');
         Route::post('/orders', [OrderController::class, 'store'])->middleware('tenant');
         Route::post('/orders/{order}/cancel', [CancelOrderController::class, 'store'])->middleware('tenant');
         Route::get('/production/tasks', [ProductionTaskController::class, 'index'])->middleware('tenant');

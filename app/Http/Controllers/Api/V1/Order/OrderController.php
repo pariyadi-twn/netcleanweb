@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\V1\Order;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Order\AcceptOrderRequest;
+use App\Http\Requests\Api\V1\Order\SearchOrderRequest;
+use App\Http\Resources\Api\V1\BagResource;
 use App\Http\Resources\Api\V1\OrderResource;
 use App\Modules\Identity\Authorization\TenantContext;
 use App\Modules\Identity\Models\Branch;
@@ -21,6 +23,51 @@ use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
 {
+    public function index(SearchOrderRequest $request): JsonResponse
+    {
+        Gate::authorize('viewAny', Order::class);
+
+        $context = app(TenantContext::class);
+        $query = Order::query()
+            ->where('tenant_id', $context->tenantId)
+            ->whereIn('sales_branch_id', $context->branchIds)
+            ->when(
+                $request->filled('order_number'),
+                fn ($builder) => $builder->where('order_number', trim((string) $request->input('order_number'))),
+            )
+            ->with([
+                'invoice.adjustments',
+                'invoice.allocations',
+                'lines',
+                'salesBranch',
+                'quote',
+                'bags.contents.orderLine',
+                'bags.order',
+                'bags.currentLocation',
+            ])
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
+
+        $paginator = $query->cursorPaginate(
+            (int) $request->integer('per_page', 25),
+            ['*'],
+            'cursor',
+            $request->input('cursor'),
+        );
+
+        return response()->json([
+            'data' => collect($paginator->items())->map(fn (Order $order): array => [
+                ...(new OrderResource($order))->resolve($request),
+                'bags' => BagResource::collection($order->bags)->resolve($request),
+            ])->values()->all(),
+            'meta' => [
+                'correlation_id' => CorrelationId::current(),
+                'per_page' => $paginator->perPage(),
+                'next_cursor' => $paginator->nextCursor()?->encode(),
+            ],
+        ]);
+    }
+
     public function store(
         AcceptOrderRequest $request,
         CommandReceiptService $receipts,

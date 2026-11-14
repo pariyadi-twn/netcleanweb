@@ -71,6 +71,11 @@ class UatCashierFlowTest extends TestCase
             ->assertJsonPath('data.balance_due_rupiah', 28000)
             ->json('data');
 
+        $this->getJson('/api/v1/orders?order_number='.urlencode($order['order_number']))
+            ->assertOk()
+            ->assertJsonPath('data.0.order_id', $order['order_id'])
+            ->assertJsonPath('data.0.bags.0.order_id', $order['order_id']);
+
         $paymentCommand = (string) Str::uuid();
         $this->withHeader('Idempotency-Key', $paymentCommand)
             ->postJson('/api/v1/invoices/'.$order['invoice_id'].'/payments', [

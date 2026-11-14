@@ -2068,7 +2068,9 @@ paths:
       tags: [Order]
       operationId: listOrders
       x-release-phase: P0
+      summary: Cari order terbaru atau berdasarkan nomor nota dalam scope cabang
       parameters:
+        - {name: order_number, in: query, schema: {type: string, maxLength: 64}}
         - {$ref: '#/components/parameters/PageSize'}
         - {$ref: '#/components/parameters/Cursor'}
       responses:

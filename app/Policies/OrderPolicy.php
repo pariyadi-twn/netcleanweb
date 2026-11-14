@@ -53,6 +53,14 @@ class OrderPolicy
                 || $this->context->can(PermissionCode::ProductionManage));
     }
 
+    public function printReceipt(User $user, Order $order): bool
+    {
+        return $this->view($user, $order)
+            && ($this->context->can(PermissionCode::OrdersManage)
+                || $this->context->can(PermissionCode::HandoversManage)
+                || $this->context->can(PermissionCode::PaymentsView));
+    }
+
     public function manageTracking(User $user, Order $order): bool
     {
         return $this->revise($user, $order);

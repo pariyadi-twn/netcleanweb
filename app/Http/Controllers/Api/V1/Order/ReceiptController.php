@@ -33,7 +33,7 @@ class ReceiptController extends Controller
         RecordReceiptPrint $record,
     ): JsonResponse {
         $model = $this->findOrder($order);
-        Gate::authorize('revise', $model);
+        Gate::authorize('printReceipt', $model);
 
         $attempt = $record->handle(
             $model,

@@ -10,6 +10,13 @@ class PlatformWebTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutVite();
+    }
+
     public function test_platform_dashboard_requires_platform_admin_and_mfa(): void
     {
         config(['identity.mfa.mode' => 'required']);

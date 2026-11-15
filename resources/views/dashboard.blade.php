@@ -9,7 +9,11 @@
             <h1 class="mt-2 text-3xl font-bold tracking-tight text-ink">{{ $tenant->name }}</h1>
             <p class="mt-2 text-muted">Masuk sebagai {{ $user->name }} ({{ $user->email }}).</p>
         </div>
-        <a href="{{ route('mfa.setup') }}" class="inline-flex min-h-12 items-center justify-center rounded-control border border-slate-400 px-4 text-sm font-semibold text-ink hover:bg-white">Kelola MFA</a>
+        @if (config('identity.mfa.mode') === 'required')
+            <a href="{{ route('mfa.setup') }}" class="inline-flex min-h-12 items-center justify-center rounded-control border border-slate-400 px-4 text-sm font-semibold text-ink hover:bg-white">Kelola MFA</a>
+        @else
+            <span class="inline-flex min-h-12 items-center justify-center rounded-control border border-amber-300 bg-warning-bg px-4 text-sm font-semibold text-warning-text">MFA dinonaktifkan sementara</span>
+        @endif
     </div>
 
     <div class="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

@@ -53,6 +53,13 @@ class TenantRlsTest extends TestCase
     use CreatesIdentityUsers;
     use DatabaseTruncation;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['identity.mfa.mode' => 'required']);
+    }
+
     protected function tearDown(): void
     {
         $this->truncateDatabaseTables();

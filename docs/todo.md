@@ -214,6 +214,8 @@ Untuk fitur backend yang dipakai Flutter/web, task baru selesai setelah kontrak 
 
   Verifikasi: `php artisan test --compact` lulus **52 test/251 assertion**, termasuk 22 test/164 assertion T010 untuk hash token, expiry 12 jam, isolasi/revocation perangkat, non-enumerasi login/reset, MFA owner/admin, recovery sekali pakai, rotasi session, cookie aman, konteks pengguna, dan rate limit. `composer check` lulus dengan audit Composer bersih; `npm audit`, `npm run lint:api` (24 path/26 operasi), `npm run build`, dan `vendor/bin/pint --test` lulus. Rollback dan migrate ulang empat migration T010 berhasil pada PostgreSQL 18.
 
+  Status kebijakan 15 November 2026: `IDENTITY_MFA_MODE` ditambahkan dengan default `disabled` untuk sementara selama UAT atas keputusan pengguna. Mode ini melewati challenge MFA tanpa menghapus secret atau recovery code; owner dan platform admin tetap dapat login. `supervisor` tidak wajib MFA. Sebelum pilot dengan data nyata, staging dan production wajib diubah ke `required`, lalu enrolment owner/platform admin serta recovery code harus diverifikasi ulang.
+
   Gap: pembuatan role `owner` tetap tanggung jawab provisioning T009; penugasan platform admin belum mempunyai alur operasional; UUID instalasi mengikat sesi ke perangkat secara administratif tetapi token curian tetap bearer; unique email case-insensitive belum menjadi constraint database sehingga deduplikasi harus diselesaikan T009; audit pemulihan MFA menyusul T014; pengiriman email produksi mengikuti T005/T044.
 
 - [x] **T011 Implementasikan permission dan assignment**

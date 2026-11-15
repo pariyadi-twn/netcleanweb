@@ -17,6 +17,7 @@ class WebAuthenticationTest extends TestCase
     {
         parent::setUp();
 
+        config(['identity.mfa.mode' => 'required']);
         $this->withoutVite();
     }
 
@@ -103,6 +104,36 @@ class WebAuthenticationTest extends TestCase
         $this->assertNotNull($owner->refresh()->mfa_confirmed_at);
         $this->get('/dashboard')->assertRedirect(route('tenants.select'));
         $this->get('/tenants/select')->assertOk()->assertSee('Recovery codes');
+    }
+
+    public function test_disabled_mode_skips_mfa_challenge_for_enrolled_owner(): void
+    {
+        config(['identity.mfa.mode' => 'disabled']);
+
+        $owner = $this->createOwner(['password' => 'secret-password']);
+        $owner->forceFill([
+            'mfa_confirmed_at' => now(),
+            'mfa_secret_ref' => 'existing-secret',
+        ])->save();
+
+        $this->post('/login', [
+            'email' => $owner->email,
+            'password' => 'secret-password',
+        ])->assertRedirect(route('dashboard'));
+
+        $this->assertAuthenticatedAs($owner);
+    }
+
+    public function test_mfa_setup_is_bypassed_when_disabled(): void
+    {
+        config(['identity.mfa.mode' => 'disabled']);
+
+        $owner = $this->createOwner(['password' => 'secret-password']);
+
+        $this->actingAs($owner)
+            ->get('/mfa-setup')
+            ->assertRedirect(route('dashboard'))
+            ->assertSessionHas('status', 'Verifikasi MFA sedang dinonaktifkan.');
     }
 
     public function test_secure_and_http_only_session_cookie_flags_are_applied(): void

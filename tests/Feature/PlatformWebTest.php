@@ -12,6 +12,8 @@ class PlatformWebTest extends TestCase
 
     public function test_platform_dashboard_requires_platform_admin_and_mfa(): void
     {
+        config(['identity.mfa.mode' => 'required']);
+
         $normal = User::factory()->create();
         $this->actingAs($normal)->get('/platform')->assertForbidden();
 

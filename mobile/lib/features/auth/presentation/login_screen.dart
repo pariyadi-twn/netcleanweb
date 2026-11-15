@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/api_exception.dart';
 import '../../../core/session/session_controller.dart';
 import '../../../core/ui/brand.dart';
 import '../../../core/ui/responsive.dart';
@@ -150,6 +151,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             controller: _email,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
+            autocorrect: false,
+            enableSuggestions: false,
             autofillHints: const [AutofillHints.email],
             decoration: const InputDecoration(
               labelText: 'Email',
@@ -162,6 +165,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             controller: _password,
             obscureText: _obscurePassword,
             textInputAction: TextInputAction.done,
+            autocorrect: false,
+            enableSuggestions: false,
             autofillHints: const [AutofillHints.password],
             onSubmitted: (_) => _login(),
             decoration: InputDecoration(
@@ -200,7 +205,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(width: 9),
                   Expanded(
                     child: Text(
-                      '${session.error}',
+                      _errorMessage(session.error),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.error,
                       ),
@@ -253,6 +258,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ],
       ),
     );
+  }
+
+  String _errorMessage(Object? error) {
+    if (error is! ApiException) {
+      return 'Login belum dapat diproses. Coba lagi.';
+    }
+
+    String? fieldMessage;
+    for (final messages in error.fieldErrors.values) {
+      if (messages.isNotEmpty) {
+        fieldMessage = messages.first;
+        break;
+      }
+    }
+
+    final message = switch (error.code) {
+      'UNAUTHENTICATED' => 'Email atau password tidak cocok.',
+      'MFA_REQUIRED' => 'Akun ini memerlukan kode MFA.',
+      'RATE_LIMITED' => 'Terlalu banyak percobaan. Tunggu sebentar.',
+      'VALIDATION_FAILED' =>
+        fieldMessage ?? 'Periksa kembali email dan password.',
+      _ => fieldMessage ?? error.message,
+    };
+    final reference = error.correlationId;
+
+    return reference == null || reference.isEmpty
+        ? message
+        : '$message\nRef: $reference';
   }
 
   Widget _heroPanel(BuildContext context, {required bool compact}) {

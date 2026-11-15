@@ -51,6 +51,10 @@ class User extends Authenticatable
      */
     public function requiresMfa(): bool
     {
+        if (config('identity.mfa.mode', 'disabled') !== 'required') {
+            return false;
+        }
+
         if ($this->is_platform_admin) {
             return true;
         }

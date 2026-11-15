@@ -4,6 +4,9 @@ namespace Tests\Feature\Api\V1\Auth;
 
 use App\Models\User;
 use App\Modules\Identity\Models\MfaRecoveryCode;
+use App\Modules\Identity\Models\Role;
+use App\Modules\Identity\Models\Tenant;
+use App\Modules\Identity\Models\TenantMembership;
 use App\Modules\Identity\Support\TotpService;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +18,13 @@ class MfaTest extends TestCase
 {
     use CreatesIdentityUsers;
     use LazilyRefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['identity.mfa.mode' => 'required']);
+    }
 
     public function test_owner_requires_totp_and_a_recovery_code_is_single_use(): void
     {
@@ -67,6 +77,63 @@ class MfaTest extends TestCase
             'device_name' => 'Owner phone',
             'installation_id' => (string) Str::uuid(),
         ])->assertUnauthorized();
+    }
+
+    public function test_disabled_mode_allows_owner_and_platform_admin_without_mfa(): void
+    {
+        config(['identity.mfa.mode' => 'disabled']);
+
+        $owner = $this->createOwner(['password' => 'secret-password']);
+        $owner->forceFill([
+            'mfa_confirmed_at' => now(),
+            'mfa_secret_ref' => 'existing-secret',
+        ])->save();
+
+        $this->postJson('/api/v1/auth/tokens', [
+            'email' => $owner->email,
+            'password' => 'secret-password',
+            'device_name' => 'Owner phone',
+            'installation_id' => (string) Str::uuid(),
+        ])->assertCreated();
+
+        $admin = User::factory()->platformAdmin()->create(['password' => 'secret-password']);
+        $admin->forceFill([
+            'mfa_confirmed_at' => now(),
+            'mfa_secret_ref' => 'existing-secret',
+        ])->save();
+
+        $this->postJson('/api/v1/auth/tokens', [
+            'email' => $admin->email,
+            'password' => 'secret-password',
+            'device_name' => 'Admin phone',
+            'installation_id' => (string) Str::uuid(),
+        ])->assertCreated();
+    }
+
+    public function test_non_privileged_staff_roles_do_not_require_mfa(): void
+    {
+        foreach (['cashier', 'production', 'supervisor'] as $roleCode) {
+            $user = User::factory()->create([
+                'email' => $roleCode.'-'.Str::uuid().'@example.test',
+                'password' => 'secret-password',
+            ]);
+            $tenant = Tenant::factory()->create();
+            $membership = TenantMembership::factory()->for($tenant)->for($user)->create(['status' => 'active']);
+            $role = Role::factory()->for($tenant)->create([
+                'code' => $roleCode,
+                'name' => ucfirst($roleCode),
+            ]);
+            $membership->roles()->attach($role->id, ['tenant_id' => $tenant->id]);
+
+            $this->assertFalse($user->requiresMfa());
+
+            $this->postJson('/api/v1/auth/tokens', [
+                'email' => $user->email,
+                'password' => 'secret-password',
+                'device_name' => ucfirst($roleCode).' phone',
+                'installation_id' => (string) Str::uuid(),
+            ])->assertCreated();
+        }
     }
 
     public function test_mfa_enrollment_returns_hashed_recovery_codes_once(): void

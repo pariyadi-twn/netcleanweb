@@ -79,8 +79,14 @@ class RegisterController extends Controller
         Auth::guard('web')->login($user);
         $request->session()->regenerate();
 
+        if ($user->requiresMfa()) {
+            return redirect()
+                ->route('mfa.setup')
+                ->with('status', 'Akun dan organisasi berhasil dibuat. Aktifkan MFA untuk melanjutkan.');
+        }
+
         return redirect()
-            ->route('mfa.setup')
-            ->with('status', 'Akun dan organisasi berhasil dibuat. Aktifkan MFA untuk melanjutkan.');
+            ->route('tenants.select')
+            ->with('status', 'Akun dan organisasi berhasil dibuat.');
     }
 }

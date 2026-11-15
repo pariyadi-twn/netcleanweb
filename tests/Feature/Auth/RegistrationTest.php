@@ -29,11 +29,11 @@ class RegistrationTest extends TestCase
             ->assertSee('Buat akun dan organisasi');
     }
 
-    public function test_owner_registration_provisions_a_tenant_and_requires_mfa(): void
+    public function test_owner_registration_provisions_a_tenant_and_redirects_to_context_selection(): void
     {
         $response = $this->post('/register', $this->payload());
 
-        $response->assertRedirect(route('mfa.setup'));
+        $response->assertRedirect(route('tenants.select'));
         $this->assertAuthenticated();
 
         $user = User::query()->where('email', 'pemilik@example.test')->sole();
@@ -51,7 +51,20 @@ class RegistrationTest extends TestCase
         $this->assertSame('active', $membership->status->value);
         $this->assertTrue($role->is_system);
         $this->assertGreaterThan(0, $role->permissions()->count());
-        $this->assertTrue($user->refresh()->requiresMfa());
+        $this->assertFalse($user->refresh()->requiresMfa());
+    }
+
+    public function test_owner_registration_requires_mfa_when_enabled(): void
+    {
+        config(['identity.mfa.mode' => 'required']);
+
+        $response = $this->post('/register', $this->payload());
+
+        $response->assertRedirect(route('mfa.setup'));
+        $this->assertAuthenticated();
+
+        $user = User::query()->where('email', 'pemilik@example.test')->sole();
+        $this->assertTrue($user->requiresMfa());
     }
 
     public function test_registration_rejects_a_duplicate_email(): void

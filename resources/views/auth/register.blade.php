@@ -1,7 +1,7 @@
 @extends('layouts.auth', [
     'title' => 'Daftar - NetClean',
     'heading' => 'Buat akun pemilik',
-    'subheading' => 'Siapkan organisasi, cabang pertama, dan akun pemilik. Anda dapat menambahkan staf setelah MFA aktif.',
+    'subheading' => 'Siapkan organisasi, cabang pertama, dan akun pemilik. Anda dapat menambahkan staf setelah organisasi aktif.',
 ])
 
 @section('content')

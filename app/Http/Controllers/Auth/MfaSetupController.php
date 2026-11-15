@@ -14,6 +14,11 @@ class MfaSetupController extends Controller
 {
     public function show(Request $request, BeginMfaEnrollment $begin): View|RedirectResponse
     {
+        if (config('identity.mfa.mode', 'disabled') !== 'required') {
+            return redirect()->route('dashboard')
+                ->with('status', 'Verifikasi MFA sedang dinonaktifkan.');
+        }
+
         $user = $request->user();
 
         if ($user->hasConfirmedMfa()) {
@@ -27,6 +32,11 @@ class MfaSetupController extends Controller
 
     public function confirm(ConfirmMfaRequest $request, ConfirmMfaEnrollment $confirm): RedirectResponse
     {
+        if (config('identity.mfa.mode', 'disabled') !== 'required') {
+            return redirect()->route('dashboard')
+                ->with('status', 'Verifikasi MFA sedang dinonaktifkan.');
+        }
+
         $codes = $confirm->handle($request->user(), $request->string('code')->toString());
 
         $request->session()->forget('mfa.setup_required');

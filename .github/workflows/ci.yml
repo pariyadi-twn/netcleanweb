@@ -38,7 +38,19 @@ jobs:
           done
           echo "S3 endpoint did not become ready" >&2
           exit 1
-      - run: composer check
+      - name: Validate Composer
+        run: composer validate --strict
+      - name: Run backend tests
+        run: vendor/bin/phpunit --colors=never --log-junit build/phpunit.xml
+      - name: Audit dependencies
+        run: composer audit
+      - name: Upload backend test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-report
+          path: build/phpunit.xml
+          if-no-files-found: ignore
       - name: Storage diagnostics
         if: failure()
         run: |

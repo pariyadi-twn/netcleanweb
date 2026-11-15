@@ -213,3 +213,43 @@ int _asInt(dynamic value) {
   }
   return int.tryParse('${value ?? 0}') ?? 0;
 }
+
+@immutable
+class ComplaintSummary {
+  const ComplaintSummary({
+    required this.id,
+    required this.kind,
+    required this.status,
+    required this.description,
+    this.resolution,
+    this.rewashAttemptNo,
+    this.orderLineId,
+    this.openedAt,
+  });
+
+  factory ComplaintSummary.fromJson(Map<String, dynamic> json) {
+    return ComplaintSummary(
+      id: '${json['complaint_id']}',
+      kind: '${json['kind']}',
+      status: '${json['status']}',
+      description: '${json['description']}',
+      resolution: json['resolution'] as String?,
+      rewashAttemptNo: json['rewash_attempt_no'] == null
+          ? null
+          : _asInt(json['rewash_attempt_no']),
+      orderLineId: json['order_line_id'] as String?,
+      openedAt: json['opened_at'] == null
+          ? null
+          : DateTime.parse('${json['opened_at']}').toLocal(),
+    );
+  }
+
+  final String id;
+  final String kind;
+  final String status;
+  final String description;
+  final String? resolution;
+  final int? rewashAttemptNo;
+  final String? orderLineId;
+  final DateTime? openedAt;
+}

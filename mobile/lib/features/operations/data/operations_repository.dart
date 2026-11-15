@@ -140,6 +140,57 @@ class OperationsRepository {
     return HandoverSummary.fromJson(_data(payload));
   }
 
+  Future<List<ComplaintSummary>> complaints({
+    required String tenantId,
+    required String orderId,
+  }) async {
+    final payload = await _api.get(
+      '/orders/$orderId/complaints',
+      tenantId: tenantId,
+    );
+    final data = payload['data'];
+    if (data is! List) {
+      return const [];
+    }
+    return data
+        .whereType<Map<String, dynamic>>()
+        .map(ComplaintSummary.fromJson)
+        .toList(growable: false);
+  }
+
+  Future<void> createComplaint({
+    required String tenantId,
+    required String orderId,
+    required String kind,
+    required String description,
+  }) async {
+    await _api.post(
+      '/orders/$orderId/complaints',
+      tenantId: tenantId,
+      body: {'kind': kind, 'description': description},
+    );
+  }
+
+  Future<void> rewashComplaint({
+    required String tenantId,
+    required String complaintId,
+  }) async {
+    await _api.post('/complaints/$complaintId/rewash', tenantId: tenantId);
+  }
+
+  Future<void> resolveComplaint({
+    required String tenantId,
+    required String complaintId,
+    required String status,
+    required String resolution,
+  }) async {
+    await _api.post(
+      '/complaints/$complaintId/resolution',
+      tenantId: tenantId,
+      body: {'status': status, 'resolution': resolution},
+    );
+  }
+
   Map<String, dynamic> _data(Map<String, dynamic> payload) {
     final data = payload['data'];
     if (data is! Map<String, dynamic>) {

@@ -22,6 +22,7 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
   final _orderNumber = TextEditingController();
   OrderLookup? _order;
   List<ProductionTaskSummary> _tasks = const [];
+  List<ComplaintSummary> _complaints = const [];
   OrderReadiness? _readiness;
   HandoverSummary? _handover;
   bool _busy = false;
@@ -86,6 +87,7 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
       _orderNumber.text = order.orderNumber;
       setState(() => _order = order);
       await _loadTasks();
+      await _loadComplaints();
     } on ApiException catch (error) {
       _fail(_errorMessage(error));
     } catch (_) {
@@ -115,6 +117,115 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
           .where((task) => task.orderId == order.orderId)
           .toList(growable: false);
     });
+  }
+
+  Future<void> _loadComplaints() async {
+    final tenantId = _tenantId;
+    final order = _order;
+    if (tenantId == null || order == null) {
+      return;
+    }
+    final complaints = await ref
+        .read(operationsRepositoryProvider)
+        .complaints(tenantId: tenantId, orderId: order.orderId);
+    if (mounted) {
+      setState(() => _complaints = complaints);
+    }
+  }
+
+  Future<void> _createComplaint() async {
+    final tenantId = _tenantId;
+    final order = _order;
+    if (tenantId == null || order == null) {
+      return;
+    }
+    final result = await showDialog<({String kind, String description})>(
+      context: context,
+      builder: (context) => const _ComplaintDialog(),
+    );
+    if (result == null || !mounted) {
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(operationsRepositoryProvider)
+          .createComplaint(
+            tenantId: tenantId,
+            orderId: order.orderId,
+            kind: result.kind,
+            description: result.description,
+          );
+      await _loadComplaints();
+      _say('Komplain dicatat.');
+    } on ApiException catch (error) {
+      _say(_errorMessage(error));
+    } catch (_) {
+      _say('Komplain belum dapat dicatat.');
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
+  }
+
+  Future<void> _rewash(ComplaintSummary complaint) async {
+    final tenantId = _tenantId;
+    if (tenantId == null) {
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(operationsRepositoryProvider)
+          .rewashComplaint(tenantId: tenantId, complaintId: complaint.id);
+      await _loadTasks();
+      await _loadComplaints();
+      _say('Rewash attempt baru dibuat.');
+    } on ApiException catch (error) {
+      _say(_errorMessage(error));
+    } catch (_) {
+      _say('Rewash belum dapat dibuat.');
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
+  }
+
+  Future<void> _resolveComplaint(ComplaintSummary complaint) async {
+    final tenantId = _tenantId;
+    if (tenantId == null) {
+      return;
+    }
+    final result = await showDialog<({String status, String resolution})>(
+      context: context,
+      builder: (context) => const _ResolveComplaintDialog(),
+    );
+    if (result == null || !mounted) {
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(operationsRepositoryProvider)
+          .resolveComplaint(
+            tenantId: tenantId,
+            complaintId: complaint.id,
+            status: result.status,
+            resolution: result.resolution,
+          );
+      await _loadComplaints();
+      _say('Komplain diperbarui.');
+    } on ApiException catch (error) {
+      _say(_errorMessage(error));
+    } catch (_) {
+      _say('Komplain belum dapat diperbarui.');
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
   }
 
   Future<void> _receiveBags() async {
@@ -484,6 +595,8 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
                 _orderCard(context),
                 const SizedBox(height: 16),
                 _tasksCard(context),
+                const SizedBox(height: 16),
+                _complaintsCard(context),
                 if (_readiness != null) ...[
                   const SizedBox(height: 16),
                   _readinessCard(context),
@@ -695,6 +808,95 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
                 ],
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _complaintsCard(BuildContext context) {
+    return _Panel(
+      title: 'Komplain',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (_complaints.isEmpty)
+            const Text('Belum ada komplain untuk order ini.')
+          else
+            ..._complaints.map((complaint) {
+              final tone = switch (complaint.status) {
+                'resolved' => StatusTone.success,
+                'rejected' => StatusTone.danger,
+                'investigating' => StatusTone.warning,
+                _ => StatusTone.info,
+              };
+              final active = ![
+                'resolved',
+                'rejected',
+              ].contains(complaint.status);
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              complaint.kind,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                          ),
+                          StatusChip(
+                            label: complaint.status,
+                            icon: Icons.flag_outlined,
+                            tone: tone,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(complaint.description),
+                      if (complaint.resolution != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            'Resolusi: ${complaint.resolution}',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ),
+                      if (complaint.rewashAttemptNo != null)
+                        Text('Rewash attempt ${complaint.rewashAttemptNo}'),
+                      if (active)
+                        Wrap(
+                          spacing: 8,
+                          children: [
+                            if (complaint.kind == 'rewash')
+                              OutlinedButton(
+                                onPressed: _busy
+                                    ? null
+                                    : () => _rewash(complaint),
+                                child: const Text('Buat rewash'),
+                              ),
+                            FilledButton.tonal(
+                              onPressed: _busy
+                                  ? null
+                                  : () => _resolveComplaint(complaint),
+                              child: const Text('Selesaikan'),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _busy ? null : _createComplaint,
+            icon: const Icon(Icons.add_alert_outlined),
+            label: const Text('Buat komplain'),
           ),
         ],
       ),
@@ -948,6 +1150,131 @@ class _HandoverDialogState extends State<_HandoverDialog> {
           child: const Text('Batal'),
         ),
         FilledButton(onPressed: _submit, child: const Text('Serahkan')),
+      ],
+    );
+  }
+}
+
+class _ComplaintDialog extends StatefulWidget {
+  const _ComplaintDialog();
+
+  @override
+  State<_ComplaintDialog> createState() => _ComplaintDialogState();
+}
+
+class _ComplaintDialogState extends State<_ComplaintDialog> {
+  final _description = TextEditingController();
+  String _kind = 'rewash';
+
+  @override
+  void dispose() {
+    _description.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (_description.text.trim().isEmpty) {
+      return;
+    }
+    Navigator.of(
+      context,
+    ).pop((kind: _kind, description: _description.text.trim()));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Buat komplain'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          DropdownButtonFormField<String>(
+            initialValue: _kind,
+            decoration: const InputDecoration(labelText: 'Jenis'),
+            items: const [
+              DropdownMenuItem(value: 'rewash', child: Text('Rewash')),
+              DropdownMenuItem(value: 'missing', child: Text('Hilang')),
+              DropdownMenuItem(value: 'damaged', child: Text('Rusak')),
+              DropdownMenuItem(value: 'other', child: Text('Lainnya')),
+            ],
+            onChanged: (value) => setState(() => _kind = value ?? 'rewash'),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _description,
+            maxLines: 3,
+            decoration: const InputDecoration(labelText: 'Deskripsi'),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Batal'),
+        ),
+        FilledButton(onPressed: _submit, child: const Text('Simpan')),
+      ],
+    );
+  }
+}
+
+class _ResolveComplaintDialog extends StatefulWidget {
+  const _ResolveComplaintDialog();
+
+  @override
+  State<_ResolveComplaintDialog> createState() =>
+      _ResolveComplaintDialogState();
+}
+
+class _ResolveComplaintDialogState extends State<_ResolveComplaintDialog> {
+  final _resolution = TextEditingController();
+  String _status = 'resolved';
+
+  @override
+  void dispose() {
+    _resolution.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (_resolution.text.trim().isEmpty) {
+      return;
+    }
+    Navigator.of(
+      context,
+    ).pop((status: _status, resolution: _resolution.text.trim()));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Selesaikan komplain'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(value: 'resolved', label: Text('Selesai')),
+              ButtonSegment(value: 'rejected', label: Text('Tolak')),
+            ],
+            selected: {_status},
+            onSelectionChanged: (value) =>
+                setState(() => _status = value.first),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _resolution,
+            maxLines: 3,
+            decoration: const InputDecoration(labelText: 'Resolusi'),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Batal'),
+        ),
+        FilledButton(onPressed: _submit, child: const Text('Simpan')),
       ],
     );
   }

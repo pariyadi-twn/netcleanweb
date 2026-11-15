@@ -56,6 +56,77 @@ void main() {
     expect(order?.bags.single.custodyStatus, 'at_location');
   });
 
+  test('lists, creates, rewash, and resolves complaints', () async {
+    final requests = <String>[];
+    final client = MockClient((request) async {
+      requests.add('${request.method} ${request.url.path}');
+      if (request.method == 'GET') {
+        return http.Response(
+          jsonEncode({
+            'data': [
+              {
+                'complaint_id': 'complaint-1',
+                'kind': 'rewash',
+                'status': 'open',
+                'description': 'Noda belum hilang',
+                'resolution': null,
+                'rewash_attempt_no': null,
+                'order_line_id': 'line-1',
+                'opened_at': '2026-11-16T10:00:00Z',
+              },
+            ],
+          }),
+          200,
+        );
+      }
+      final body = request.body.isEmpty
+          ? <String, dynamic>{}
+          : jsonDecode(request.body) as Map<String, dynamic>;
+      if (request.url.path.endsWith('/complaints')) {
+        expect(body['kind'], 'rewash');
+        expect(body['description'], 'Noda belum hilang');
+        return http.Response('{}', 201);
+      }
+      if (request.url.path.endsWith('/rewash')) {
+        return http.Response('{}', 201);
+      }
+      if (request.url.path.endsWith('/resolution')) {
+        expect(body['status'], 'resolved');
+        expect(body['resolution'], 'Sudah dicuci ulang');
+        return http.Response('{}', 200);
+      }
+      return http.Response('{}', 404);
+    });
+    final repository = OperationsRepository(
+      ApiClient(client: client, baseUrl: _baseUrl),
+    );
+
+    final complaints = await repository.complaints(
+      tenantId: 'tenant-1',
+      orderId: 'order-1',
+    );
+    await repository.createComplaint(
+      tenantId: 'tenant-1',
+      orderId: 'order-1',
+      kind: 'rewash',
+      description: 'Noda belum hilang',
+    );
+    await repository.rewashComplaint(
+      tenantId: 'tenant-1',
+      complaintId: 'complaint-1',
+    );
+    await repository.resolveComplaint(
+      tenantId: 'tenant-1',
+      complaintId: 'complaint-1',
+      status: 'resolved',
+      resolution: 'Sudah dicuci ulang',
+    );
+
+    expect(complaints.single.kind, 'rewash');
+    expect(complaints.single.status, 'open');
+    expect(requests, hasLength(4));
+  });
+
   test('sends production, QC, readiness, and handover payloads', () async {
     final requests = <String>[];
     final client = MockClient((request) async {

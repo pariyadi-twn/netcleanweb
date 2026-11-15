@@ -7,6 +7,13 @@ use Tests\TestCase;
 
 class SecurityHeadersTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutVite();
+    }
+
     public function test_web_responses_include_baseline_security_headers(): void
     {
         $response = $this->get('/');

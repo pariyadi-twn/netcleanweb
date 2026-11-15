@@ -22,6 +22,18 @@
     --color-danger-bg: #fef2f2;
     --radius-control: 0.5rem;
     --radius-container: 0.75rem;
+    --animate-float: float 7s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-12px);
+    }
 }
 
 @layer base {
@@ -33,5 +45,14 @@
     body {
         color: var(--color-ink);
         background: var(--color-canvas);
+    }
+}
+
+@layer utilities {
+    .landing-grid {
+        background-image:
+            linear-gradient(to right, rgb(255 255 255 / 0.055) 1px, transparent 1px),
+            linear-gradient(to bottom, rgb(255 255 255 / 0.055) 1px, transparent 1px);
+        background-size: 56px 56px;
     }
 }

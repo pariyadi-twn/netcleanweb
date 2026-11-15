@@ -9,8 +9,13 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Owner\BranchController;
 use App\Http\Controllers\Owner\CatalogController;
 use App\Http\Controllers\Owner\CustomerController;
+use App\Http\Controllers\Owner\FinanceController;
+use App\Http\Controllers\Owner\OrderController;
 use App\Http\Controllers\Owner\OrganizationController;
+use App\Http\Controllers\Owner\ProductionController;
+use App\Http\Controllers\Owner\ReportController;
 use App\Http\Controllers\Owner\RoleController;
+use App\Http\Controllers\Owner\SettingsController;
 use App\Http\Controllers\Owner\StaffController;
 use App\Http\Controllers\Platform\PlatformDashboardController;
 use App\Http\Controllers\Platform\PlatformWebDataRequestController;
@@ -53,8 +58,9 @@ Route::middleware(['auth', 'active'])->group(function (): void {
         Route::get('/tenants/select', [TenantSelectionController::class, 'index'])->name('tenants.select');
         Route::post('/tenants/select', [TenantSelectionController::class, 'store'])->name('tenants.store');
 
-        Route::middleware('tenant.web')->group(function (): void {
+        Route::middleware(['tenant.web', 'web.console'])->group(function (): void {
             Route::get('/dashboard', DashboardController::class)->name('dashboard');
+            Route::get('/settings', SettingsController::class)->name('settings.index');
 
             Route::get('/organization', [OrganizationController::class, 'index'])->name('organization.index');
             Route::put('/organization', [OrganizationController::class, 'update'])->name('organization.update');
@@ -80,6 +86,44 @@ Route::middleware(['auth', 'active'])->group(function (): void {
 
             Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
             Route::post('/customers', [CustomerController::class, 'store'])->name('customers.store');
+
+            Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+            Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+            Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+            Route::post('/orders/{order}/handover', [OrderController::class, 'handover'])->name('orders.handover');
+            Route::post('/orders/{order}/credit', [OrderController::class, 'credit'])->name('orders.credit');
+            Route::post('/orders/{order}/revisions/{revision}/decision', [OrderController::class, 'decideRevision'])->name('orders.revisions.decision');
+            Route::post('/orders/{order}/complaints', [OrderController::class, 'storeComplaint'])->name('orders.complaints.store');
+            Route::post('/orders/{order}/complaints/{complaint}/rewash', [OrderController::class, 'rewash'])->name('orders.complaints.rewash');
+            Route::post('/orders/{order}/complaints/{complaint}/resolution', [OrderController::class, 'resolveComplaint'])->name('orders.complaints.resolve');
+            Route::get('/orders/{order}/receipt', [OrderController::class, 'receipt'])->name('orders.receipt');
+            Route::post('/orders/{order}/payments', [OrderController::class, 'recordPayment'])->name('orders.payments.store');
+            Route::post('/orders/{order}/production-tasks', [ProductionController::class, 'plan'])->name('orders.production.plan');
+
+            Route::get('/production', [ProductionController::class, 'index'])->name('production.index');
+            Route::get('/production/tasks/{task}', [ProductionController::class, 'show'])->name('production.tasks.show');
+            Route::post('/production/tasks/{task}/transition', [ProductionController::class, 'transition'])->name('production.tasks.transition');
+            Route::post('/production/tasks/{task}/qc', [ProductionController::class, 'qc'])->name('production.tasks.qc');
+
+            Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');
+            Route::get('/finance/cash', [FinanceController::class, 'cash'])->name('finance.cash.index');
+            Route::post('/finance/cash/{register}/open', [FinanceController::class, 'openCash'])->name('finance.cash.open');
+            Route::post('/finance/cash/{session}/close', [FinanceController::class, 'closeCash'])->name('finance.cash.close');
+            Route::get('/finance/payments', [FinanceController::class, 'payments'])->name('finance.payments.index');
+            Route::post('/finance/payments/{payment}/refunds', [FinanceController::class, 'requestRefund'])->name('finance.payments.refund');
+            Route::get('/finance/expenses', [FinanceController::class, 'expenses'])->name('finance.expenses.index');
+            Route::post('/finance/expenses', [FinanceController::class, 'storeExpense'])->name('finance.expenses.store');
+            Route::post('/finance/expenses/{expense}/decision', [FinanceController::class, 'decideExpense'])->name('finance.expenses.decision');
+            Route::get('/finance/refunds', [FinanceController::class, 'refunds'])->name('finance.refunds.index');
+            Route::post('/finance/refunds/{refund}/decision', [FinanceController::class, 'decideRefund'])->name('finance.refunds.decision');
+            Route::post('/finance/refunds/{refund}/status', [FinanceController::class, 'transitionRefund'])->name('finance.refunds.status');
+
+            Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+            Route::get('/reports/outlet', [ReportController::class, 'outlet'])->name('reports.outlet');
+            Route::get('/reports/receivables', [ReportController::class, 'receivables'])->name('reports.receivables');
+            Route::post('/reports/exports', [ReportController::class, 'storeExport'])->name('reports.exports.store');
+            Route::get('/reports/exports/{export}/download', [ReportController::class, 'downloadExport'])->name('reports.exports.download');
+            Route::get('/reports/exports/{export}', [ReportController::class, 'showExport'])->name('reports.exports.show');
         });
 
         Route::middleware('platform.admin')->prefix('platform')->group(function (): void {

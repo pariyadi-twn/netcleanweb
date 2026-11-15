@@ -89,6 +89,10 @@ class UseWebTenantContext
             }
 
             app()->instance(TenantContext::class, $context);
+            view()->share([
+                'tenant' => $tenant,
+                'tenantContext' => $context,
+            ]);
 
             try {
                 return $next($request);

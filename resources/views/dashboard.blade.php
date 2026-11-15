@@ -3,65 +3,97 @@
 @section('title', 'Ringkasan - NetClean')
 
 @section('content')
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-            <p class="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Ringkasan operasional</p>
-            <h1 class="mt-2 text-3xl font-bold tracking-tight text-ink">{{ $tenant->name }}</h1>
-            <p class="mt-2 text-muted">Masuk sebagai {{ $user->name }} ({{ $user->email }}).</p>
+    <x-ui.page-header
+        eyebrow="Ringkasan operasional"
+        :title="$tenant->name"
+        description="Pantau pekerjaan hari ini dan masuk ke area yang paling relevan."
+    >
+        <x-slot:actions>
+            @if (config('identity.mfa.mode') === 'required')
+                <a href="{{ route('mfa.setup') }}" class="inline-flex min-h-11 items-center rounded-control border border-divider bg-white px-4 text-sm font-bold text-ink hover:bg-slate-50">Kelola MFA</a>
+            @else
+                <span class="inline-flex min-h-11 items-center rounded-control border border-amber-300 bg-warning-bg px-4 text-sm font-semibold text-warning-text">MFA nonaktif sementara</span>
+            @endif
+        </x-slot:actions>
+    </x-ui.page-header>
+
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <x-ui.stat-card label="Cabang" :value="$branchCount" description="Cabang dalam scope membership." />
+        <x-ui.stat-card label="Lokasi" :value="$locationCount" description="Outlet dan plant yang ditugaskan." />
+        <x-ui.stat-card label="Order berjalan" :value="number_format($pendingOrders, 0, ',', '.')" description="Order yang belum selesai." />
+        <x-ui.stat-card label="Tugas produksi" :value="number_format($activeTasks, 0, ',', '.')" description="Task queued, berjalan, atau blocked." />
+    </div>
+
+    <div class="mt-5 grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
+        <section class="rounded-container border border-divider bg-white p-5 shadow-sm">
+            <div class="flex items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-base font-extrabold tracking-tight text-ink">Order terbaru</h2>
+                    <p class="mt-1 text-sm text-muted">Akses cepat ke pekerjaan yang baru masuk.</p>
+                </div>
+                @if ($tenantContext->can(\App\Modules\Identity\Enums\PermissionCode::OrdersView))
+                    <a href="{{ route('orders.index') }}" class="text-xs font-bold text-brand-700 hover:text-brand-800">Lihat semua</a>
+                @endif
+            </div>
+
+            <div class="mt-4 divide-y divide-divider">
+                @forelse ($recentOrders as $order)
+                    <a href="{{ route('orders.show', $order) }}" class="flex items-center justify-between gap-4 py-3 transition hover:text-brand-700">
+                        <div class="min-w-0">
+                            <p class="truncate text-sm font-bold">{{ $order->order_number }}</p>
+                            <p class="mt-1 truncate text-xs text-muted">{{ $order->customer?->name ?? 'Walk in' }} · {{ $order->invoice?->invoice_number }}</p>
+                        </div>
+                        <div class="shrink-0 text-right">
+                            <p class="text-xs font-bold">{{ $order->operational_status->value }}</p>
+                            <p class="mt-1 text-[11px] text-muted">{{ $order->due_at_current?->format('d M H:i') }}</p>
+                        </div>
+                    </a>
+                @empty
+                    <p class="py-8 text-sm text-muted">Belum ada order dalam scope.</p>
+                @endforelse
+            </div>
+        </section>
+
+        <section class="rounded-container border border-divider bg-chrome p-5 text-white shadow-sm">
+            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-accent">Status fondasi</p>
+            <h2 class="mt-3 text-xl font-extrabold leading-tight">Konteks tenant terlindungi</h2>
+            <p class="mt-2 text-sm leading-6 text-white/55">Setiap halaman operasional memvalidasi membership dan scope cabang sebelum menampilkan data.</p>
+            <dl class="mt-5 grid grid-cols-2 gap-3 text-sm">
+                <div class="rounded-xl bg-white/[0.06] p-3">
+                    <dt class="text-[10px] uppercase tracking-wider text-white/40">Shift terbuka</dt>
+                    <dd class="mt-1 text-xl font-extrabold">{{ $openCashSessions }}</dd>
+                </div>
+                <div class="rounded-xl bg-white/[0.06] p-3">
+                    <dt class="text-[10px] uppercase tracking-wider text-white/40">Akses</dt>
+                    <dd class="mt-1 text-sm font-bold">Owner / supervisor</dd>
+                </div>
+            </dl>
+        </section>
+    </div>
+
+    <section class="mt-8">
+        <h2 class="text-base font-extrabold tracking-tight text-ink">Aksi cepat</h2>
+        <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            @foreach ([
+                ['Pesanan', 'Cari order, invoice, dan status produksi.', 'orders.index', \App\Modules\Identity\Enums\PermissionCode::OrdersView],
+                ['Produksi', 'Pantau antrean dan QC per lokasi.', 'production.index', \App\Modules\Identity\Enums\PermissionCode::ProductionView],
+                ['Keuangan', 'Kas, pembayaran, biaya, dan refund.', 'finance.index', \App\Modules\Identity\Enums\PermissionCode::CashView],
+                ['Laporan', 'Penjualan, piutang, dan ekspor.', 'reports.index', \App\Modules\Identity\Enums\PermissionCode::ReportsView],
+                ['Pelanggan', 'Cari dan tambah pelanggan.', 'customers.index', \App\Modules\Identity\Enums\PermissionCode::CustomersView],
+                ['Pengaturan', 'Organisasi, cabang, staf, dan akses.', 'settings.index', \App\Modules\Identity\Enums\PermissionCode::MembershipsManage],
+            ] as [$label, $description, $route, $permission])
+                @if ($tenantContext->can($permission) && \Illuminate\Support\Facades\Route::has($route))
+                    <a href="{{ route($route) }}" class="group rounded-container border border-divider bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-600/40 hover:shadow-lg">
+                        <p class="font-extrabold text-ink">{{ $label }}</p>
+                        <p class="mt-1 text-xs leading-5 text-muted">{{ $description }}</p>
+                        <span class="mt-3 inline-flex text-xs font-bold text-brand-700">Buka <span class="ml-1 transition group-hover:translate-x-0.5" aria-hidden="true">&rarr;</span></span>
+                    </a>
+                @endif
+            @endforeach
         </div>
-        @if (config('identity.mfa.mode') === 'required')
-            <a href="{{ route('mfa.setup') }}" class="inline-flex min-h-12 items-center justify-center rounded-control border border-slate-400 px-4 text-sm font-semibold text-ink hover:bg-white">Kelola MFA</a>
-        @else
-            <span class="inline-flex min-h-12 items-center justify-center rounded-control border border-amber-300 bg-warning-bg px-4 text-sm font-semibold text-warning-text">MFA dinonaktifkan sementara</span>
-        @endif
-    </div>
-
-    <div class="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <section class="rounded-container border border-divider bg-white p-5 shadow-sm">
-            <p class="text-sm font-semibold text-muted">Cabang dalam scope</p>
-            <p class="mt-3 text-4xl font-bold tabular-nums text-ink">{{ $branchCount }}</p>
-            <p class="mt-2 text-sm text-muted">Cabang yang dapat diakses membership aktif.</p>
-        </section>
-        <section class="rounded-container border border-divider bg-white p-5 shadow-sm">
-            <p class="text-sm font-semibold text-muted">Lokasi dalam scope</p>
-            <p class="mt-3 text-4xl font-bold tabular-nums text-ink">{{ $locationCount }}</p>
-            <p class="mt-2 text-sm text-muted">Outlet dan pusat produksi yang ditugaskan.</p>
-        </section>
-        <section class="rounded-container border border-blue-200 bg-brand-50 p-5 sm:col-span-2 xl:col-span-1">
-            <p class="text-sm font-semibold text-brand-700">Status fondasi</p>
-            <p class="mt-3 text-lg font-bold text-ink">Konteks tenant terlindungi</p>
-            <p class="mt-2 text-sm text-muted">Setiap halaman operasional memvalidasi ulang membership sebelum membuka scope data.</p>
-        </section>
-    </div>
-
-    <div class="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <a href="{{ route('organization.index') }}" class="rounded-container border border-divider bg-white p-5 shadow-sm transition hover:border-brand-600">
-            <p class="font-bold text-ink">Organisasi</p>
-            <p class="mt-1 text-sm text-muted">Nama usaha dan zona waktu.</p>
-        </a>
-        <a href="{{ route('roles.index') }}" class="rounded-container border border-divider bg-white p-5 shadow-sm transition hover:border-brand-600">
-            <p class="font-bold text-ink">Peran</p>
-            <p class="mt-1 text-sm text-muted">Peran dan izin staf.</p>
-        </a>
-        <a href="{{ route('branches.index') }}" class="rounded-container border border-divider bg-white p-5 shadow-sm transition hover:border-brand-600">
-            <p class="font-bold text-ink">Cabang</p>
-            <p class="mt-1 text-sm text-muted">Profil cabang dan lokasi.</p>
-        </a>
-        <a href="{{ route('staff.index') }}" class="rounded-container border border-divider bg-white p-5 shadow-sm transition hover:border-brand-600">
-            <p class="font-bold text-ink">Staf</p>
-            <p class="mt-1 text-sm text-muted">Peran, cabang, dan lokasi staf.</p>
-        </a>
-        <a href="{{ route('catalog.index') }}" class="rounded-container border border-divider bg-white p-5 shadow-sm transition hover:border-brand-600">
-            <p class="font-bold text-ink">Katalog &amp; harga</p>
-            <p class="mt-1 text-sm text-muted">Layanan, workflow, dan price book.</p>
-        </a>
-        <a href="{{ route('customers.index') }}" class="rounded-container border border-divider bg-white p-5 shadow-sm transition hover:border-brand-600">
-            <p class="font-bold text-ink">Pelanggan</p>
-            <p class="mt-1 text-sm text-muted">Cari dan tambah pelanggan.</p>
-        </a>
-    </div>
+    </section>
 
     @if ($user->is_platform_admin)
-        <a href="{{ route('platform.dashboard') }}" class="mt-8 inline-flex min-h-12 items-center rounded-control bg-brand-600 px-5 font-semibold text-white hover:bg-brand-700">Buka platform admin</a>
+        <a href="{{ route('platform.dashboard') }}" class="mt-8 inline-flex min-h-11 items-center rounded-control bg-brand-600 px-5 text-sm font-bold text-white hover:bg-brand-700">Buka platform admin</a>
     @endif
 @endsection

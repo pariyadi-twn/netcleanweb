@@ -10,18 +10,28 @@
     --color-brand-100: #dbeafe;
     --color-brand-600: #1d4ed8;
     --color-brand-700: #1e40af;
-    --color-ink: #0f172a;
-    --color-muted: #475569;
-    --color-canvas: #f8fafc;
+    --color-brand-800: #1e3a8a;
+    --color-chrome: #061225;
+    --color-chrome-soft: #0b1c33;
+    --color-chrome-line: #1c3454;
+    --color-accent: #d7f36a;
+    --color-accent-soft: #f1fad0;
+    --color-ink: #0b1730;
+    --color-muted: #5b6b82;
+    --color-canvas: #f4f7fb;
     --color-divider: #e2e8f0;
+    --color-input: #64748b;
     --color-success-text: #166534;
     --color-success-bg: #f0fdf4;
     --color-warning-text: #92400e;
     --color-warning-bg: #fffbeb;
     --color-danger-text: #b91c1c;
     --color-danger-bg: #fef2f2;
-    --radius-control: 0.5rem;
-    --radius-container: 0.75rem;
+    --color-info-text: #1e40af;
+    --color-info-bg: #eff6ff;
+    --radius-control: 0.75rem;
+    --radius-container: 1.25rem;
+    --shadow-soft: 0 16px 40px -24px rgb(15 23 42 / 0.25);
     --animate-float: float 7s ease-in-out infinite;
 }
 
@@ -40,6 +50,10 @@
     :focus-visible {
         outline: 3px solid var(--color-brand-600);
         outline-offset: 2px;
+    }
+
+    html {
+        color-scheme: light;
     }
 
     body {

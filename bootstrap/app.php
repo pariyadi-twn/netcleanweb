@@ -5,6 +5,7 @@ use App\Http\Middleware\AssignCorrelationId;
 use App\Http\Middleware\EnsureMfaIsConfirmed;
 use App\Http\Middleware\EnsurePlatformAdmin;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\EnsureWebConsoleAccess;
 use App\Http\Middleware\RecordRequestMetrics;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\UseTenantContext;
@@ -38,6 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant' => UseTenantContext::class,
             'tenant.web' => UseWebTenantContext::class,
             'platform.admin' => EnsurePlatformAdmin::class,
+            'web.console' => EnsureWebConsoleAccess::class,
         ]);
 
         $middleware->prependToPriorityList(SubstituteBindings::class, UseTenantContext::class);

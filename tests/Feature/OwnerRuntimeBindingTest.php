@@ -15,6 +15,13 @@ class OwnerRuntimeBindingTest extends TestCase
 {
     use DatabaseTruncation;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutVite();
+    }
+
     protected function tearDown(): void
     {
         $this->truncateDatabaseTables();

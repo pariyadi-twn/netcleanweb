@@ -9,6 +9,7 @@ import '../../../core/ui/session_context_bar.dart';
 import '../../cash/presentation/cash_screen.dart';
 import '../../customers/presentation/customers_screen.dart';
 import '../../operations/presentation/operations_screen.dart';
+import '../../orders/presentation/scan_screen.dart';
 import '../../orders/presentation/new_order_screen.dart';
 import '../../sync/presentation/sync_screen.dart';
 
@@ -176,6 +177,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               icon: const Icon(Icons.precision_manufacturing_outlined),
               label: const Text('Operasi produksi & serah terima'),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (context) => const ScanScreen(),
+                ),
+              ),
+              icon: const Icon(Icons.qr_code_scanner),
+              label: const Text('Scan / cari nota'),
             ),
           ),
           const SizedBox(height: 16),

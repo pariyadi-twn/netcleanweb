@@ -20,6 +20,14 @@ class ComplaintPolicy
             && $this->context->canAccessBranch($order->salesBranch);
     }
 
+    public function viewAny(User $user, Order $order): bool
+    {
+        return $user->id === $this->context->userId
+            && $order->tenant_id === $this->context->tenantId
+            && $this->context->can(PermissionCode::ComplaintsManage)
+            && $this->context->canAccessBranch($order->salesBranch);
+    }
+
     public function view(User $user, Complaint $complaint): bool
     {
         return $user->id === $this->context->userId

@@ -9,13 +9,16 @@ use App\Modules\Identity\Models\Branch;
 use App\Modules\Reporting\Actions\BuildOutletReport;
 use App\Modules\Reporting\Actions\OutstandingInvoices;
 use App\Modules\Reporting\Actions\RequestReportExport;
+use App\Modules\Reporting\Actions\RunImport;
 use App\Modules\Reporting\Enums\ReportExportStatus;
 use App\Modules\Reporting\Jobs\BuildReportExport;
+use App\Modules\Reporting\Models\ImportBatch;
 use App\Modules\Reporting\Models\ReportExport;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -36,6 +39,33 @@ class ReportController extends Controller
                 ->limit(10)
                 ->get(),
         ]);
+    }
+
+    public function imports(Request $request, TenantContext $context): View
+    {
+        abort_unless($context->can(PermissionCode::ImportsManage), 403);
+
+        return view('owner.reports.imports', [
+            'user' => $request->user(),
+            'batches' => ImportBatch::query()->where('tenant_id', $context->tenantId)->latest('created_at')->limit(15)->get(),
+        ]);
+    }
+
+    public function storeImport(Request $request, TenantContext $context, RunImport $import): RedirectResponse
+    {
+        abort_unless($context->can(PermissionCode::ImportsManage), 403);
+        $validated = $request->validate([
+            'type' => ['required', 'in:customers,catalog'],
+            'file' => ['required', 'file', 'max:2048', 'extensions:csv,txt'],
+            'dry_run' => ['sometimes', 'boolean'],
+        ]);
+        Gate::authorize('create', ImportBatch::class);
+
+        /** @var UploadedFile $file */
+        $file = $validated['file'];
+        $batch = $import->handle($context->tenantId, $context->membershipId, $validated['type'], $file, $request->boolean('dry_run'), [], $request->user());
+
+        return redirect()->route('reports.imports')->with('status', 'Impor selesai: '.$batch->imported_rows.' baris, '.$batch->invalid_rows.' gagal.');
     }
 
     public function outlet(Request $request, TenantContext $context, BuildOutletReport $build): View

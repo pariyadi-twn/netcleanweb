@@ -109,6 +109,7 @@ Route::middleware(['auth', 'active'])->group(function (): void {
             Route::get('/finance/cash', [FinanceController::class, 'cash'])->name('finance.cash.index');
             Route::post('/finance/cash/{register}/open', [FinanceController::class, 'openCash'])->name('finance.cash.open');
             Route::post('/finance/cash/{session}/close', [FinanceController::class, 'closeCash'])->name('finance.cash.close');
+            Route::post('/finance/cash/{session}/reopen', [FinanceController::class, 'reopenCash'])->name('finance.cash.reopen');
             Route::get('/finance/payments', [FinanceController::class, 'payments'])->name('finance.payments.index');
             Route::post('/finance/payments/{payment}/refunds', [FinanceController::class, 'requestRefund'])->name('finance.payments.refund');
             Route::get('/finance/expenses', [FinanceController::class, 'expenses'])->name('finance.expenses.index');
@@ -119,6 +120,8 @@ Route::middleware(['auth', 'active'])->group(function (): void {
             Route::post('/finance/refunds/{refund}/status', [FinanceController::class, 'transitionRefund'])->name('finance.refunds.status');
 
             Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+            Route::get('/reports/imports', [ReportController::class, 'imports'])->name('reports.imports');
+            Route::post('/reports/imports', [ReportController::class, 'storeImport'])->name('reports.imports.store');
             Route::get('/reports/outlet', [ReportController::class, 'outlet'])->name('reports.outlet');
             Route::get('/reports/receivables', [ReportController::class, 'receivables'])->name('reports.receivables');
             Route::post('/reports/exports', [ReportController::class, 'storeExport'])->name('reports.exports.store');

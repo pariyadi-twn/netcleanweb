@@ -32,7 +32,9 @@ class DiscountApprovalController extends Controller
         $model = Quote::query()
             ->where('tenant_id', $context->tenantId)
             ->where('public_id', $quote)
+            ->with('salesBranch')
             ->firstOrFail();
+        abort_unless($model->salesBranch !== null && $context->canAccessBranch($model->salesBranch), 403);
 
         $approval = $decide->handle(
             $model,

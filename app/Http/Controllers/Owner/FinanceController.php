@@ -8,6 +8,7 @@ use App\Modules\Cash\Actions\CloseCashSession;
 use App\Modules\Cash\Actions\CreateExpense;
 use App\Modules\Cash\Actions\DecideExpense;
 use App\Modules\Cash\Actions\OpenCashSession;
+use App\Modules\Cash\Actions\ReopenCashSession;
 use App\Modules\Cash\Models\CashRegister;
 use App\Modules\Cash\Models\CashSession;
 use App\Modules\Cash\Models\Expense;
@@ -123,6 +124,22 @@ class FinanceController extends Controller
         }
 
         return back()->with('status', 'Shift kas ditutup.');
+    }
+
+    public function reopenCash(Request $request, string $session, TenantContext $context, ReopenCashSession $reopen): RedirectResponse
+    {
+        $model = CashSession::query()->where('tenant_id', $context->tenantId)->where('public_id', $session)->with('register.branch')->firstOrFail();
+        abort_unless($context->canAccessBranch($model->register->branch), 403);
+        Gate::authorize('reopen', $model);
+        $validated = $request->validate(['reason' => ['required', 'string', 'max:2000']]);
+
+        try {
+            $reopen->handle($model, $validated['reason'], $context->membershipId);
+        } catch (ApiException $exception) {
+            return back()->withErrors(['cash' => $exception->getMessage()]);
+        }
+
+        return back()->with('status', 'Shift kas dibuka kembali.');
     }
 
     public function payments(Request $request, TenantContext $context): View

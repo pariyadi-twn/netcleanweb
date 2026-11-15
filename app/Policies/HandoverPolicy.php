@@ -24,6 +24,8 @@ class HandoverPolicy
     {
         return $user->id === $this->context->userId
             && $handover->tenant_id === $this->context->tenantId
-            && $this->context->can(PermissionCode::HandoversManage);
+            && $this->context->can(PermissionCode::HandoversManage)
+            && $handover->order !== null
+            && $this->context->canAccessBranch($handover->order->salesBranch);
     }
 }

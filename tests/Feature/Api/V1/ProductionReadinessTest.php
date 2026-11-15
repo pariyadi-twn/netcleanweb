@@ -114,6 +114,27 @@ class ProductionReadinessTest extends TestCase
             ->assertJsonPath('data.can_ready', true);
     }
 
+    public function test_readiness_rejects_order_outside_assigned_branch(): void
+    {
+        [$tenant, $token] = $this->scenario();
+        $otherBranch = Branch::factory()->for($tenant)->create(['name' => 'Cabang Lain']);
+        $otherQuote = Quote::factory()->create([
+            'tenant_id' => $tenant->id,
+            'sales_branch_id' => $otherBranch->id,
+            'pickup_branch_id' => $otherBranch->id,
+        ]);
+        $otherOrder = Order::factory()->create([
+            'quote_id' => $otherQuote->id,
+            'tenant_id' => $tenant->id,
+            'sales_branch_id' => $otherBranch->id,
+        ]);
+
+        $this->withToken($token)
+            ->withHeader('X-Tenant-ID', $tenant->public_id)
+            ->getJson('/api/v1/orders/'.$otherOrder->public_id.'/readiness')
+            ->assertForbidden();
+    }
+
     private function complete(Tenant $tenant, string $token, Collection $tasks, int $startAt = 0): void
     {
         foreach ($tasks->slice($startAt)->values() as $task) {

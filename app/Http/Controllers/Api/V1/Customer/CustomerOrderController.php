@@ -28,6 +28,7 @@ class CustomerOrderController extends Controller
         $paginator = Order::query()
             ->where('tenant_id', $context->tenantId)
             ->where('customer_id', $model->id)
+            ->whereIn('sales_branch_id', $context->branchIds)
             ->with(['invoice.adjustments', 'invoice.allocations', 'salesBranch'])
             ->orderByDesc('created_at')
             ->orderByDesc('id')

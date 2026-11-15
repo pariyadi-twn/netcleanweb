@@ -30,6 +30,8 @@ class ComplaintController extends Controller
             ->where('public_id', Str::lower($order))
             ->firstOrFail();
 
+        Gate::authorize('viewAny', [Complaint::class, $order]);
+
         $complaints = Complaint::query()
             ->where('tenant_id', $context->tenantId)
             ->where('order_id', $order->id)
@@ -37,10 +39,6 @@ class ComplaintController extends Controller
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->get();
-
-        foreach ($complaints as $complaint) {
-            Gate::authorize('view', $complaint);
-        }
 
         return response()->json([
             'data' => ComplaintResource::collection($complaints)->resolve($request),

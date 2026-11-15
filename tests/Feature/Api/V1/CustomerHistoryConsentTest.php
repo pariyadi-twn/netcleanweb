@@ -59,6 +59,23 @@ class CustomerHistoryConsentTest extends TestCase
             ->assertJsonPath('data.0.order_number', 'ORD-1');
     }
 
+    public function test_customer_order_history_is_limited_to_assigned_branches(): void
+    {
+        [$tenant, , $token, $branch, $membership] = $this->scenario();
+        $customer = Customer::factory()->for($tenant)->create();
+        $otherBranch = Branch::factory()->for($tenant)->create(['name' => 'Cabang Lain']);
+
+        $this->historyOrder($tenant, $branch, $membership, $customer, 'ORD-VISIBLE', 10000, '2026-10-01 10:00:00');
+        $this->historyOrder($tenant, $otherBranch, $membership, $customer, 'ORD-HIDDEN', 20000, '2026-10-02 10:00:00');
+
+        $this->withToken($token)
+            ->withHeader('X-Tenant-ID', $tenant->public_id)
+            ->getJson('/api/v1/customers/'.$customer->public_id.'/orders')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.order_number', 'ORD-VISIBLE');
+    }
+
     public function test_consent_is_separate_per_purpose_and_channel_and_marketing_withdrawal_preserves_service_access(): void
     {
         [$tenant, , $token] = $this->scenario();

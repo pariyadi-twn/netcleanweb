@@ -127,6 +127,8 @@ class ProductionTaskController extends Controller
             ->where('tenant_id', $context->tenantId)
             ->where('public_id', Str::lower($order))
             ->firstOrFail();
+        $model->loadMissing('salesBranch');
+        abort_unless($model->salesBranch !== null && $context->canAccessBranch($model->salesBranch), 403);
 
         return response()->json([
             'data' => $readiness->snapshot($model),

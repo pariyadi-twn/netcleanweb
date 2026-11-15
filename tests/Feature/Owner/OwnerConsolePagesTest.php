@@ -32,7 +32,7 @@ class OwnerConsolePagesTest extends TestCase
         $branch = Branch::query()->where('tenant_id', $tenant->id)->where('code', 'UAT-MAIN')->sole();
         $session = ['tenant.public_id' => $tenant->public_id];
 
-        foreach (['/dashboard', '/settings', '/orders', '/production', '/finance', '/finance/cash', '/finance/payments', '/finance/expenses', '/finance/refunds', '/reports'] as $path) {
+        foreach (['/dashboard', '/settings', '/orders', '/production', '/finance', '/finance/cash', '/finance/payments', '/finance/expenses', '/finance/refunds', '/reports', '/reports/imports'] as $path) {
             $this->actingAs($owner)->withSession($session)->get($path)->assertOk();
         }
 

@@ -27,6 +27,14 @@
         </form>
     </div>
 
+    <div class="mt-5 flex flex-wrap gap-2">
+        <a href="{{ route('reports.outlet') }}" class="inline-flex min-h-11 items-center rounded-control border border-divider bg-white px-4 text-sm font-bold text-muted hover:bg-slate-50">Buka laporan outlet</a>
+        <a href="{{ route('reports.receivables') }}" class="inline-flex min-h-11 items-center rounded-control border border-divider bg-white px-4 text-sm font-bold text-muted hover:bg-slate-50">Buka piutang</a>
+        @if ($tenantContext->can(\App\Modules\Identity\Enums\PermissionCode::ImportsManage))
+            <a href="{{ route('reports.imports') }}" class="inline-flex min-h-11 items-center rounded-control border border-divider bg-white px-4 text-sm font-bold text-muted hover:bg-slate-50">Impor data</a>
+        @endif
+    </div>
+
     <section class="mt-6 rounded-container border border-divider bg-white p-5 shadow-sm">
         <h2 class="font-extrabold">Ekspor terbaru</h2>
         <div class="mt-3 divide-y divide-divider">

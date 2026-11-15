@@ -9,6 +9,7 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/providers.dart';
 import '../../../core/session/session_controller.dart';
 import '../../../core/ui/formatting.dart';
+import '../../../core/ui/page_header.dart';
 import '../../../core/ui/responsive.dart';
 import '../../../core/ui/theme.dart';
 import '../../cash/presentation/cash_screen.dart';
@@ -564,48 +565,44 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
         key: const Key('new-order-screen'),
         padding: EdgeInsets.fromLTRB(padding, 24, padding, 32),
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _order == null ? 'Pesanan baru' : 'Pesanan tersimpan',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _branch == null
-                          ? 'Cabang belum tersedia'
-                          : '${_branch!.name} • ${_branch!.timezone}',
-                    ),
-                  ],
-                ),
+          AppPageHeader(
+            eyebrow: 'Kasir',
+            title: _order == null ? 'Pesanan baru' : 'Pesanan tersimpan',
+            subtitle: _branch == null
+                ? 'Cabang belum tersedia'
+                : '${_branch!.name} • ${_branch!.timezone}',
+            trailing: IconButton(
+              tooltip: 'Riwayat pesanan',
+              style: IconButton.styleFrom(
+                backgroundColor: AppTheme.surface,
+                side: const BorderSide(color: AppTheme.divider),
               ),
-              IconButton(
-                tooltip: 'Riwayat pesanan',
-                onPressed: _busy
-                    ? null
-                    : () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (context) => const OrderHistoryScreen(),
-                        ),
+              onPressed: _busy
+                  ? null
+                  : () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (context) => const OrderHistoryScreen(),
                       ),
-                icon: const Icon(Icons.history),
-              ),
-              if (_order != null)
-                TextButton(
-                  onPressed: _busy ? null : _resetOrder,
-                  child: const Text('Pesanan berikutnya'),
-                ),
-            ],
+                    ),
+              icon: const Icon(Icons.history_rounded),
+            ),
           ),
+          if (_order != null) ...[
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: _busy ? null : _resetOrder,
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Pesanan berikutnya'),
+              ),
+            ),
+          ],
           if (_busy) ...[
             const SizedBox(height: 12),
             const LinearProgressIndicator(),
           ],
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           if (_order == null) ...[
             _customerSection(context),
             const SizedBox(height: 16),
@@ -798,9 +795,9 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
           ),
           const SizedBox(height: 16),
           if (expired)
-            const Text(
+            Text(
               'Quote kedaluwarsa. Hitung ulang sebelum mengonfirmasi.',
-              style: TextStyle(color: Color(0xFFB91C1C)),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
             )
           else
             SizedBox(
@@ -998,12 +995,12 @@ class _Panel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
+            Text(title, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 14),
             child,
           ],
         ),

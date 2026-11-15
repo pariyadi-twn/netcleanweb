@@ -6,6 +6,7 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/providers.dart';
 import '../../../core/session/session_controller.dart';
 import '../../../core/ui/formatting.dart';
+import '../../../core/ui/page_header.dart';
 import '../../../core/ui/responsive.dart';
 import '../../../core/ui/status_chip.dart';
 import '../../../core/ui/theme.dart';
@@ -181,21 +182,18 @@ class _CashScreenState extends ConsumerState<CashScreen> {
     final padding = Responsive.horizontalPadding(width);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Kas')),
+      appBar: AppBar(title: const Text('Kasir')),
       body: SafeArea(
         child: ResponsiveCenter(
           child: ListView(
             key: const Key('cash-screen'),
             padding: EdgeInsets.fromLTRB(padding, 24, padding, 32),
             children: [
-              Text(
-                'Shift kas',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Kas awal, penjualan tunai, dan kas fisik dihitung per shift.',
-                style: Theme.of(context).textTheme.bodyMedium,
+              const AppPageHeader(
+                eyebrow: 'Kasir',
+                title: 'Kas & shift',
+                subtitle:
+                    'Kas awal, penjualan tunai, dan kas fisik dihitung per shift.',
               ),
               if (_busy) ...[
                 const SizedBox(height: 12),
@@ -229,7 +227,7 @@ class _CashScreenState extends ConsumerState<CashScreen> {
   Widget _emptyRegisters(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -299,7 +297,7 @@ class _CashScreenState extends ConsumerState<CashScreen> {
   Widget _openCard(BuildContext context, CashRegisterSummary register) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -339,7 +337,7 @@ class _CashScreenState extends ConsumerState<CashScreen> {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -455,7 +453,7 @@ class _ErrorPanel extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: palette.dangerBackground,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

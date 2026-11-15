@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../auth/auth_session.dart';
+import 'page_header.dart';
 import 'status_chip.dart';
+import 'theme.dart';
 
 class SessionContextBar extends StatelessWidget {
   const SessionContextBar({super.key, required this.session});
@@ -11,30 +13,61 @@ class SessionContextBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tenant = session.tenantId;
-    final device = session.deviceId;
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Wrap(
-          spacing: 16,
-          runSpacing: 12,
-          crossAxisAlignment: WrapCrossAlignment.center,
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _ContextValue(
-              icon: Icons.business_outlined,
-              label: 'Tenant',
-              value: tenant == null ? 'Belum dipilih' : _shortId(tenant),
+            Row(
+              children: [
+                const AppIconTile(icon: Icons.shield_outlined, size: 42),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Konteks perangkat',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Tenant dan sesi aktif',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                const StatusChip(
+                  label: 'Aman',
+                  icon: Icons.verified_user_outlined,
+                  tone: StatusTone.success,
+                ),
+              ],
             ),
-            _ContextValue(
-              icon: Icons.smartphone_outlined,
-              label: 'Perangkat',
-              value: _shortId(device),
-            ),
-            const StatusChip(
-              label: 'Sesi aktif',
-              icon: Icons.verified_user_outlined,
-              tone: StatusTone.success,
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                _ContextTile(
+                  icon: Icons.business_outlined,
+                  label: 'Tenant',
+                  value: tenant == null ? 'Belum dipilih' : _shortId(tenant),
+                ),
+                _ContextTile(
+                  icon: Icons.smartphone_outlined,
+                  label: 'Perangkat',
+                  value: _shortId(session.deviceId),
+                ),
+                _ContextTile(
+                  icon: Icons.account_tree_outlined,
+                  label: 'Cabang',
+                  value: '${session.branchIds.length}',
+                ),
+              ],
             ),
           ],
         ),
@@ -51,8 +84,8 @@ class SessionContextBar extends StatelessWidget {
   }
 }
 
-class _ContextValue extends StatelessWidget {
-  const _ContextValue({
+class _ContextTile extends StatelessWidget {
+  const _ContextTile({
     required this.icon,
     required this.label,
     required this.value,
@@ -64,19 +97,40 @@ class _ContextValue extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: Theme.of(context).textTheme.labelMedium),
-            Text(value, style: Theme.of(context).textTheme.bodyMedium),
-          ],
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceMuted,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: AppTheme.divider),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: AppTheme.primary),
+          const SizedBox(width: 9),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label.toUpperCase(),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontSize: 9,
+                  letterSpacing: 0.8,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontSize: 13),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

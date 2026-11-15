@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/ui/brand.dart';
 import '../../../core/ui/formatting.dart';
 import '../../../core/ui/responsive.dart';
 import '../../../core/ui/theme.dart';
@@ -24,18 +25,26 @@ class ReceiptScreen extends StatelessWidget {
             children: [
               Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(22),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const NetCleanLockup(markSize: 38),
+                      const SizedBox(height: 22),
                       Text(
                         receipt.branchName,
-                        style: Theme.of(context).textTheme.titleMedium,
+                        style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: 4),
-                      Text('Nota ${receipt.orderNumber}'),
-                      Text('Invoice ${receipt.invoiceNumber}'),
-                      const SizedBox(height: 16),
+                      Text(
+                        'Nota ${receipt.orderNumber}',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      Text(
+                        'Invoice ${receipt.invoiceNumber}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      const Divider(height: 28),
                       _ValueRow(
                         label: 'Pelanggan',
                         value: receipt.customerName,

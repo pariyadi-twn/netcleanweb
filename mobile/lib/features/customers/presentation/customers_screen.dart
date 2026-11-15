@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/providers.dart';
 import '../../../core/session/session_controller.dart';
+import '../../../core/ui/page_header.dart';
 import '../../../core/ui/responsive.dart';
 import '../../../core/ui/status_chip.dart';
 import '../../../core/ui/theme.dart';
@@ -167,22 +168,17 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.fromLTRB(padding, 24, padding, 32),
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Pelanggan',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                ),
-                FilledButton.icon(
-                  onPressed: _createCustomer,
-                  icon: const Icon(Icons.person_add_alt_1_outlined),
-                  label: const Text('Baru'),
-                ),
-              ],
+            AppPageHeader(
+              eyebrow: 'Database',
+              title: 'Pelanggan',
+              subtitle: 'Cari dan kelola pelanggan tenant ini.',
+              trailing: FilledButton.icon(
+                onPressed: _createCustomer,
+                icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
+                label: const Text('Baru'),
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
             TextField(
               key: const Key('customer-search'),
               controller: _search,
@@ -208,11 +204,18 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Card(
                     child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 7,
+                      ),
                       leading: CircleAvatar(
+                        backgroundColor: AppTheme.primarySoft,
+                        foregroundColor: AppTheme.primary,
                         child: Text(
                           customer.name.isEmpty
                               ? '?'
                               : customer.name.substring(0, 1).toUpperCase(),
+                          style: const TextStyle(fontWeight: FontWeight.w800),
                         ),
                       ),
                       title: Text(customer.name),
@@ -252,12 +255,8 @@ class _EmptyPanel extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 16),
       child: Column(
         children: [
-          Icon(
-            Icons.people_outline,
-            size: 48,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(height: 12),
+          const AppIconTile(icon: Icons.people_outline_rounded, size: 56),
+          const SizedBox(height: 14),
           Text(
             'Belum ada pelanggan',
             style: Theme.of(context).textTheme.titleMedium,
@@ -283,7 +282,7 @@ class _ErrorPanel extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: palette?.dangerBackground ?? const Color(0xFFFEF2F2),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

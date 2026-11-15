@@ -5,6 +5,7 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/providers.dart';
 import '../../../core/session/session_controller.dart';
 import '../../../core/ui/formatting.dart';
+import '../../../core/ui/page_header.dart';
 import '../../../core/ui/responsive.dart';
 import '../../../core/ui/status_chip.dart';
 import '../../../core/ui/theme.dart';
@@ -527,22 +528,19 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
     final padding = Responsive.horizontalPadding(width);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Operasi')),
+      appBar: AppBar(title: const Text('Produksi')),
       body: SafeArea(
         child: ResponsiveCenter(
           child: ListView(
             key: const Key('operations-screen'),
             padding: EdgeInsets.fromLTRB(padding, 24, padding, 32),
             children: [
-              Text(
-                'Produksi dan serah terima',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Kamera/scan fisik belum tersedia. Masukkan nomor nota atau '
-                'gunakan order terbaru sebagai simulasi scan.',
-                style: Theme.of(context).textTheme.bodyMedium,
+              const AppPageHeader(
+                eyebrow: 'Produksi',
+                title: 'Operasi & serah terima',
+                subtitle:
+                    'Kamera/scan fisik belum tersedia. Masukkan nomor nota '
+                    'atau gunakan order terbaru sebagai simulasi scan.',
               ),
               if (_busy) ...[
                 const SizedBox(height: 12),
@@ -794,7 +792,7 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
                         ? Icons.check_circle_outline
                         : Icons.pending_outlined,
                     color: content.ready
-                        ? AppTheme.light.colorScheme.primary
+                        ? Theme.of(context).colorScheme.primary
                         : AppTheme.textSecondary,
                   ),
                   const SizedBox(width: 8),
@@ -925,12 +923,12 @@ class _Panel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
+            Text(title, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 14),
             child,
           ],
         ),
@@ -973,7 +971,7 @@ class _ErrorPanel extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: palette.dangerBackground,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Text(message),
     );

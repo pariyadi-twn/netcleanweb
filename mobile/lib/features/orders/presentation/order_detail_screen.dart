@@ -128,39 +128,26 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     final padding = Responsive.horizontalPadding(width);
 
     return Scaffold(
-      appBar: AppBar(title: Text(order.orderNumber)),
+      appBar: AppBar(title: const Text('Detail pesanan')),
       body: SafeArea(
         child: ResponsiveCenter(
           child: ListView(
             key: const Key('order-detail-screen'),
-            padding: EdgeInsets.fromLTRB(padding, 24, padding, 32),
+            padding: EdgeInsets.fromLTRB(padding, 18, padding, 32),
             children: [
+              _OrderSummary(order: order),
+              const SizedBox(height: 16),
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              order.orderNumber,
-                              style: Theme.of(context).textTheme.headlineSmall,
-                            ),
-                          ),
-                          StatusChip(
-                            label: order.status,
-                            icon: Icons.circle_outlined,
-                            tone: order.status == 'completed'
-                                ? StatusTone.success
-                                : order.status == 'cancelled'
-                                ? StatusTone.danger
-                                : StatusTone.info,
-                          ),
-                        ],
+                      Text(
+                        'Informasi pesanan',
+                        style: Theme.of(context).textTheme.titleLarge,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
                       _DetailRow(label: 'Invoice', value: order.invoiceNumber),
                       _DetailRow(
                         label: 'Status invoice',
@@ -267,6 +254,123 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   }
 }
 
+class _OrderSummary extends StatelessWidget {
+  const _OrderSummary({required this.order});
+
+  final OrderHistory order;
+
+  @override
+  Widget build(BuildContext context) {
+    final tone = order.status == 'completed'
+        ? StatusTone.success
+        : order.status == 'cancelled'
+        ? StatusTone.danger
+        : StatusTone.info;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(28),
+      child: Container(
+        decoration: const BoxDecoration(gradient: AppTheme.heroGradient),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -50,
+              top: -70,
+              child: Container(
+                width: 180,
+                height: 180,
+                decoration: BoxDecoration(
+                  color: AppTheme.accent.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(22),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.12),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.receipt_long_outlined,
+                          color: AppTheme.accent,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              order.orderNumber,
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(color: Colors.white),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Invoice ${order.invoiceNumber}',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.55),
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      StatusChip(
+                        label: order.status,
+                        icon: Icons.circle_outlined,
+                        tone: tone,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Sisa tagihan',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.55),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    formatRupiah(order.balanceDueRupiah),
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: Colors.white,
+                      fontSize: 32,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    order.balanceDueRupiah > 0
+                        ? 'Total ${formatRupiah(order.totalRupiah)} • '
+                              'dibayar ${formatRupiah(order.paidRupiah)}'
+                        : 'Lunas • total ${formatRupiah(order.totalRupiah)}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _DetailRow extends StatelessWidget {
   const _DetailRow({required this.label, required this.value});
 
@@ -276,12 +380,21 @@ class _DetailRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: Text(label)),
+          Expanded(
+            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+          ),
           const SizedBox(width: 12),
-          Text(value),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+          ),
         ],
       ),
     );

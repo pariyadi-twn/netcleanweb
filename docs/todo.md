@@ -464,6 +464,8 @@ Untuk fitur backend yang dipakai Flutter/web, task baru selesai setelah kontrak 
 
   Mobile kini juga mempunyai riwayat pesanan: pencarian nomor nota, daftar order terbaru dengan status/sisa, detail layanan dan bag, akses nota, serta simulasi cetak dari detail. Flutter lulus **36 test** dan APK staging dibangun.
 
+  Kesiapan uji langsung 15 November 2026: akun owner telah mengaktifkan MFA melalui sesi web nyata; `/dashboard`, `/organization`, `/roles`, `/branches`, `/staff`, `/catalog`, dan `/customers` semuanya `200` dengan data tenant UAT. APK release 59.957.708 byte di-host di staging dengan checksum SHA-256 `8118225978c61397a56faf9d82eea8a08551ae76555988293faf994b6365d9ab`; manifest URL/checksum berada root-only di `/etc/netclean/uat-mobile.json`, secret/recovery MFA di `/etc/netclean/uat-owner-mfa.json`. CI final `8cfe29c` run `43656164138` hijau.
+
   Belum selesai: scan kamera/BT dan printer fisik (T048), bukti foto/attachment fisik, scan khusus kasir, draft offline, serta UAT perangkat. Karena itu T033 tetap belum dicentang.
 
 ## Fase D Produksi uang dan pengelolaan P0

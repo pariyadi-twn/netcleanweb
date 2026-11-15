@@ -6,7 +6,7 @@
     <div>
         <p class="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">Organisasi</p>
         <h1 class="mt-2 text-3xl font-bold tracking-tight text-ink">Profil organisasi</h1>
-        <p class="mt-2 text-muted">Nama dan zona waktu dipakai pada nota, laporan, dan perhitungan tenggat.</p>
+        <p class="mt-2 text-muted">Nama usaha dipakai pada nota dan laporan. Zona waktu mengikuti Asia/Jakarta.</p>
     </div>
 
     @if ($errors->any())
@@ -23,10 +23,7 @@
                 <label class="grid gap-1 text-sm font-semibold text-ink">Nama organisasi
                     <input name="name" value="{{ old('name', $tenant->name) }}" required class="min-h-12 rounded-control border border-slate-400 px-4 font-normal">
                 </label>
-                <label class="grid gap-1 text-sm font-semibold text-ink">Zona waktu
-                    <input name="timezone" value="{{ old('timezone', $tenant->timezone) }}" required class="min-h-12 rounded-control border border-slate-400 px-4 font-normal">
-                </label>
-                <label class="grid gap-1 text-sm font-semibold text-ink">Alasan perubahan
+                <label class="grid gap-1 text-sm font-semibold text-ink">Keterangan
                     <input name="reason" value="{{ old('reason') }}" class="min-h-12 rounded-control border border-slate-400 px-4 font-normal">
                 </label>
                 <button type="submit" class="min-h-12 rounded-control bg-brand-600 px-5 font-semibold text-white hover:bg-brand-700">Simpan profil</button>

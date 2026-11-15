@@ -58,6 +58,22 @@
             </header>
 
             <main class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+                @unless (request()->routeIs('dashboard'))
+                    @php
+                        $currentRoute = request()->route()?->getName() ?? '';
+                        $backUrl = match (true) {
+                            $currentRoute === 'tenants.select' => url('/'),
+                            str_starts_with($currentRoute, 'roles.') && $currentRoute !== 'roles.index' => route('roles.index'),
+                            str_starts_with($currentRoute, 'branches.') && $currentRoute !== 'branches.index' => route('branches.index'),
+                            str_starts_with($currentRoute, 'staff.') && $currentRoute !== 'staff.index' => route('staff.index'),
+                            default => route('dashboard'),
+                        };
+                    @endphp
+                    <div class="mb-5">
+                        <x-ui.back-link :href="$backUrl" />
+                    </div>
+                @endunless
+
                 @if (session('status'))
                     <p role="status" class="mb-6 rounded-container border border-green-200 bg-success-bg px-4 py-3 text-success-text">{{ session('status') }}</p>
                 @endif

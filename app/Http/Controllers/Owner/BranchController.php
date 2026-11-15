@@ -60,7 +60,7 @@ class BranchController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:150'],
-            'timezone' => ['required', 'string', 'timezone'],
+            'timezone' => ['nullable', 'string', 'timezone'],
             'address' => ['required', 'string', 'max:2000'],
             'phone' => ['nullable', 'string', 'max:32'],
             'is_active' => ['sometimes', 'boolean'],
@@ -69,7 +69,11 @@ class BranchController extends Controller
 
         $update->handle(
             $branch,
-            [...$validated, 'is_active' => $request->boolean('is_active')],
+            [
+                ...$validated,
+                'timezone' => $validated['timezone'] ?? ($branch->timezone ?: 'Asia/Jakarta'),
+                'is_active' => $request->boolean('is_active'),
+            ],
             $request->user(),
             $validated['reason'] ?? null,
         );

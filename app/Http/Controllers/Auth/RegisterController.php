@@ -34,7 +34,7 @@ class RegisterController extends Controller
             'email' => ['required', 'string', 'email:rfc', 'max:254', 'unique:users,email'],
             'password' => ['required', 'string', 'min:12', 'max:1024', 'confirmed'],
             'organization_name' => ['required', 'string', 'max:150'],
-            'timezone' => ['required', 'string', 'timezone'],
+            'timezone' => ['nullable', 'string', 'timezone'],
             'branch_name' => ['required', 'string', 'max:150'],
             'branch_address' => ['required', 'string', 'max:2000'],
             'branch_phone' => ['nullable', 'string', 'max:32'],
@@ -42,6 +42,7 @@ class RegisterController extends Controller
         ]);
 
         $permissionSeeder->run();
+        $timezone = $validated['timezone'] ?? 'Asia/Jakarta';
 
         $user = DB::transaction(function () use ($validated): User {
             $user = User::query()->create([
@@ -61,10 +62,10 @@ class RegisterController extends Controller
         try {
             $scope->run($user, fn (): array => $provisionTenant->handle($user, [
                 'organization_name' => $validated['organization_name'],
-                'timezone' => $validated['timezone'],
+                'timezone' => $timezone,
                 'branch_name' => $validated['branch_name'],
                 'branch_code' => 'MAIN',
-                'branch_timezone' => $validated['timezone'],
+                'branch_timezone' => $timezone,
                 'branch_address' => $validated['branch_address'],
                 'branch_phone' => $validated['branch_phone'] ?? null,
             ], (string) Str::uuid()));

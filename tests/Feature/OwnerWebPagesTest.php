@@ -36,16 +36,21 @@ class OwnerWebPagesTest extends TestCase
         [$owner, $tenant] = $this->ownerContext();
 
         $this->actingAs($owner)->withSession(['tenant.public_id' => $tenant->public_id])
+            ->get('/organization')
+            ->assertOk()
+            ->assertSee('Keterangan')
+            ->assertDontSee('name="timezone"', false);
+
+        $this->actingAs($owner)->withSession(['tenant.public_id' => $tenant->public_id])
             ->put('/organization', [
                 'name' => 'Organisasi Diperbarui',
-                'timezone' => 'Asia/Makassar',
                 'reason' => 'Uji profil',
             ])->assertRedirect(route('organization.index'));
 
         $this->assertDatabaseHas('tenants', [
             'id' => $tenant->id,
             'name' => 'Organisasi Diperbarui',
-            'timezone' => 'Asia/Makassar',
+            'timezone' => 'Asia/Jakarta',
         ]);
     }
 
@@ -88,7 +93,6 @@ class OwnerWebPagesTest extends TestCase
 
         $this->put('/branches/'.$branch->public_id, [
             'name' => 'Cabang Diperbarui',
-            'timezone' => 'Asia/Jakarta',
             'address' => 'Jl. Baru No. 1',
             'phone' => '081234567890',
             'is_active' => '1',
@@ -99,6 +103,7 @@ class OwnerWebPagesTest extends TestCase
             'tenant_id' => $tenant->id,
             'public_id' => $branch->public_id,
             'name' => 'Cabang Diperbarui',
+            'timezone' => 'Asia/Jakarta',
         ]);
     }
 

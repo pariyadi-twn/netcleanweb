@@ -9,7 +9,6 @@
             <h1 class="mt-2 text-3xl font-bold tracking-tight text-ink">{{ $branch->name }}</h1>
             <p class="mt-2 text-muted">Kode {{ $branch->code }}. Perubahan konfigurasi diaudit.</p>
         </div>
-        <a href="{{ route('branches.index') }}" class="inline-flex min-h-12 items-center rounded-control border border-slate-400 px-4 text-sm font-semibold text-ink hover:bg-white">Kembali</a>
     </div>
 
     @if ($errors->any())
@@ -26,16 +25,13 @@
                 <label class="grid gap-1 text-sm font-semibold text-ink">Nama
                     <input name="name" value="{{ old('name', $branch->name) }}" required class="min-h-12 rounded-control border border-slate-400 px-4 font-normal">
                 </label>
-                <label class="grid gap-1 text-sm font-semibold text-ink">Zona waktu
-                    <input name="timezone" value="{{ old('timezone', $branch->timezone) }}" required class="min-h-12 rounded-control border border-slate-400 px-4 font-normal">
-                </label>
                 <label class="grid gap-1 text-sm font-semibold text-ink">Alamat
                     <textarea name="address" required class="min-h-24 rounded-control border border-slate-400 px-4 py-3 font-normal">{{ old('address', $branch->address) }}</textarea>
                 </label>
                 <label class="grid gap-1 text-sm font-semibold text-ink">Telepon
                     <input name="phone" value="{{ old('phone', $branch->phone) }}" class="min-h-12 rounded-control border border-slate-400 px-4 font-normal">
                 </label>
-                <label class="grid gap-1 text-sm font-semibold text-ink">Alasan perubahan
+                <label class="grid gap-1 text-sm font-semibold text-ink">Keterangan
                     <input name="reason" value="{{ old('reason') }}" class="min-h-12 rounded-control border border-slate-400 px-4 font-normal">
                 </label>
                 <label class="flex min-h-12 items-center gap-3 text-sm font-semibold text-ink">

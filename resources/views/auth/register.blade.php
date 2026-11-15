@@ -38,18 +38,9 @@
                     <input name="organization_name" value="{{ old('organization_name') }}" required
                         class="min-h-12 rounded-control border border-slate-400 px-4 font-normal outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100">
                 </label>
-                <div class="grid gap-4 sm:grid-cols-2">
-                    <label class="grid gap-1.5 text-sm font-semibold text-ink">Zona waktu
-                        <select name="timezone" required class="min-h-12 rounded-control border border-slate-400 px-4 font-normal">
-                            @foreach (['Asia/Jakarta', 'Asia/Makassar', 'Asia/Jayapura'] as $timezone)
-                                <option value="{{ $timezone }}" @selected(old('timezone', 'Asia/Jakarta') === $timezone)>{{ $timezone }}</option>
-                            @endforeach
-                        </select>
-                    </label>
-                    <label class="grid gap-1.5 text-sm font-semibold text-ink">Telepon cabang
-                        <input name="branch_phone" value="{{ old('branch_phone') }}" class="min-h-12 rounded-control border border-slate-400 px-4 font-normal">
-                    </label>
-                </div>
+                <label class="grid gap-1.5 text-sm font-semibold text-ink">Telepon cabang
+                    <input name="branch_phone" value="{{ old('branch_phone') }}" class="min-h-12 rounded-control border border-slate-400 px-4 font-normal">
+                </label>
                 <label class="grid gap-1.5 text-sm font-semibold text-ink">Nama cabang
                     <input name="branch_name" value="{{ old('branch_name') }}" required class="min-h-12 rounded-control border border-slate-400 px-4 font-normal">
                 </label>

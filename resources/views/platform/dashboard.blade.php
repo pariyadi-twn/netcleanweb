@@ -116,7 +116,7 @@
         <h2>Permintaan data</h2>
         <p class="muted">Verifikasi identitas sebelum memproses. Proses hanya menganonimkan PII pelanggan; ledger tidak dihapus.</p>
         <table>
-            <thead><tr><th>Tenant / kasus</th><th>Status</th><th>Alasan</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>Tenant / kasus</th><th>Status</th><th>Keterangan</th><th>Aksi</th></tr></thead>
             <tbody>
             @forelse ($dataRequests as $dataRequest)
                 <tr>
@@ -132,7 +132,7 @@
                             </form>
                             <form class="inline" method="POST" action="{{ route('platform.data-requests.reject', $dataRequest->public_id) }}">
                                 @csrf
-                                <input name="reason" placeholder="Alasan tolak" aria-label="Alasan penolakan" required>
+                                <input name="reason" placeholder="Keterangan penolakan" aria-label="Keterangan penolakan" required>
                                 <button class="danger" type="submit">Tolak</button>
                             </form>
                         @elseif ($dataRequest->status === 'verified')

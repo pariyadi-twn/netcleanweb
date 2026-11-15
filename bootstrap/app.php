@@ -16,6 +16,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -38,6 +39,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant.web' => UseWebTenantContext::class,
             'platform.admin' => EnsurePlatformAdmin::class,
         ]);
+
+        $middleware->prependToPriorityList(SubstituteBindings::class, UseTenantContext::class);
+        $middleware->prependToPriorityList(SubstituteBindings::class, UseWebTenantContext::class);
+        $middleware->prependToPriorityList(UseTenantContext::class, EnsureUserIsActive::class);
+        $middleware->prependToPriorityList(UseWebTenantContext::class, EnsureUserIsActive::class);
+        $middleware->prependToPriorityList(UseWebTenantContext::class, EnsureMfaIsConfirmed::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

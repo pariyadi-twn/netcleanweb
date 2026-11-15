@@ -31,16 +31,20 @@ class OrganizationController extends Controller
         $context = app(TenantContext::class);
         abort_unless($context->can(PermissionCode::MembershipsManage), 403);
 
+        $tenant = Tenant::query()->findOrFail($context->tenantId);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:150'],
-            'timezone' => ['required', 'string', 'timezone'],
+            'timezone' => ['nullable', 'string', 'timezone'],
             'reason' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $tenant = Tenant::query()->findOrFail($context->tenantId);
         $update->handle(
             $tenant,
-            ['name' => $validated['name'], 'timezone' => $validated['timezone']],
+            [
+                'name' => $validated['name'],
+                'timezone' => $validated['timezone'] ?? ($tenant->timezone ?: 'Asia/Jakarta'),
+            ],
             $request->user(),
             $validated['reason'] ?? null,
         );

@@ -15,7 +15,6 @@
             <h1 class="mt-2 text-3xl font-bold tracking-tight text-ink">{{ $membership->user->name }}</h1>
             <p class="mt-2 text-muted">{{ $membership->user->email }}</p>
         </div>
-        <a href="{{ route('staff.index') }}" class="inline-flex min-h-12 items-center rounded-control border border-slate-400 px-4 text-sm font-semibold text-ink hover:bg-white">Kembali</a>
     </div>
 
     @if ($errors->any())
@@ -65,7 +64,7 @@
             </x-ui.panel>
         </div>
 
-        <x-ui.panel title="Alasan perubahan">
+        <x-ui.panel title="Keterangan">
             <input name="reason" value="{{ old('reason') }}" class="min-h-12 w-full rounded-control border border-slate-400 px-4 font-normal" placeholder="Opsional, tercatat pada audit">
         </x-ui.panel>
 

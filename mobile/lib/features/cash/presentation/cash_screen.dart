@@ -90,7 +90,7 @@ class _CashScreenState extends ConsumerState<CashScreen> {
     }
     final difference = counted - session.expectedRupiah;
     if (difference != 0 && _reason.text.trim().isEmpty) {
-      _say('Alasan wajib diisi jika ada selisih kas.');
+      _say('Keterangan wajib diisi jika ada selisih kas.');
       return;
     }
     setState(() => _busy = true);
@@ -394,7 +394,7 @@ class _CashScreenState extends ConsumerState<CashScreen> {
               controller: _reason,
               maxLines: 2,
               decoration: const InputDecoration(
-                labelText: 'Alasan selisih (wajib jika ada selisih)',
+                labelText: 'Keterangan selisih (wajib jika ada selisih)',
               ),
             ),
             const SizedBox(height: 12),

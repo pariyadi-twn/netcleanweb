@@ -28,7 +28,7 @@ class UatProvisioningTest extends TestCase
         $this->assertDatabaseCount('branch_calendars', 8);
         $this->assertDatabaseCount('cash_registers', 1);
         $this->assertDatabaseHas('cash_registers', ['code' => 'KASIR-1']);
-        $this->assertDatabaseCount('tenant_memberships', 4);
+        $this->assertDatabaseCount('tenant_memberships', 5);
         $this->assertDatabaseCount('roles', 4);
         $this->assertDatabaseCount('workflow_templates', 1);
         $this->assertDatabaseCount('workflow_steps', 4);
@@ -44,6 +44,7 @@ class UatProvisioningTest extends TestCase
         $this->assertDatabaseHas('users', ['email' => 'cashier@uat.netclean.id', 'status' => 'active']);
         $this->assertDatabaseHas('users', ['email' => 'production@uat.netclean.id', 'status' => 'active']);
         $this->assertDatabaseHas('users', ['email' => 'supervisor@uat.netclean.id', 'status' => 'active']);
+        $this->assertDatabaseHas('users', ['email' => 'platform.admin@uat.netclean.id', 'status' => 'active', 'is_platform_admin' => true]);
         $this->assertSame(['OUTLET-MAIN', 'PLANT-MAIN'], Location::query()->orderBy('code')->pluck('code')->all());
         $this->assertSame(['cashier', 'owner', 'production', 'supervisor'], Role::query()->orderBy('code')->pluck('code')->all());
         $cashierPermissions = Role::query()
@@ -69,7 +70,7 @@ class UatProvisioningTest extends TestCase
         $this->assertDatabaseCount('branch_calendars', 8);
         $this->assertDatabaseCount('cash_registers', 1);
         $this->assertDatabaseHas('cash_registers', ['code' => 'KASIR-1']);
-        $this->assertDatabaseCount('tenant_memberships', 4);
+        $this->assertDatabaseCount('tenant_memberships', 5);
         $this->assertDatabaseCount('roles', 4);
         $this->assertDatabaseCount('workflow_templates', 1);
         $this->assertDatabaseCount('workflow_steps', 4);

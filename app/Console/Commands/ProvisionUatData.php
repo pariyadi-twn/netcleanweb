@@ -74,6 +74,7 @@ class ProvisionUatData extends Command
         $permissionSeeder->run();
 
         [$owner, $ownerPassword] = $this->user('Pemilik UAT', $ownerEmail);
+        [$platformAdmin, $platformAdminPassword] = $this->user('Platform Admin UAT', 'platform.admin@uat.netclean.id', true);
         $tenant = $this->findTenant($tenantScope, $owner, $tenantName);
 
         if ($tenant === null) {
@@ -97,6 +98,7 @@ class ProvisionUatData extends Command
             $this->staffCredential('cashier', 'Kasir UAT', 'cashier@uat.netclean.id'),
             $this->staffCredential('production', 'Operator Produksi UAT', 'production@uat.netclean.id'),
             $this->staffCredential('supervisor', 'Supervisor UAT', 'supervisor@uat.netclean.id'),
+            $this->credential('platform_admin', $platformAdmin, $platformAdminPassword),
         ]));
 
         $staff = [
@@ -105,7 +107,7 @@ class ProvisionUatData extends Command
             'supervisor' => User::query()->where('email', 'supervisor@uat.netclean.id')->sole(),
         ];
 
-        $tenantScope->forTenantId($tenant->id, $owner->id, function () use ($owner, $staff, $syncPermissions, $tenant, $updateAssignments, $createWorkflow, $createService, $createPriceBook, $createPriceEntry, $setPublication, $createCustomer, $updateCalendar): void {
+        $tenantScope->forTenantId($tenant->id, $owner->id, function () use ($owner, $platformAdmin, $staff, $syncPermissions, $tenant, $updateAssignments, $createWorkflow, $createService, $createPriceBook, $createPriceEntry, $setPublication, $createCustomer, $updateCalendar): void {
             $branch = Branch::query()->where('code', 'UAT-MAIN')->firstOrFail();
             $outlet = $this->location($tenant, $branch, 'OUTLET-MAIN', LocationType::Outlet, 'Outlet UAT Utama');
             $plant = $this->location($tenant, $branch, 'PLANT-MAIN', LocationType::Plant, 'Pusat Produksi UAT');
@@ -195,6 +197,22 @@ class ProvisionUatData extends Command
             $ownerRole = Role::query()->where('code', RoleCode::Owner->value)->firstOrFail();
             $this->syncRole($ownerRole, Permission::query()->pluck('id')->all(), $owner, $syncPermissions);
             $this->membership($ownerMembership, $ownerRole, [$branch->id], [$outlet->id, $plant->id], $owner, $updateAssignments);
+
+            $platformAdminMembership = TenantMembership::query()
+                ->where('tenant_id', $tenant->id)
+                ->where('user_id', $platformAdmin->id)
+                ->first();
+            if ($platformAdminMembership === null) {
+                $platformAdminMembership = new TenantMembership;
+                $platformAdminMembership->forceFill([
+                    'tenant_id' => $tenant->id,
+                    'user_id' => $platformAdmin->id,
+                    'status' => MembershipStatus::Active,
+                    'permission_version' => 1,
+                    'invited_by_user_id' => $owner->id,
+                ])->save();
+            }
+            $this->membership($platformAdminMembership, $ownerRole, [$branch->id], [$outlet->id, $plant->id], $owner, $updateAssignments);
 
             foreach ($staff as $code => $user) {
                 $membership = TenantMembership::query()
@@ -357,7 +375,7 @@ class ProvisionUatData extends Command
     }
 
     /** @return array{User, ?string} */
-    private function user(string $name, string $email): array
+    private function user(string $name, string $email, bool $platformAdmin = false): array
     {
         $existing = User::query()->where('email', $email)->first();
         if ($existing !== null) {
@@ -373,7 +391,7 @@ class ProvisionUatData extends Command
         $user->forceFill([
             'email_verified_at' => now(),
             'status' => 'active',
-            'is_platform_admin' => false,
+            'is_platform_admin' => $platformAdmin,
         ])->save();
 
         return [$user, $password];

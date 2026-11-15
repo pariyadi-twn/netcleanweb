@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\MfaSetupController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Owner\BranchController;
 use App\Http\Controllers\Owner\CatalogController;
@@ -24,6 +25,9 @@ Route::get('/', function () {
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->middleware('throttle:login')->name('login.store');
+
+    Route::get('/register', [RegisterController::class, 'create'])->name('register');
+    Route::post('/register', [RegisterController::class, 'store'])->middleware('throttle:register')->name('register.store');
 
     Route::get('/mfa-challenge', [AuthenticatedSessionController::class, 'challenge'])->name('mfa.challenge');
     Route::post('/mfa-challenge', [AuthenticatedSessionController::class, 'verify'])->middleware('throttle:mfa')->name('mfa.challenge.verify');

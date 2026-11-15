@@ -472,6 +472,8 @@ Untuk fitur backend yang dipakai Flutter/web, task baru selesai setelah kontrak 
 
   Registrasi owner publik tersedia di `/register`: membuat user terverifikasi, tenant, cabang pertama, role owner, lalu mengarahkan ke aktivasi MFA. Layout auth baru dipakai login/register dengan panel brand, form responsif, status/error terhubung, dan tautan silang; `RegistrationTest` lulus **3 test/17 assertion**. Akun platform admin UAT `platform.admin@uat.netclean.id` dibuat dengan membership owner pada tenant `NetClean UAT`, MFA aktif, dan akses `/platform`, dashboard, serta halaman owner terverifikasi `200`. Staging image `c773531e3231`; kredensial dan MFA platform admin disimpan root-only.
 
+  Perbaikan UI owner 16 November 2026: field zona waktu dihapus dari registrasi dan konfigurasi; nilai baru/default memakai `Asia/Jakarta` dan nilai lama dipertahankan bila ada. Label field "Alasan" diganti menjadi "Keterangan" pada form owner/platform dan shift kas mobile. Tombol kembali global ditambahkan ke seluruh halaman konsol setelah login kecuali dashboard. Halaman detail owner yang sebelumnya 404 diperbaiki dengan menjalankan tenant context sebelum route model binding; regresi diuji memakai koneksi runtime RLS. Smoke staging: seluruh tautan owner dan halaman detail role/cabang/staf merespons `200`. APK UAT terbaru `1.1.2+4` di-host di `/uat/netclean-staff-uat-4091165c6f.apk`.
+
   Belum selesai: kamera/BT dan printer fisik (T048), bukti foto/attachment fisik, draft offline, serta UAT perangkat. Karena itu T033 tetap belum dicentang.
 
 ## Fase D Produksi uang dan pengelolaan P0

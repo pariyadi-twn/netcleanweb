@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('title', 'Sedang pemeliharaan - NetClean')
+@section('code', '503')
+@section('heading', 'Sedang pemeliharaan')
+@section('message', 'Layanan sedang diperbarui. Silakan kembali beberapa saat lagi.')

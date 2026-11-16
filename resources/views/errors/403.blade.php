@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('title', 'Akses ditolak - NetClean')
+@section('code', '403')
+@section('heading', 'Akses ditolak')
+@section('message', 'Akun ini tidak memiliki izin untuk membuka halaman atau tindakan tersebut.')

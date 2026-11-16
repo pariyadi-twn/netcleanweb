@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('title', 'Terjadi kesalahan - NetClean')
+@section('code', '500')
+@section('heading', 'Terjadi kesalahan')
+@section('message', 'Permintaan belum dapat diproses. Coba lagi atau hubungi administrator.')

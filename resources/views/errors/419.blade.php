@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('title', 'Sesi berakhir - NetClean')
+@section('code', '419')
+@section('heading', 'Sesi berakhir')
+@section('message', 'Halaman terlalu lama terbuka. Muat ulang lalu coba lagi.')

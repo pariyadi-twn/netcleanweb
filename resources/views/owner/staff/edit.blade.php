@@ -65,7 +65,7 @@
         </div>
 
         <x-ui.panel title="Keterangan">
-            <input name="reason" value="{{ old('reason') }}" class="min-h-12 w-full rounded-control border border-slate-400 px-4 font-normal" placeholder="Opsional, tercatat pada audit">
+            <input name="reason" value="{{ old('reason') }}" class="min-h-12 w-full rounded-control border border-input px-4 font-normal" placeholder="Opsional, tercatat pada audit">
         </x-ui.panel>
 
         <div>

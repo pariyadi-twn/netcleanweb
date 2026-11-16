@@ -23,7 +23,7 @@
         @csrf
         @method('PUT')
         <x-ui.panel title="Nama peran">
-            <input name="name" value="{{ old('name', $role->name) }}" required class="min-h-12 w-full rounded-control border border-slate-400 px-4 font-normal">
+            <input name="name" value="{{ old('name', $role->name) }}" required class="min-h-12 w-full rounded-control border border-input px-4 font-normal">
         </x-ui.panel>
 
         <x-ui.panel title="Izin" description="Izin berlaku untuk seluruh staf dengan peran ini.">
@@ -38,7 +38,7 @@
         </x-ui.panel>
 
         <x-ui.panel title="Keterangan">
-            <input name="reason" value="{{ old('reason') }}" class="min-h-12 w-full rounded-control border border-slate-400 px-4 font-normal">
+            <input name="reason" value="{{ old('reason') }}" class="min-h-12 w-full rounded-control border border-input px-4 font-normal">
         </x-ui.panel>
 
         <div>

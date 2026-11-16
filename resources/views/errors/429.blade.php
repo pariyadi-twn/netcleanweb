@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('title', 'Terlalu banyak permintaan - NetClean')
+@section('code', '429')
+@section('heading', 'Terlalu banyak permintaan')
+@section('message', 'Tunggu sebentar sebelum mencoba lagi.')

@@ -28,9 +28,9 @@
                 <h2 class="text-base font-extrabold text-ink">Keamanan akun</h2>
                 <p class="mt-1 text-sm text-muted">Verifikasi dua langkah untuk pemilik dan admin platform.</p>
             </div>
-            <x-ui.alert :tone="$mfaMode === 'required' ? 'success' : 'warning'">
+            <x-ui.status-chip :tone="$mfaMode === 'required' ? 'success' : 'warning'">
                 {{ $mfaMode === 'required' ? 'MFA aktif' : 'MFA dinonaktifkan sementara' }}
-            </x-ui.alert>
+            </x-ui.status-chip>
         </div>
     </div>
 @endsection

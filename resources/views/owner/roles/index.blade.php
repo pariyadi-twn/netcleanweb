@@ -24,12 +24,12 @@
                             <div class="flex flex-wrap items-center gap-2">
                                 <p class="font-bold text-ink">{{ $role->name }}</p>
                                 @if ($role->is_system)
-                                    <x-ui.alert tone="info" class="!py-1">Sistem</x-ui.alert>
+                                    <x-ui.status-chip tone="info">Sistem</x-ui.status-chip>
                                 @endif
                             </div>
                             <p class="mt-1 text-sm text-muted">{{ $role->code }} • {{ $role->permissions_count }} izin</p>
                         </div>
-                        <a href="{{ route('roles.edit', $role) }}" class="inline-flex min-h-12 shrink-0 items-center rounded-control border border-slate-400 px-4 text-sm font-semibold text-ink hover:bg-slate-50">Kelola izin</a>
+                        <a href="{{ route('roles.edit', $role) }}" class="inline-flex min-h-12 shrink-0 items-center rounded-control border border-input px-4 text-sm font-semibold text-ink hover:bg-slate-50">Kelola izin</a>
                     </div>
                 @endforeach
             </div>
@@ -39,13 +39,13 @@
             <form method="POST" action="{{ route('roles.store') }}" class="grid gap-3">
                 @csrf
                 <label class="grid gap-1 text-sm font-semibold text-ink">Kode
-                    <input name="code" value="{{ old('code') }}" required class="min-h-12 rounded-control border border-slate-400 px-4 font-normal" placeholder="supervisor">
+                    <input name="code" value="{{ old('code') }}" required class="min-h-12 rounded-control border border-input px-4 font-normal" placeholder="supervisor">
                 </label>
                 <label class="grid gap-1 text-sm font-semibold text-ink">Nama
-                    <input name="name" value="{{ old('name') }}" required class="min-h-12 rounded-control border border-slate-400 px-4 font-normal" placeholder="Supervisor">
+                    <input name="name" value="{{ old('name') }}" required class="min-h-12 rounded-control border border-input px-4 font-normal" placeholder="Supervisor">
                 </label>
                 <label class="grid gap-1 text-sm font-semibold text-ink">Keterangan
-                    <input name="reason" value="{{ old('reason') }}" class="min-h-12 rounded-control border border-slate-400 px-4 font-normal">
+                    <input name="reason" value="{{ old('reason') }}" class="min-h-12 rounded-control border border-input px-4 font-normal">
                 </label>
                 <button type="submit" class="min-h-12 rounded-control bg-brand-600 px-5 font-semibold text-white hover:bg-brand-700">Buat peran</button>
             </form>

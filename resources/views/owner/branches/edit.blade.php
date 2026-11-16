@@ -23,16 +23,16 @@
                 @csrf
                 @method('PUT')
                 <label class="grid gap-1 text-sm font-semibold text-ink">Nama
-                    <input name="name" value="{{ old('name', $branch->name) }}" required class="min-h-12 rounded-control border border-slate-400 px-4 font-normal">
+                    <input name="name" value="{{ old('name', $branch->name) }}" required class="min-h-12 rounded-control border border-input px-4 font-normal">
                 </label>
                 <label class="grid gap-1 text-sm font-semibold text-ink">Alamat
-                    <textarea name="address" required class="min-h-24 rounded-control border border-slate-400 px-4 py-3 font-normal">{{ old('address', $branch->address) }}</textarea>
+                    <textarea name="address" required class="min-h-24 rounded-control border border-input px-4 py-3 font-normal">{{ old('address', $branch->address) }}</textarea>
                 </label>
                 <label class="grid gap-1 text-sm font-semibold text-ink">Telepon
-                    <input name="phone" value="{{ old('phone', $branch->phone) }}" class="min-h-12 rounded-control border border-slate-400 px-4 font-normal">
+                    <input name="phone" value="{{ old('phone', $branch->phone) }}" class="min-h-12 rounded-control border border-input px-4 font-normal">
                 </label>
                 <label class="grid gap-1 text-sm font-semibold text-ink">Keterangan
-                    <input name="reason" value="{{ old('reason') }}" class="min-h-12 rounded-control border border-slate-400 px-4 font-normal">
+                    <input name="reason" value="{{ old('reason') }}" class="min-h-12 rounded-control border border-input px-4 font-normal">
                 </label>
                 <label class="flex min-h-12 items-center gap-3 text-sm font-semibold text-ink">
                     <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $branch->is_active))>

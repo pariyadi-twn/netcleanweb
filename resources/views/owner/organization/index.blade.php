@@ -21,10 +21,10 @@
                 @csrf
                 @method('PUT')
                 <label class="grid gap-1 text-sm font-semibold text-ink">Nama organisasi
-                    <input name="name" value="{{ old('name', $tenant->name) }}" required class="min-h-12 rounded-control border border-slate-400 px-4 font-normal">
+                    <input name="name" value="{{ old('name', $tenant->name) }}" required class="min-h-12 rounded-control border border-input px-4 font-normal">
                 </label>
                 <label class="grid gap-1 text-sm font-semibold text-ink">Keterangan
-                    <input name="reason" value="{{ old('reason') }}" class="min-h-12 rounded-control border border-slate-400 px-4 font-normal">
+                    <input name="reason" value="{{ old('reason') }}" class="min-h-12 rounded-control border border-input px-4 font-normal">
                 </label>
                 <button type="submit" class="min-h-12 rounded-control bg-brand-600 px-5 font-semibold text-white hover:bg-brand-700">Simpan profil</button>
             </form>

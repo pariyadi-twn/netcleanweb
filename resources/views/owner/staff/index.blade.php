@@ -19,7 +19,7 @@
                         <div>
                             <div class="flex flex-wrap items-center gap-2">
                                 <h2 class="text-xl font-bold text-ink">{{ $membership->user->name }}</h2>
-                                <x-ui.alert :tone="$membership->status->value === 'active' ? 'success' : 'warning'" class="!py-1">{{ $membership->status->value }}</x-ui.alert>
+                                <x-ui.status-chip :tone="$membership->status->value === 'active' ? 'success' : 'warning'">{{ $membership->status->value }}</x-ui.status-chip>
                             </div>
                             <p class="mt-1 text-sm text-muted">{{ $membership->user->email }}</p>
                             <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-3">

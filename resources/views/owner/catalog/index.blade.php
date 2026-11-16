@@ -27,7 +27,7 @@
                                 <div>
                                     <div class="flex flex-wrap items-center gap-2">
                                         <p class="font-bold text-ink">{{ $service->name }}</p>
-                                        <x-ui.alert :tone="$service->is_active ? 'success' : 'warning'" class="!py-1">{{ $service->is_active ? 'Aktif' : 'Draft' }}</x-ui.alert>
+                                        <x-ui.status-chip :tone="$service->is_active ? 'success' : 'warning'">{{ $service->is_active ? 'Aktif' : 'Draft' }}</x-ui.status-chip>
                                     </div>
                                     <p class="mt-1 text-sm text-muted">{{ $service->code }} • per {{ $service->unit->value }} • min {{ $service->minimum_quantity }} • step {{ $service->quantity_step }}</p>
                                     <p class="mt-1 text-sm text-muted">Workflow: {{ $service->workflowTemplate?->name }} rev. {{ $service->workflowTemplate?->revision }}</p>
@@ -35,7 +35,7 @@
                                 <form method="POST" action="{{ route('catalog.services.publication', $service) }}" class="shrink-0">
                                     @csrf
                                     <input type="hidden" name="is_active" value="{{ $service->is_active ? 0 : 1 }}">
-                                    <button type="submit" class="min-h-12 rounded-control border border-slate-400 px-4 text-sm font-semibold text-ink hover:bg-slate-50">{{ $service->is_active ? 'Nonaktifkan' : 'Publikasikan' }}</button>
+                                    <button type="submit" class="min-h-12 rounded-control border border-input px-4 text-sm font-semibold text-ink hover:bg-slate-50">{{ $service->is_active ? 'Nonaktifkan' : 'Publikasikan' }}</button>
                                 </form>
                             </div>
                         </div>
@@ -50,24 +50,24 @@
                 @else
                     <form method="POST" action="{{ route('catalog.services.store') }}" class="mt-3 grid gap-3 sm:grid-cols-2">
                         @csrf
-                        <label class="grid gap-1 text-sm font-semibold text-ink">Kode<input name="code" value="{{ old('code') }}" required class="min-h-12 rounded-control border border-slate-400 px-4 font-normal"></label>
-                        <label class="grid gap-1 text-sm font-semibold text-ink">Nama<input name="name" value="{{ old('name') }}" required class="min-h-12 rounded-control border border-slate-400 px-4 font-normal"></label>
+                        <label class="grid gap-1 text-sm font-semibold text-ink">Kode<input name="code" value="{{ old('code') }}" required class="min-h-12 rounded-control border border-input px-4 font-normal"></label>
+                        <label class="grid gap-1 text-sm font-semibold text-ink">Nama<input name="name" value="{{ old('name') }}" required class="min-h-12 rounded-control border border-input px-4 font-normal"></label>
                         <label class="grid gap-1 text-sm font-semibold text-ink">Unit
-                            <select name="unit" required class="min-h-12 rounded-control border border-slate-400 px-4 font-normal">
+                            <select name="unit" required class="min-h-12 rounded-control border border-input px-4 font-normal">
                                 @foreach (['kg', 'pcs', 'pair', 'meter', 'package'] as $unit)
                                     <option value="{{ $unit }}" @selected(old('unit', 'kg') === $unit)>{{ $unit }}</option>
                                 @endforeach
                             </select>
                         </label>
                         <label class="grid gap-1 text-sm font-semibold text-ink">Workflow
-                            <select name="workflow_template_id" required class="min-h-12 rounded-control border border-slate-400 px-4 font-normal">
+                            <select name="workflow_template_id" required class="min-h-12 rounded-control border border-input px-4 font-normal">
                                 @foreach ($workflows as $workflow)
                                     <option value="{{ $workflow->public_id }}" @selected(old('workflow_template_id') === $workflow->public_id)>{{ $workflow->name }} ({{ $workflow->code }} rev. {{ $workflow->revision }})</option>
                                 @endforeach
                             </select>
                         </label>
-                        <label class="grid gap-1 text-sm font-semibold text-ink">Minimum<input name="minimum_quantity" value="{{ old('minimum_quantity', '1.000') }}" required class="min-h-12 rounded-control border border-slate-400 px-4 font-normal"></label>
-                        <label class="grid gap-1 text-sm font-semibold text-ink">Step<input name="quantity_step" value="{{ old('quantity_step', '0.100') }}" required class="min-h-12 rounded-control border border-slate-400 px-4 font-normal"></label>
+                        <label class="grid gap-1 text-sm font-semibold text-ink">Minimum<input name="minimum_quantity" value="{{ old('minimum_quantity', '1.000') }}" required class="min-h-12 rounded-control border border-input px-4 font-normal"></label>
+                        <label class="grid gap-1 text-sm font-semibold text-ink">Step<input name="quantity_step" value="{{ old('quantity_step', '0.100') }}" required class="min-h-12 rounded-control border border-input px-4 font-normal"></label>
                         <div class="sm:col-span-2">
                             <button type="submit" class="min-h-12 rounded-control bg-brand-600 px-5 font-semibold text-white hover:bg-brand-700">Buat layanan draft</button>
                         </div>
@@ -85,7 +85,7 @@
                         <div class="rounded-control border border-divider p-4">
                             <div class="flex flex-wrap items-center gap-2">
                                 <p class="font-bold text-ink">{{ $book->name }}</p>
-                                <x-ui.alert :tone="$book->is_active ? 'success' : 'warning'" class="!py-1">{{ $book->is_active ? 'Aktif' : 'Nonaktif' }}</x-ui.alert>
+                                <x-ui.status-chip :tone="$book->is_active ? 'success' : 'warning'">{{ $book->is_active ? 'Aktif' : 'Nonaktif' }}</x-ui.status-chip>
                                 <span class="text-sm text-muted">{{ $book->branch?->name ?? 'Tenant' }}</span>
                             </div>
                             <ul class="mt-3 space-y-1 text-sm text-muted">
@@ -99,23 +99,23 @@
                                 <form method="POST" action="{{ route('catalog.price-entries.store', $book) }}" class="mt-4 grid gap-2 sm:grid-cols-2">
                                     @csrf
                                     <label class="grid gap-1 text-sm font-semibold text-ink">Layanan
-                                        <select name="service_id" required class="min-h-12 rounded-control border border-slate-400 px-3 font-normal">
+                                        <select name="service_id" required class="min-h-12 rounded-control border border-input px-3 font-normal">
                                             @foreach ($services as $service)
                                                 <option value="{{ $service->public_id }}">{{ $service->name }}</option>
                                             @endforeach
                                         </select>
                                     </label>
                                     <label class="grid gap-1 text-sm font-semibold text-ink">Tier
-                                        <select name="tier" class="min-h-12 rounded-control border border-slate-400 px-3 font-normal">
+                                        <select name="tier" class="min-h-12 rounded-control border border-input px-3 font-normal">
                                             <option value="regular">regular</option>
                                             <option value="express">express</option>
                                         </select>
                                     </label>
                                     <label class="grid gap-1 text-sm font-semibold text-ink">Harga (Rp)
-                                        <input name="unit_price_rupiah" type="number" min="0" required class="min-h-12 rounded-control border border-slate-400 px-3 font-normal">
+                                        <input name="unit_price_rupiah" type="number" min="0" required class="min-h-12 rounded-control border border-input px-3 font-normal">
                                     </label>
                                     <label class="grid gap-1 text-sm font-semibold text-ink">Berlaku dari
-                                        <input name="effective_from" type="date" value="{{ now()->toDateString() }}" required class="min-h-12 rounded-control border border-slate-400 px-3 font-normal">
+                                        <input name="effective_from" type="date" value="{{ now()->toDateString() }}" required class="min-h-12 rounded-control border border-input px-3 font-normal">
                                     </label>
                                     <div class="sm:col-span-2">
                                         <button type="submit" class="min-h-12 rounded-control bg-brand-600 px-4 font-semibold text-white hover:bg-brand-700">Tambah harga</button>
@@ -131,9 +131,9 @@
                 <h3 class="font-bold text-ink">Price book baru</h3>
                 <form method="POST" action="{{ route('catalog.price-books.store') }}" class="mt-3 grid gap-3">
                     @csrf
-                    <label class="grid gap-1 text-sm font-semibold text-ink">Nama<input name="name" value="{{ old('name') }}" required class="min-h-12 rounded-control border border-slate-400 px-4 font-normal"></label>
+                    <label class="grid gap-1 text-sm font-semibold text-ink">Nama<input name="name" value="{{ old('name') }}" required class="min-h-12 rounded-control border border-input px-4 font-normal"></label>
                     <label class="grid gap-1 text-sm font-semibold text-ink">Cabang (opsional)
-                        <select name="branch_id" class="min-h-12 rounded-control border border-slate-400 px-4 font-normal">
+                        <select name="branch_id" class="min-h-12 rounded-control border border-input px-4 font-normal">
                             <option value="">Tenant (semua cabang)</option>
                             @foreach ($branches as $branch)
                                 <option value="{{ $branch->public_id }}">{{ $branch->name }}</option>

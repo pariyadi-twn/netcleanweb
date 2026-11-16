@@ -18,7 +18,7 @@
     <div class="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)]">
         <x-ui.panel title="Cari pelanggan">
             <form method="GET" action="{{ route('customers.index') }}" class="flex flex-col gap-3 sm:flex-row">
-                <input name="q" value="{{ $query }}" placeholder="Nama atau nomor telepon" class="min-h-12 flex-1 rounded-control border border-slate-400 px-4">
+                <input name="q" value="{{ $query }}" placeholder="Nama atau nomor telepon" class="min-h-12 flex-1 rounded-control border border-input px-4">
                 <button type="submit" class="min-h-12 rounded-control bg-brand-600 px-5 font-semibold text-white hover:bg-brand-700">Cari</button>
             </form>
 
@@ -33,7 +33,7 @@
                                     <p class="mt-1 text-sm text-muted">{{ $customer->notes }}</p>
                                 @endif
                             </div>
-                            <x-ui.alert :tone="$customer->is_active ? 'success' : 'warning'" class="!py-1">{{ $customer->is_active ? 'Aktif' : 'Nonaktif' }}</x-ui.alert>
+                            <x-ui.status-chip :tone="$customer->is_active ? 'success' : 'warning'">{{ $customer->is_active ? 'Aktif' : 'Nonaktif' }}</x-ui.status-chip>
                         </div>
                     </div>
                 @empty
@@ -47,12 +47,12 @@
         <x-ui.panel title="Pelanggan baru">
             <form method="POST" action="{{ route('customers.store') }}" class="grid gap-3">
                 @csrf
-                <label class="grid gap-1 text-sm font-semibold text-ink">Nama<input name="name" value="{{ old('name') }}" required class="min-h-12 rounded-control border border-slate-400 px-4 font-normal"></label>
-                <label class="grid gap-1 text-sm font-semibold text-ink">Telepon<input name="phone" value="{{ old('phone') }}" class="min-h-12 rounded-control border border-slate-400 px-4 font-normal"></label>
-                <label class="grid gap-1 text-sm font-semibold text-ink">Email<input name="email" type="email" value="{{ old('email') }}" class="min-h-12 rounded-control border border-slate-400 px-4 font-normal"></label>
-                <label class="grid gap-1 text-sm font-semibold text-ink">Catatan<textarea name="notes" class="min-h-20 rounded-control border border-slate-400 px-4 py-3 font-normal">{{ old('notes') }}</textarea></label>
-                <label class="grid gap-1 text-sm font-semibold text-ink">Label alamat<input name="address_label" value="{{ old('address_label') }}" class="min-h-12 rounded-control border border-slate-400 px-4 font-normal" placeholder="Utama"></label>
-                <label class="grid gap-1 text-sm font-semibold text-ink">Alamat<textarea name="address" class="min-h-20 rounded-control border border-slate-400 px-4 py-3 font-normal">{{ old('address') }}</textarea></label>
+                <label class="grid gap-1 text-sm font-semibold text-ink">Nama<input name="name" value="{{ old('name') }}" required class="min-h-12 rounded-control border border-input px-4 font-normal"></label>
+                <label class="grid gap-1 text-sm font-semibold text-ink">Telepon<input name="phone" value="{{ old('phone') }}" class="min-h-12 rounded-control border border-input px-4 font-normal"></label>
+                <label class="grid gap-1 text-sm font-semibold text-ink">Email<input name="email" type="email" value="{{ old('email') }}" class="min-h-12 rounded-control border border-input px-4 font-normal"></label>
+                <label class="grid gap-1 text-sm font-semibold text-ink">Catatan<textarea name="notes" class="min-h-20 rounded-control border border-input px-4 py-3 font-normal">{{ old('notes') }}</textarea></label>
+                <label class="grid gap-1 text-sm font-semibold text-ink">Label alamat<input name="address_label" value="{{ old('address_label') }}" class="min-h-12 rounded-control border border-input px-4 font-normal" placeholder="Utama"></label>
+                <label class="grid gap-1 text-sm font-semibold text-ink">Alamat<textarea name="address" class="min-h-20 rounded-control border border-input px-4 py-3 font-normal">{{ old('address') }}</textarea></label>
                 <button type="submit" class="min-h-12 rounded-control bg-brand-600 px-5 font-semibold text-white hover:bg-brand-700">Simpan pelanggan</button>
             </form>
         </x-ui.panel>

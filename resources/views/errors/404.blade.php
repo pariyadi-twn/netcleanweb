@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('title', 'Halaman tidak ditemukan - NetClean')
+@section('code', '404')
+@section('heading', 'Halaman tidak ditemukan')
+@section('message', 'Halaman yang dicari tidak tersedia atau sudah dipindahkan.')

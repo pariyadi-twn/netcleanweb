@@ -23,9 +23,7 @@
                             <h2 class="mt-1 text-xl font-bold text-ink">{{ $branch->name }}</h2>
                             <p class="mt-2 text-sm text-muted">{{ $branch->address }}</p>
                         </div>
-                        <x-ui.alert :tone="$branch->is_active ? 'success' : 'danger'" class="shrink-0">
-                            {{ $branch->is_active ? 'Aktif' : 'Nonaktif' }}
-                        </x-ui.alert>
+                        <x-ui.status-chip :tone="$branch->is_active ? 'success' : 'danger'" class="shrink-0">{{ $branch->is_active ? 'Aktif' : 'Nonaktif' }}</x-ui.status-chip>
                     </div>
                     <dl class="mt-4 grid grid-cols-2 gap-3 text-sm">
                         <div><dt class="text-muted">Zona waktu</dt><dd class="font-semibold">{{ $branch->timezone }}</dd></div>

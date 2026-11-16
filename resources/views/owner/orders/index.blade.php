@@ -3,7 +3,9 @@
 @section('title', 'Pesanan - NetClean')
 
 @section('content')
-    <x-ui.page-header eyebrow="Operasional" title="Pesanan" description="Cari dan pantau order dari cabang dalam scope akses Anda." />
+    <x-ui.page-header eyebrow="Operasional" title="Pesanan" description="Cari dan pantau order dari cabang dalam scope akses Anda.">
+        <x-slot:actions><a href="{{ route('orders.create') }}" class="inline-flex min-h-11 items-center rounded-control bg-brand-600 px-4 text-sm font-bold text-white hover:bg-brand-700">Pesanan baru</a></x-slot:actions>
+    </x-ui.page-header>
 
     <form method="GET" action="{{ route('orders.index') }}" class="mb-5 grid gap-3 rounded-container border border-divider bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4">
         <label class="grid gap-1 text-xs font-bold text-muted">Cari

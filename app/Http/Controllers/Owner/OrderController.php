@@ -5,18 +5,23 @@ namespace App\Http\Controllers\Owner;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Modules\Cash\Models\CashSession;
+use App\Modules\Catalog\Models\Service;
+use App\Modules\Customer\Models\Customer;
 use App\Modules\Identity\Authorization\TenantContext;
 use App\Modules\Identity\Enums\PermissionCode;
 use App\Modules\Identity\Models\Branch;
 use App\Modules\Identity\Models\Location;
 use App\Modules\Logistics\Actions\CreateHandover;
 use App\Modules\Logistics\Models\Handover;
+use App\Modules\Order\Actions\AcceptOrder;
 use App\Modules\Order\Actions\BuildReceipt;
 use App\Modules\Order\Actions\CancelOrder;
+use App\Modules\Order\Actions\CreateQuote;
 use App\Modules\Order\Actions\DecideOrderRevision;
 use App\Modules\Order\Enums\OrderStatus;
 use App\Modules\Order\Models\Order;
 use App\Modules\Order\Models\OrderRevision;
+use App\Modules\Order\Models\Quote;
 use App\Modules\Payment\Actions\GrantInvoiceCredit;
 use App\Modules\Payment\Actions\RecordPayment;
 use App\Modules\Payment\Models\CreditApproval;
@@ -80,6 +85,112 @@ class OrderController extends Controller
             'branches' => $branches,
             'statuses' => $statuses,
         ]);
+    }
+
+    public function create(Request $request, TenantContext $context): View
+    {
+        Gate::authorize('create', Order::class);
+
+        if ($request->boolean('reset')) {
+            $request->session()->forget('web_order_quote_id');
+        }
+
+        $quote = null;
+        $quoteId = $request->session()->get('web_order_quote_id');
+        if (is_string($quoteId)) {
+            $quote = Quote::query()
+                ->where('tenant_id', $context->tenantId)
+                ->where('public_id', $quoteId)
+                ->where('consumed_at', null)
+                ->first();
+        }
+
+        return view('owner.orders.create', [
+            'user' => $request->user(),
+            'branches' => Branch::query()->where('tenant_id', $context->tenantId)->whereIn('id', $context->branchIds)->orderBy('name')->get(),
+            'services' => Service::query()->where('tenant_id', $context->tenantId)->where('is_active', true)->orderBy('name')->get(),
+            'customers' => Customer::query()->where('tenant_id', $context->tenantId)->where('is_active', true)->orderBy('name')->limit(100)->get(),
+            'quote' => $quote,
+        ]);
+    }
+
+    public function storeQuote(Request $request, TenantContext $context, CreateQuote $create): RedirectResponse
+    {
+        Gate::authorize('create', Order::class);
+        $validated = $request->validate([
+            'branch_id' => ['required', 'uuid'],
+            'customer_id' => ['nullable', 'uuid'],
+            'quantities' => ['required', 'array'],
+            'quantities.*' => ['nullable', 'string', 'regex:/^(0|[1-9][0-9]{0,8})([.,][0-9]{1,3})?$/'],
+            'tiers' => ['sometimes', 'array'],
+            'tiers.*' => ['nullable', 'in:regular,express'],
+        ]);
+
+        $branch = Branch::query()->where('tenant_id', $context->tenantId)->where('public_id', $validated['branch_id'])->firstOrFail();
+        abort_unless($context->canAccessBranch($branch), 403);
+        $lines = [];
+        foreach ($validated['quantities'] as $serviceId => $quantity) {
+            $quantity = str_replace(',', '.', trim((string) $quantity));
+            if ($quantity === '' || (float) $quantity <= 0) {
+                continue;
+            }
+            $lines[] = [
+                'service_id' => (string) $serviceId,
+                'measured_quantity' => $quantity,
+                'tier' => $validated['tiers'][$serviceId] ?? 'regular',
+            ];
+        }
+        if ($lines === []) {
+            return back()->withErrors(['quantities' => 'Isi jumlah minimal satu layanan.'])->withInput();
+        }
+
+        try {
+            $quote = $create->handle(
+                $context->tenantId,
+                [
+                    'branch_id' => $branch->public_id,
+                    'customer_id' => $validated['customer_id'] ?? null,
+                    'fulfillment_method' => 'pickup',
+                    'pickup_branch_id' => $branch->public_id,
+                    'service_discount_percent' => 0,
+                    'lines' => $lines,
+                ],
+                $context->membershipId,
+                $context->can(PermissionCode::DiscountsStandard),
+                $context->can(PermissionCode::DiscountsOverride),
+            );
+        } catch (ApiException $exception) {
+            return back()->withErrors(['quote' => $exception->getMessage()])->withInput();
+        }
+
+        $request->session()->put('web_order_quote_id', $quote->public_id);
+
+        return redirect()->route('orders.create')->with('status', 'Quote berhasil dihitung.');
+    }
+
+    public function acceptQuote(Request $request, TenantContext $context, AcceptOrder $accept): RedirectResponse
+    {
+        Gate::authorize('create', Order::class);
+        $quoteId = $request->session()->get('web_order_quote_id');
+        $quote = is_string($quoteId)
+            ? Quote::query()->where('tenant_id', $context->tenantId)->where('public_id', $quoteId)->first()
+            : null;
+
+        if ($quote === null || $quote->consumed_at !== null || $quote->expires_at->isPast()) {
+            $request->session()->forget('web_order_quote_id');
+
+            return redirect()->route('orders.create')->withErrors(['quote' => 'Quote tidak tersedia atau sudah kedaluwarsa.']);
+        }
+
+        try {
+            $order = $accept->handle($quote, $quote->pricing_snapshot['input'], $request->user(), $context->membershipId);
+        } catch (ApiException $exception) {
+            return back()->withErrors(['quote' => $exception->getMessage()]);
+        }
+
+        $request->session()->forget('web_order_quote_id');
+
+        return redirect()->route('orders.show', $order)->with('status', 'Pesanan berhasil dibuat.');
     }
 
     public function show(string $order, TenantContext $context): View

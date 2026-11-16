@@ -23,5 +23,18 @@
             <x-ui.alert tone="warning">Belum ada laci kas dalam scope.</x-ui.alert>
         @endforelse
     </div>
+    @if ($canManage && $openSessions->isNotEmpty())
+        <form method="POST" action="{{ route('finance.cash.transfer') }}" class="mt-6 grid gap-3 rounded-container border border-divider bg-white p-5 shadow-sm sm:grid-cols-2 lg:grid-cols-5">
+            @csrf
+            <select name="kind" class="min-h-11 rounded-control border border-input px-3 text-sm"><option value="inter_register">Antar laci</option><option value="bank_deposit">Setoran bank</option><option value="owner_funding">Dana owner</option></select>
+            <input name="amount_rupiah" type="number" min="1" required placeholder="Nominal" class="min-h-11 rounded-control border border-input px-3 text-sm">
+            <select name="from_session" class="min-h-11 rounded-control border border-input px-3 text-sm"><option value="">Sesi asal</option>@foreach($openSessions as $session)<option value="{{ $session->register?->public_id }}|{{ $session->public_id }}">{{ $session->register?->code }} · {{ $session->register?->branch?->name }}</option>@endforeach</select>
+            <select name="to_session" class="min-h-11 rounded-control border border-input px-3 text-sm"><option value="">Sesi tujuan</option>@foreach($openSessions as $session)<option value="{{ $session->register?->public_id }}|{{ $session->public_id }}">{{ $session->register?->code }} · {{ $session->register?->branch?->name }}</option>@endforeach</select>
+            <button class="min-h-11 rounded-control bg-brand-600 px-4 text-sm font-bold text-white">Catat transfer</button>
+            <input name="reason" required placeholder="Keterangan transfer" class="min-h-11 rounded-control border border-input px-3 text-sm sm:col-span-2 lg:col-span-3">
+            <input name="reference" placeholder="Referensi bank (opsional)" class="min-h-11 rounded-control border border-input px-3 text-sm sm:col-span-2">
+        </form>
+    @endif
+
     <section class="mt-6 rounded-container border border-divider bg-white p-5 shadow-sm"><h2 class="font-extrabold">Riwayat shift</h2><div class="mt-3 divide-y divide-divider">@foreach($sessions as $session)<div class="py-3 text-sm"><div class="flex flex-wrap justify-between gap-2"><span class="font-semibold">{{ $session->register?->code }} · {{ $session->register?->branch?->name }}</span><span class="text-muted">{{ $session->status->value }} · {{ $session->opened_at?->format('d M H:i') }}</span></div>@if($canManage && $session->status->value === 'closed')<form method="POST" action="{{ route('finance.cash.reopen', $session) }}" class="mt-2 flex flex-wrap gap-2">@csrf<input name="reason" required placeholder="Keterangan buka kembali" class="min-h-9 flex-1 rounded-control border border-input px-3 text-xs"><button class="min-h-9 rounded-control border border-divider px-3 text-xs font-bold text-brand-700">Buka kembali</button></form>@endif</div>@endforeach</div></section>
 @endsection

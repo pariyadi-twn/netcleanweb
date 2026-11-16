@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Owner;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Modules\Cash\Actions\CloseCashSession;
+use App\Modules\Cash\Actions\ConfirmCashTransfer;
 use App\Modules\Cash\Actions\CreateExpense;
 use App\Modules\Cash\Actions\DecideExpense;
 use App\Modules\Cash\Actions\OpenCashSession;
 use App\Modules\Cash\Actions\ReopenCashSession;
 use App\Modules\Cash\Models\CashRegister;
 use App\Modules\Cash\Models\CashSession;
+use App\Modules\Cash\Models\CashTransfer;
 use App\Modules\Cash\Models\Expense;
 use App\Modules\Identity\Authorization\TenantContext;
 use App\Modules\Identity\Enums\PermissionCode;
@@ -24,6 +26,7 @@ use App\Modules\Payment\Models\Refund;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class FinanceController extends Controller
@@ -85,6 +88,7 @@ class FinanceController extends Controller
             'user' => $request->user(),
             'registers' => $registers,
             'sessions' => $sessions,
+            'openSessions' => CashSession::query()->where('tenant_id', $context->tenantId)->where('status', 'open')->whereHas('register', fn ($query) => $query->whereIn('branch_id', $context->branchIds))->with('register.branch')->get(),
             'canManage' => $context->can(PermissionCode::CashManage),
         ]);
     }
@@ -140,6 +144,41 @@ class FinanceController extends Controller
         }
 
         return back()->with('status', 'Shift kas dibuka kembali.');
+    }
+
+    public function transfer(Request $request, TenantContext $context, ConfirmCashTransfer $transfer): RedirectResponse
+    {
+        abort_unless($context->can(PermissionCode::CashManage), 403);
+        Gate::authorize('create', CashTransfer::class);
+
+        $validated = $request->validate([
+            'kind' => ['required', 'in:inter_register,bank_deposit,owner_funding'],
+            'amount_rupiah' => ['required', 'integer', 'min:1'],
+            'from_session' => ['nullable', 'string'],
+            'to_session' => ['nullable', 'string'],
+            'reason' => ['required', 'string', 'max:2000'],
+            'reference' => ['nullable', 'string', 'max:150'],
+        ]);
+
+        foreach (['from_session' => ['from_register_id', 'from_cash_session_id'], 'to_session' => ['to_register_id', 'to_cash_session_id']] as $field => [$registerKey, $sessionKey]) {
+            if (! empty($validated[$field])) {
+                $parts = explode('|', (string) $validated[$field]);
+                if (count($parts) !== 2 || ! Str::isUuid($parts[0]) || ! Str::isUuid($parts[1])) {
+                    return back()->withErrors([$field => 'Sesi kas tidak valid.'])->withInput();
+                }
+                $validated[$registerKey] = $parts[0];
+                $validated[$sessionKey] = $parts[1];
+            }
+            unset($validated[$field]);
+        }
+
+        try {
+            $transfer->handle($validated, $context->membershipId, $request->user());
+        } catch (ApiException $exception) {
+            return back()->withErrors(['transfer' => $exception->getMessage()])->withInput();
+        }
+
+        return back()->with('status', 'Transfer kas tercatat.');
     }
 
     public function payments(Request $request, TenantContext $context): View

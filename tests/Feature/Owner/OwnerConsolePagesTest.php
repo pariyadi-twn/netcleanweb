@@ -3,6 +3,8 @@
 namespace Tests\Feature\Owner;
 
 use App\Models\User;
+use App\Modules\Catalog\Models\Service;
+use App\Modules\Customer\Models\Customer;
 use App\Modules\Identity\Models\Branch;
 use App\Modules\Identity\Models\Location;
 use App\Modules\Identity\Models\Tenant;
@@ -103,6 +105,36 @@ class OwnerConsolePagesTest extends TestCase
             ->assertSee('Laporan')
             ->assertSee('Pengaturan')
             ->assertDontSee('cursor-not-allowed', false);
+    }
+
+    public function test_owner_can_create_and_accept_an_order_from_web(): void
+    {
+        $owner = User::query()->where('email', 'owner@uat.netclean.id')->sole();
+        $tenant = Tenant::query()->where('name', 'NetClean UAT')->sole();
+        $branch = Branch::query()->where('tenant_id', $tenant->id)->where('code', 'UAT-MAIN')->sole();
+        $service = Service::query()->where('tenant_id', $tenant->id)->where('code', 'uat-kiloan')->sole();
+        $customer = Customer::query()->where('tenant_id', $tenant->id)->firstOrFail();
+        $session = ['tenant.public_id' => $tenant->public_id];
+
+        $this->actingAs($owner)->withSession($session)->get('/orders/create')->assertOk()->assertSee('Pesanan baru');
+
+        $quote = $this->actingAs($owner)->withSession($session)->post('/orders/quote', [
+            'branch_id' => $branch->public_id,
+            'customer_id' => $customer->public_id,
+            'quantities' => [$service->public_id => '3.000'],
+            'tiers' => [$service->public_id => 'regular'],
+        ]);
+
+        $quote->assertRedirect(route('orders.create'))->assertSessionHas('web_order_quote_id');
+        $quoteId = session('web_order_quote_id');
+        $this->assertNotNull($quoteId);
+
+        $this->actingAs($owner)->withSession($session)->get('/orders/create')->assertOk()->assertSee('Konfirmasi pesanan');
+
+        $this->actingAs($owner)->withSession($session)->post('/orders/accept')
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('orders', ['tenant_id' => $tenant->id, 'customer_id' => $customer->id]);
     }
 
     public function test_cashier_cannot_open_owner_console(): void

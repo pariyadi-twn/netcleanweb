@@ -88,6 +88,9 @@ Route::middleware(['auth', 'active'])->group(function (): void {
             Route::post('/customers', [CustomerController::class, 'store'])->name('customers.store');
 
             Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+            Route::get('/orders/create', [OrderController::class, 'create'])->name('orders.create');
+            Route::post('/orders/quote', [OrderController::class, 'storeQuote'])->name('orders.quote');
+            Route::post('/orders/accept', [OrderController::class, 'acceptQuote'])->name('orders.accept');
             Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
             Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
             Route::post('/orders/{order}/handover', [OrderController::class, 'handover'])->name('orders.handover');
@@ -110,6 +113,7 @@ Route::middleware(['auth', 'active'])->group(function (): void {
             Route::post('/finance/cash/{register}/open', [FinanceController::class, 'openCash'])->name('finance.cash.open');
             Route::post('/finance/cash/{session}/close', [FinanceController::class, 'closeCash'])->name('finance.cash.close');
             Route::post('/finance/cash/{session}/reopen', [FinanceController::class, 'reopenCash'])->name('finance.cash.reopen');
+            Route::post('/finance/cash/transfer', [FinanceController::class, 'transfer'])->name('finance.cash.transfer');
             Route::get('/finance/payments', [FinanceController::class, 'payments'])->name('finance.payments.index');
             Route::post('/finance/payments/{payment}/refunds', [FinanceController::class, 'requestRefund'])->name('finance.payments.refund');
             Route::get('/finance/expenses', [FinanceController::class, 'expenses'])->name('finance.expenses.index');

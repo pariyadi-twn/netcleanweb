@@ -23,8 +23,15 @@ class ApiClient {
     String path, {
     Map<String, String>? query,
     String? tenantId,
+    String? bearerToken,
   }) {
-    return _send('GET', path, query: query, tenantId: tenantId);
+    return _send(
+      'GET',
+      path,
+      query: query,
+      tenantId: tenantId,
+      bearerToken: bearerToken,
+    );
   }
 
   Future<Map<String, dynamic>> post(
@@ -78,6 +85,7 @@ class ApiClient {
     String? tenantId,
     String? idempotencyKey,
     bool authenticated = true,
+    String? bearerToken,
   }) async {
     final uri = Uri.parse('$baseUrl$path').replace(queryParameters: query);
     final headers = <String, String>{
@@ -92,8 +100,8 @@ class ApiClient {
       headers['Idempotency-Key'] = idempotencyKey;
     }
 
-    if (authenticated && tokenProvider != null) {
-      final token = await tokenProvider!();
+    if (authenticated) {
+      final token = bearerToken ?? await tokenProvider?.call();
       if (token != null && token.isNotEmpty) {
         headers['Authorization'] = 'Bearer $token';
       }

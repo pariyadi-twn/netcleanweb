@@ -1,4 +1,5 @@
 import '../network/api_client.dart';
+import '../network/api_exception.dart';
 import 'auth_session.dart';
 import 'token_store.dart';
 
@@ -70,12 +71,8 @@ class AuthRepository {
       deviceId: '${data['device_id'] ?? ''}',
     );
 
-    final context = await _api.get('/me/context');
-    final contexts = context['data'];
-    if (contexts is List &&
-        contexts.isNotEmpty &&
-        contexts.first is Map<String, dynamic>) {
-      final selected = contexts.first as Map<String, dynamic>;
+    final selected = await _loadLoginContext(session.token);
+    if (selected != null) {
       session = AuthSession(
         token: session.token,
         expiresAt: session.expiresAt,
@@ -91,6 +88,29 @@ class AuthRepository {
     return session;
   }
 
+  Future<Map<String, dynamic>?> _loadLoginContext(String token) async {
+    final Map<String, dynamic> context;
+    try {
+      context = await _api.get('/me/context', bearerToken: token);
+    } on ApiException catch (error) {
+      throw LoginContextException(correlationId: error.correlationId);
+    } on Exception {
+      throw const LoginContextException();
+    }
+
+    final contexts = context['data'];
+    if (contexts is List) {
+      if (contexts.isEmpty) {
+        return null;
+      }
+      final selected = contexts.first;
+      if (selected is Map<String, dynamic>) {
+        return selected;
+      }
+    }
+    throw const LoginContextException();
+  }
+
   Future<void> logout() => _tokens.clear();
 
   List<String> _stringList(dynamic value) {
@@ -99,4 +119,10 @@ class AuthRepository {
     }
     return value.whereType<String>().toList(growable: false);
   }
+}
+
+class LoginContextException implements Exception {
+  const LoginContextException({this.correlationId});
+
+  final String? correlationId;
 }

@@ -10,66 +10,72 @@ import 'package:netclean_staff/core/auth/token_store.dart';
 import 'package:netclean_staff/core/network/api_client.dart';
 
 void main() {
-  test('login stores token, context and stable installation id', () async {
-    final tokenStore = TokenStore(MemorySecretStore());
-    final client = MockClient((request) async {
-      if (request.url.path.endsWith('/me/context')) {
-        return http.Response(
-          jsonEncode({
-            'data': [
-              {
-                'tenant_id': 'tenant-public-id',
-                'membership_id': 'membership-public-id',
-                'permission_version': 1,
-                'branch_ids': ['branch-public-id'],
-                'location_ids': ['location-public-id'],
-              },
-            ],
-          }),
-          200,
+  for (final previousToken in [null, 'previous-token']) {
+    test(
+      'login uses the new token for context (stored: $previousToken)',
+      () async {
+        final tokenStore = TokenStore(MemorySecretStore());
+        if (previousToken != null) {
+          await tokenStore.saveSession(
+            AuthSession(
+              token: previousToken,
+              expiresAt: DateTime.now().toUtc().add(const Duration(hours: 1)),
+              deviceId: 'device-public-id',
+              tenantId: 'previous-tenant',
+            ),
+          );
+        }
+        final installationId = await tokenStore.installationId();
+        final client = MockClient((request) async {
+          if (request.url.path.endsWith('/me/context')) {
+            expect(request.headers['Authorization'], 'Bearer plain-token');
+            expect((await tokenStore.readSession())?.token, previousToken);
+            return http.Response(
+              jsonEncode({
+                'data': [
+                  {
+                    'tenant_id': 'tenant-public-id',
+                    'membership_id': 'membership-public-id',
+                    'permission_version': 1,
+                    'branch_ids': ['branch-public-id'],
+                    'location_ids': ['location-public-id'],
+                  },
+                ],
+              }),
+              200,
+            );
+          }
+          final body = jsonDecode(request.body) as Map<String, dynamic>;
+          expect(request.url.path, '/api/v1/auth/tokens');
+          expect(request.headers['Authorization'], isNull);
+          expect(body['installation_id'], installationId);
+          return _tokenResponse();
+        });
+        final repository = AuthRepository(
+          ApiClient(
+            client: client,
+            baseUrl: 'https://example.test/api/v1',
+            tokenProvider: () async => (await tokenStore.readSession())?.token,
+          ),
+          tokenStore,
         );
-      }
-      final body = jsonDecode(request.body) as Map<String, dynamic>;
-      expect(request.url.path, '/api/v1/auth/tokens');
-      expect(body['installation_id'], isNotEmpty);
-      return http.Response(
-        jsonEncode({
-          'data': {
-            'token': 'plain-token',
-            'token_type': 'Bearer',
-            'expires_at': DateTime.now()
-                .toUtc()
-                .add(const Duration(hours: 12))
-                .toIso8601String(),
-            'device_id': 'device-public-id',
-          },
-        }),
-        201,
-      );
-    });
-    final repository = AuthRepository(
-      ApiClient(client: client, baseUrl: 'https://example.test/api/v1'),
-      tokenStore,
-    );
 
-    final session = await repository.login(
-      email: 'staff@example.test',
-      password: 'secret',
-    );
+        final session = await repository.login(
+          email: 'staff@example.test',
+          password: 'secret',
+        );
 
-    expect(session.token, 'plain-token');
-    expect(session.deviceId, 'device-public-id');
-    expect(session.tenantId, 'tenant-public-id');
-    expect(session.membershipId, 'membership-public-id');
-    expect(session.branchIds, ['branch-public-id']);
-    expect(session.locationIds, ['location-public-id']);
-    expect((await tokenStore.readSession())?.branchIds, ['branch-public-id']);
-    expect((await tokenStore.readSession())?.locationIds, [
-      'location-public-id',
-    ]);
-    expect((await tokenStore.readSession())?.token, 'plain-token');
-    expect(await tokenStore.installationId(), isNotEmpty);
-  });
+        final saved = await tokenStore.readSession();
+        expect(session.tenantId, 'tenant-public-id');
+        expect(saved?.token, 'plain-token');
+        expect(saved?.deviceId, 'device-public-id');
+        expect(saved?.tenantId, 'tenant-public-id');
+        expect(saved?.membershipId, 'membership-public-id');
+        expect(saved?.branchIds, ['branch-public-id']);
+        expect(saved?.locationIds, ['location-public-id']);
+      },
+    );
+  }
 
   test('restore refreshes missing branch context from the server', () async {
     final tokenStore = TokenStore(MemorySecretStore());
@@ -162,3 +168,18 @@ void main() {
     expect(await tokenStore.installationId(), installation);
   });
 }
+
+http.Response _tokenResponse() => http.Response(
+  jsonEncode({
+    'data': {
+      'token': 'plain-token',
+      'token_type': 'Bearer',
+      'expires_at': DateTime.now()
+          .toUtc()
+          .add(const Duration(hours: 12))
+          .toIso8601String(),
+      'device_id': 'device-public-id',
+    },
+  }),
+  201,
+);

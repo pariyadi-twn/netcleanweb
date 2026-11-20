@@ -16,6 +16,7 @@
 /.vscode
 /.zed
 /auth.json
+/docs/akun.md
 /node_modules
 /public/build
 /public/fonts-manifest.dev.json

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/auth/auth_repository.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/session/session_controller.dart';
 import '../../../core/ui/brand.dart';
@@ -261,6 +262,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   String _errorMessage(Object? error) {
+    if (error is LoginContextException) {
+      return _withReference(
+        'Data organisasi belum dapat dimuat. Coba masuk kembali.',
+        error.correlationId,
+      );
+    }
     if (error is! ApiException) {
       return 'Login belum dapat diproses. Coba lagi.';
     }
@@ -281,8 +288,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         fieldMessage ?? 'Periksa kembali email dan password.',
       _ => fieldMessage ?? error.message,
     };
-    final reference = error.correlationId;
+    return _withReference(message, error.correlationId);
+  }
 
+  String _withReference(String message, String? reference) {
     return reference == null || reference.isEmpty
         ? message
         : '$message\nRef: $reference';

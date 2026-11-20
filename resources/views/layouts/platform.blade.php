@@ -12,17 +12,17 @@
     <header class="bg-[#1e1b4b] text-white">
         <div class="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-5 sm:px-8 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex items-center gap-3">
-                <span class="grid size-10 place-items-center rounded-xl bg-white text-sm font-black text-[#312e81]">NC</span>
+                <span class="grid size-12 place-items-center rounded-xl bg-white text-sm font-black text-[#312e81]">NC</span>
                 <div><p class="text-base font-extrabold tracking-tight">NetClean Platform</p><p class="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-200/60">Konteks: platform / semua tenant</p></div>
             </div>
             <nav aria-label="Navigasi platform" class="flex flex-wrap items-center gap-2 text-xs font-semibold text-indigo-100/70">
-                <a href="#tenants" class="rounded-full px-3 py-2 hover:bg-white/10 hover:text-white">Tenant</a>
-                <a href="#plans" class="rounded-full px-3 py-2 hover:bg-white/10 hover:text-white">Paket</a>
-                <a href="#invoices" class="rounded-full px-3 py-2 hover:bg-white/10 hover:text-white">Tagihan</a>
-                <a href="#data-requests" class="rounded-full px-3 py-2 hover:bg-white/10 hover:text-white">Permintaan data</a>
+                <a href="#tenants" class="inline-flex min-h-12 items-center rounded-full px-3 hover:bg-white/10 hover:text-white">Tenant</a>
+                <a href="#plans" class="inline-flex min-h-12 items-center rounded-full px-3 hover:bg-white/10 hover:text-white">Paket</a>
+                <a href="#invoices" class="inline-flex min-h-12 items-center rounded-full px-3 hover:bg-white/10 hover:text-white">Tagihan</a>
+                <a href="#data-requests" class="inline-flex min-h-12 items-center rounded-full px-3 hover:bg-white/10 hover:text-white">Permintaan data</a>
                 <span class="mx-1 h-5 w-px bg-white/15"></span>
-                <a href="{{ route('tenants.select') }}" class="rounded-full border border-white/15 px-3 py-2 hover:bg-white/10 hover:text-white">Konteks tenant</a>
-                <form method="POST" action="{{ route('logout') }}">@csrf<button type="submit" class="rounded-full px-3 py-2 text-indigo-100/60 hover:bg-white/10 hover:text-white">Keluar</button></form>
+                <a href="{{ route('tenants.select') }}" class="inline-flex min-h-12 items-center rounded-full border border-white/15 px-3 hover:bg-white/10 hover:text-white">Konteks tenant</a>
+                <form method="POST" action="{{ route('logout') }}">@csrf<button type="submit" class="inline-flex min-h-12 items-center rounded-full px-3 text-indigo-100/60 hover:bg-white/10 hover:text-white">Keluar</button></form>
             </nav>
         </div>
     </header>

@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Modules\Catalog\Models\PriceEntry;
 use App\Modules\Catalog\Models\Service;
 use App\Modules\Customer\Actions\CreateCustomer;
 use App\Modules\Customer\Models\Customer;
@@ -31,29 +32,30 @@ class UatDemoSeeder extends Seeder
             throw new RuntimeException('UAT demo data is disabled in production.');
         }
 
-        Artisan::call('uat:provision', [
-            '--tenant-name' => 'NetClean UAT',
-            '--owner-email' => 'owner@uat.netclean.id',
-        ]);
-
-        $owner = User::query()->where('email', 'owner@uat.netclean.id')->firstOrFail();
-        $tenantScope = app(TenantScope::class);
-        $tenant = $tenantScope->identity(
-            $owner,
-            fn (): ?Tenant => Tenant::query()->where('name', 'NetClean UAT')->first(),
-        );
-
-        if ($tenant === null) {
-            throw new RuntimeException('Tenant NetClean UAT tidak ditemukan setelah provisioning.');
-        }
-
         Carbon::setTestNow(Carbon::parse('2026-11-16 10:00:00', 'Asia/Jakarta'));
         CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-11-16 10:00:00', 'Asia/Jakarta'));
 
         try {
+            Artisan::call('uat:provision', [
+                '--tenant-name' => 'NetClean UAT',
+                '--owner-email' => 'owner@uat.netclean.id',
+            ]);
+
+            $owner = User::query()->where('email', 'owner@uat.netclean.id')->firstOrFail();
+            $tenantScope = app(TenantScope::class);
+            $tenant = $tenantScope->identity(
+                $owner,
+                fn (): ?Tenant => Tenant::query()->where('name', 'NetClean UAT')->first(),
+            );
+
+            if ($tenant === null) {
+                throw new RuntimeException('Tenant NetClean UAT tidak ditemukan setelah provisioning.');
+            }
+
             $tenantScope->forTenantId($tenant->id, $owner->id, function () use ($owner, $tenant): void {
                 $branch = Branch::query()->where('code', 'UAT-MAIN')->firstOrFail();
                 $service = Service::query()->where('code', 'uat-kiloan')->firstOrFail();
+                $this->ensureDemoPriceIsEffective($service);
                 $cashier = User::query()->where('email', 'cashier@uat.netclean.id')->firstOrFail();
                 $membership = TenantMembership::query()
                     ->where('tenant_id', $tenant->id)
@@ -109,6 +111,17 @@ class UatDemoSeeder extends Seeder
         }
 
         $this->command?->info('Data demo UAT siap: 3 pelanggan/order contoh (belum bayar, DP, lunas).');
+    }
+
+    private function ensureDemoPriceIsEffective(Service $service): void
+    {
+        $demoStart = Carbon::parse('2026-11-16 00:00:00', 'Asia/Jakarta')->utc();
+
+        PriceEntry::query()
+            ->where('service_id', $service->id)
+            ->where('tier', 'regular')
+            ->where('effective_from', '>', $demoStart)
+            ->update(['effective_from' => $demoStart]);
     }
 
     private function createDemoOrder(

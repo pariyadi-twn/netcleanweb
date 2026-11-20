@@ -145,6 +145,22 @@ class AttachmentTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_attachment_initialization_rejects_a_declared_size_above_the_limit(): void
+    {
+        [$tenant, $token] = $this->scenario();
+
+        $this->withToken($token)
+            ->withHeader('X-Tenant-ID', $tenant->public_id)
+            ->postJson('/api/v1/attachments/uploads', [
+                'original_name' => 'oversized.jpg',
+                'mime_type' => 'image/jpeg',
+                'size_bytes' => 5_242_881,
+                'sha256' => str_repeat('a', 64),
+            ])
+            ->assertUnprocessable()
+            ->assertJsonStructure(['error' => ['field_errors' => ['size_bytes']]]);
+    }
+
     public function test_cleanup_removes_only_old_orphans_and_keeps_active_attachments(): void
     {
         [$tenant, $token, $membership, $order] = $this->scenario();

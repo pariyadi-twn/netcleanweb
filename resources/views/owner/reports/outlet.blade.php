@@ -5,10 +5,10 @@
 @section('content')
     <x-ui.page-header eyebrow="Laporan" title="Outlet" :description="$branch->name.' · '.$from.' sampai '.$to" />
     <form method="GET" action="{{ route('reports.outlet') }}" class="mb-5 grid gap-3 rounded-container border border-divider bg-white p-4 shadow-sm sm:grid-cols-4">
-        <select name="branch_id" class="min-h-11 rounded-control border border-input px-3 text-sm">@foreach($branches as $option)<option value="{{ $option->public_id }}" @selected($option->id === $branch->id)>{{ $option->name }}</option>@endforeach</select>
-        <input name="from" type="date" value="{{ $from }}" class="min-h-11 rounded-control border border-input px-3 text-sm">
-        <input name="to" type="date" value="{{ $to }}" class="min-h-11 rounded-control border border-input px-3 text-sm">
-        <button class="min-h-11 rounded-control bg-brand-600 px-4 text-sm font-bold text-white">Tampilkan</button>
+        <select name="branch_id" aria-label="Cabang laporan outlet" class="min-h-12 rounded-control border border-input px-3 text-sm">@foreach($branches as $option)<option value="{{ $option->public_id }}" @selected($option->id === $branch->id)>{{ $option->name }}</option>@endforeach</select>
+        <input name="from" type="date" value="{{ $from }}" aria-label="Tanggal awal laporan outlet" class="min-h-12 rounded-control border border-input px-3 text-sm">
+        <input name="to" type="date" value="{{ $to }}" aria-label="Tanggal akhir laporan outlet" class="min-h-12 rounded-control border border-input px-3 text-sm">
+        <button class="min-h-12 rounded-control bg-brand-600 px-4 text-sm font-bold text-white">Tampilkan</button>
     </form>
 
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -35,7 +35,7 @@
         <form method="POST" action="{{ route('reports.exports.store') }}" class="mt-5 flex flex-wrap items-end gap-2 rounded-container border border-divider bg-white p-4 shadow-sm">
             @csrf
             <input type="hidden" name="branch_id" value="{{ $branch->public_id }}"><input type="hidden" name="from" value="{{ $from }}"><input type="hidden" name="to" value="{{ $to }}">
-            <p class="flex-1 text-sm text-muted">Ekspor CSV untuk periode ini.</p><button class="min-h-11 rounded-control bg-brand-600 px-4 text-sm font-bold text-white">Minta ekspor</button>
+            <p class="flex-1 text-sm text-muted">Ekspor CSV untuk periode ini.</p><button class="min-h-12 rounded-control bg-brand-600 px-4 text-sm font-bold text-white">Minta ekspor</button>
         </form>
     @endif
 @endsection

@@ -18,7 +18,7 @@
     <div class="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)]">
         <x-ui.panel title="Cari pelanggan">
             <form method="GET" action="{{ route('customers.index') }}" class="flex flex-col gap-3 sm:flex-row">
-                <input name="q" value="{{ $query }}" placeholder="Nama atau nomor telepon" class="min-h-12 flex-1 rounded-control border border-input px-4">
+                <input name="q" value="{{ $query }}" placeholder="Nama atau nomor telepon" aria-label="Cari pelanggan" class="min-h-12 flex-1 rounded-control border border-input px-4">
                 <button type="submit" class="min-h-12 rounded-control bg-brand-600 px-5 font-semibold text-white hover:bg-brand-700">Cari</button>
             </form>
 

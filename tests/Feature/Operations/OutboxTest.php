@@ -19,6 +19,7 @@ use App\Modules\Operations\Models\OutboxEvent;
 use App\Modules\Operations\Outbox\OutboxConsumerRegistry;
 use App\Modules\Operations\Outbox\OutboxDispatcher;
 use App\Modules\Operations\Outbox\OutboxWriter;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
@@ -108,6 +109,24 @@ class OutboxTest extends TestCase
             $this->fail('The synthetic consumer should throw.');
         } catch (RuntimeException $exception) {
             $this->assertSame('Synthetic consumer failure.', $exception->getMessage());
+        }
+
+        $this->assertSame(0, ConsumerReceipt::query()->count());
+        $this->assertSame(0, AuditLog::query()->where('action', AuditAction::OutboxEventApplied->value)->count());
+        $this->assertSame($event->event_id, $delivery->refresh()->event_id);
+    }
+
+    public function test_job_rejects_a_foreign_tenant_payload_without_consumer_effects(): void
+    {
+        [$event, $delivery] = $this->scenario();
+        $foreignTenant = Tenant::factory()->create();
+
+        try {
+            (new ProcessOutboxDelivery($delivery->id, $foreignTenant->id))
+                ->handle(app(OutboxConsumerRegistry::class), app(TenantScope::class));
+            $this->fail('A job with a foreign tenant payload must not run.');
+        } catch (ModelNotFoundException) {
+            // The RLS-scoped delivery lookup must hide the foreign row.
         }
 
         $this->assertSame(0, ConsumerReceipt::query()->count());

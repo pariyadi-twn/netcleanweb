@@ -10,28 +10,28 @@
             <h2 class="font-extrabold">Laporan outlet</h2>
             <p class="mt-1 text-sm text-muted">Penjualan, penerimaan, refund, dan piutang per hari.</p>
             <div class="mt-4 grid gap-3 sm:grid-cols-3">
-                <select name="branch_id" class="min-h-11 rounded-control border border-input px-3 text-sm">@foreach($branches as $branch)<option value="{{ $branch->public_id }}">{{ $branch->name }}</option>@endforeach</select>
-                <input name="from" type="date" required value="{{ now()->subDays(6)->toDateString() }}" class="min-h-11 rounded-control border border-input px-3 text-sm">
-                <input name="to" type="date" required value="{{ now()->toDateString() }}" class="min-h-11 rounded-control border border-input px-3 text-sm">
+                <select name="branch_id" aria-label="Cabang laporan" class="min-h-12 rounded-control border border-input px-3 text-sm">@foreach($branches as $branch)<option value="{{ $branch->public_id }}">{{ $branch->name }}</option>@endforeach</select>
+                <input name="from" type="date" required value="{{ now()->subDays(6)->toDateString() }}" aria-label="Tanggal awal laporan outlet" class="min-h-12 rounded-control border border-input px-3 text-sm">
+                <input name="to" type="date" required value="{{ now()->toDateString() }}" aria-label="Tanggal akhir laporan outlet" class="min-h-12 rounded-control border border-input px-3 text-sm">
             </div>
-            <button class="mt-3 min-h-11 rounded-control bg-brand-600 px-4 text-sm font-bold text-white hover:bg-brand-700">Buka laporan</button>
+            <button class="mt-3 min-h-12 rounded-control bg-brand-600 px-4 text-sm font-bold text-white hover:bg-brand-700">Buka laporan</button>
         </form>
         <form method="GET" action="{{ route('reports.receivables') }}" class="rounded-container border border-divider bg-white p-5 shadow-sm">
             <h2 class="font-extrabold">Piutang</h2>
             <p class="mt-1 text-sm text-muted">Invoice dengan saldo tersisa pada tanggal tertentu.</p>
             <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                <select name="branch_id" class="min-h-11 rounded-control border border-input px-3 text-sm">@foreach($branches as $branch)<option value="{{ $branch->public_id }}">{{ $branch->name }}</option>@endforeach</select>
-                <input name="as_of" type="date" value="{{ now()->toDateString() }}" class="min-h-11 rounded-control border border-input px-3 text-sm">
+                <select name="branch_id" aria-label="Cabang laporan" class="min-h-12 rounded-control border border-input px-3 text-sm">@foreach($branches as $branch)<option value="{{ $branch->public_id }}">{{ $branch->name }}</option>@endforeach</select>
+                <input name="as_of" type="date" value="{{ now()->toDateString() }}" aria-label="Piutang per tanggal" class="min-h-12 rounded-control border border-input px-3 text-sm">
             </div>
-            <button class="mt-3 min-h-11 rounded-control bg-brand-600 px-4 text-sm font-bold text-white hover:bg-brand-700">Buka piutang</button>
+            <button class="mt-3 min-h-12 rounded-control bg-brand-600 px-4 text-sm font-bold text-white hover:bg-brand-700">Buka piutang</button>
         </form>
     </div>
 
     <div class="mt-5 flex flex-wrap gap-2">
-        <a href="{{ route('reports.outlet') }}" class="inline-flex min-h-11 items-center rounded-control border border-divider bg-white px-4 text-sm font-bold text-muted hover:bg-slate-50">Buka laporan outlet</a>
-        <a href="{{ route('reports.receivables') }}" class="inline-flex min-h-11 items-center rounded-control border border-divider bg-white px-4 text-sm font-bold text-muted hover:bg-slate-50">Buka piutang</a>
+        <a href="{{ route('reports.outlet') }}" class="inline-flex min-h-12 items-center rounded-control border border-divider bg-white px-4 text-sm font-bold text-muted hover:bg-slate-50">Buka laporan outlet</a>
+        <a href="{{ route('reports.receivables') }}" class="inline-flex min-h-12 items-center rounded-control border border-divider bg-white px-4 text-sm font-bold text-muted hover:bg-slate-50">Buka piutang</a>
         @if ($tenantContext->can(\App\Modules\Identity\Enums\PermissionCode::ImportsManage))
-            <a href="{{ route('reports.imports') }}" class="inline-flex min-h-11 items-center rounded-control border border-divider bg-white px-4 text-sm font-bold text-muted hover:bg-slate-50">Impor data</a>
+            <a href="{{ route('reports.imports') }}" class="inline-flex min-h-12 items-center rounded-control border border-divider bg-white px-4 text-sm font-bold text-muted hover:bg-slate-50">Impor data</a>
         @endif
     </div>
 

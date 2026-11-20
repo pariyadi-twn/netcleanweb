@@ -7,10 +7,10 @@
     @if ($errors->any())<x-ui.alert tone="danger" class="mb-5"><ul class="list-disc pl-5">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></x-ui.alert>@endif
     <form method="POST" action="{{ route('reports.imports.store') }}" enctype="multipart/form-data" class="grid gap-3 rounded-container border border-divider bg-white p-5 shadow-sm sm:grid-cols-2 lg:grid-cols-4">
         @csrf
-        <select name="type" class="min-h-11 rounded-control border border-input px-3 text-sm"><option value="customers">Pelanggan</option><option value="catalog">Katalog</option></select>
-        <input name="file" type="file" accept=".csv,text/csv,.txt" required class="min-h-11 rounded-control border border-input px-3 py-2 text-sm">
-        <label class="flex min-h-11 items-center gap-2 text-sm text-muted"><input type="checkbox" name="dry_run" value="1" class="size-4 rounded border-input"> Dry run</label>
-        <button class="min-h-11 rounded-control bg-brand-600 px-4 text-sm font-bold text-white hover:bg-brand-700">Unggah</button>
+        <select name="type" aria-label="Jenis impor" class="min-h-12 rounded-control border border-input px-3 text-sm"><option value="customers">Pelanggan</option><option value="catalog">Katalog</option></select>
+        <input name="file" type="file" accept=".csv,text/csv,.txt" required aria-label="Berkas CSV" class="min-h-12 rounded-control border border-input px-3 py-2 text-sm">
+        <label class="flex min-h-12 items-center gap-2 text-sm text-muted"><input type="checkbox" name="dry_run" value="1" class="size-4 rounded border-input"> Dry run</label>
+        <button class="min-h-12 rounded-control bg-brand-600 px-4 text-sm font-bold text-white hover:bg-brand-700">Unggah</button>
     </form>
     <section class="mt-5 rounded-container border border-divider bg-white p-5 shadow-sm">
         <h2 class="font-extrabold">Riwayat impor</h2>

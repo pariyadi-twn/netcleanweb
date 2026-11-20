@@ -4,15 +4,15 @@
 
 @section('content')
     <x-ui.page-header eyebrow="Operasional" title="Pesanan" description="Cari dan pantau order dari cabang dalam scope akses Anda.">
-        <x-slot:actions><a href="{{ route('orders.create') }}" class="inline-flex min-h-11 items-center rounded-control bg-brand-600 px-4 text-sm font-bold text-white hover:bg-brand-700">Pesanan baru</a></x-slot:actions>
+        <x-slot:actions><a href="{{ route('orders.create') }}" class="inline-flex min-h-12 items-center rounded-control bg-brand-600 px-4 text-sm font-bold text-white hover:bg-brand-700">Pesanan baru</a></x-slot:actions>
     </x-ui.page-header>
 
     <form method="GET" action="{{ route('orders.index') }}" class="mb-5 grid gap-3 rounded-container border border-divider bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4">
         <label class="grid gap-1 text-xs font-bold text-muted">Cari
-            <input name="q" value="{{ request('q') }}" placeholder="Nomor nota atau pelanggan" class="min-h-11 rounded-control border border-input bg-white px-3 text-sm font-normal text-ink outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100">
+            <input name="q" value="{{ request('q') }}" placeholder="Nomor nota atau pelanggan" class="min-h-12 rounded-control border border-input bg-white px-3 text-sm font-normal text-ink outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100">
         </label>
         <label class="grid gap-1 text-xs font-bold text-muted">Status
-            <select name="status" class="min-h-11 rounded-control border border-input bg-white px-3 text-sm font-normal text-ink outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100">
+            <select name="status" class="min-h-12 rounded-control border border-input bg-white px-3 text-sm font-normal text-ink outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100">
                 <option value="">Semua status</option>
                 @foreach ($statuses as $status)
                     <option value="{{ $status['value'] }}" @selected(request('status') === $status['value'])>{{ $status['label'] }}</option>
@@ -20,7 +20,7 @@
             </select>
         </label>
         <label class="grid gap-1 text-xs font-bold text-muted">Cabang
-            <select name="branch" class="min-h-11 rounded-control border border-input bg-white px-3 text-sm font-normal text-ink outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100">
+            <select name="branch" class="min-h-12 rounded-control border border-input bg-white px-3 text-sm font-normal text-ink outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100">
                 <option value="">Semua cabang</option>
                 @foreach ($branches as $branch)
                     <option value="{{ $branch->public_id }}" @selected(request('branch') === $branch->public_id)>{{ $branch->name }}</option>
@@ -28,8 +28,8 @@
             </select>
         </label>
         <div class="flex items-end gap-2">
-            <button type="submit" class="min-h-11 flex-1 rounded-control bg-brand-600 px-4 text-sm font-bold text-white hover:bg-brand-700">Terapkan</button>
-            <a href="{{ route('orders.index') }}" class="inline-flex min-h-11 items-center rounded-control border border-divider px-4 text-sm font-bold text-muted hover:bg-slate-50">Reset</a>
+            <button type="submit" class="min-h-12 flex-1 rounded-control bg-brand-600 px-4 text-sm font-bold text-white hover:bg-brand-700">Terapkan</button>
+            <a href="{{ route('orders.index') }}" class="inline-flex min-h-12 items-center rounded-control border border-divider px-4 text-sm font-bold text-muted hover:bg-slate-50">Reset</a>
         </div>
     </form>
 

@@ -99,6 +99,6 @@ printf '{"status":"passed","source_database":"%s","restore_database":"%s","dump_
   "${SOURCE_DB}" "${TARGET_DB}" "${dump_seconds}" "${restore_seconds}" "${counts_source}" "${counts_target}" "${tombstones_reapplied}" "${storage_status}" "${storage_files}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "${EVIDENCE_FILE}"
 
 cat "${EVIDENCE_FILE}"
-if [ -n "${RESTORE_EVIDENCE_FILE:-}" ]; then
+if [ -n "${RESTORE_EVIDENCE_FILE:-}" ] && [ "${RESTORE_EVIDENCE_FILE}" != "${EVIDENCE_FILE}" ]; then
   cp "${EVIDENCE_FILE}" "${RESTORE_EVIDENCE_FILE}"
 fi

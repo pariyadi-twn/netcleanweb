@@ -14,7 +14,7 @@
     @isset($tenant)
     <aside class="fixed inset-y-0 left-0 z-30 hidden w-[17.5rem] flex-col bg-chrome text-white lg:flex">
             <div class="flex h-[4.5rem] items-center gap-3 border-b border-white/10 px-6">
-                <span class="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-accent via-emerald-300 to-cyan-300 text-base font-black text-chrome">N</span>
+                <span class="grid size-12 place-items-center rounded-xl bg-gradient-to-br from-accent via-emerald-300 to-cyan-300 text-base font-black text-chrome">N</span>
                 <span class="leading-none">
                     <span class="block text-base font-bold tracking-tight">NetClean</span>
                     <span class="mt-1 block text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Konsol owner</span>
@@ -42,7 +42,7 @@
                     </div>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="rounded-lg p-2 text-white/50 transition hover:bg-white/10 hover:text-white" aria-label="Keluar">
+                        <button type="submit" class="grid size-12 place-items-center rounded-control text-white/50 transition hover:bg-white/10 hover:text-white" aria-label="Keluar">
                             <svg class="size-4" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M8 3.5H4.5v13H8M12 6.5 15.5 10 12 13.5M7 10h8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         </button>
                     </form>
@@ -54,11 +54,11 @@
     @isset($tenant)
     <header class="sticky top-0 z-30 border-b border-divider bg-white/90 backdrop-blur lg:hidden">
             <div class="flex min-h-16 items-center justify-between gap-3 px-4">
-                <button type="button" class="grid size-11 place-items-center rounded-control border border-divider text-ink" data-nav-toggle aria-controls="mobile-navigation" aria-expanded="false" aria-label="Buka navigasi">
+                <button type="button" class="grid size-12 place-items-center rounded-control border border-divider text-ink" data-nav-toggle aria-controls="mobile-navigation" aria-expanded="false" aria-label="Buka navigasi">
                     <svg class="size-5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
                 </button>
                 <span class="text-sm font-extrabold tracking-tight">NetClean</span>
-                <span class="grid size-10 place-items-center rounded-full bg-chrome text-xs font-black text-accent">{{ str(auth()->user()?->name ?? 'U')->substr(0, 1)->upper() }}</span>
+                <span class="grid size-12 place-items-center rounded-full bg-chrome text-xs font-black text-accent">{{ str(auth()->user()?->name ?? 'U')->substr(0, 1)->upper() }}</span>
             </div>
         </header>
     
@@ -67,7 +67,7 @@
             <aside class="relative flex h-full w-[19rem] max-w-[85vw] flex-col bg-chrome text-white shadow-2xl">
                 <div class="flex h-16 items-center justify-between border-b border-white/10 px-5">
                     <span class="text-sm font-extrabold">Menu</span>
-                    <button type="button" class="grid size-10 place-items-center rounded-control text-white/60 hover:bg-white/10 hover:text-white" data-nav-close aria-label="Tutup navigasi">
+                    <button type="button" class="grid size-12 place-items-center rounded-control text-white/60 hover:bg-white/10 hover:text-white" data-nav-close aria-label="Tutup navigasi">
                         <svg class="size-5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
                     </button>
                 </div>
@@ -76,11 +76,11 @@
                 </div>
                 <div class="border-t border-white/10 p-4">
                     @isset($tenant)
-                        <a href="{{ route('tenants.select') }}" class="mb-2 flex min-h-11 items-center rounded-xl px-3 text-sm font-semibold text-white/65 hover:bg-white/10 hover:text-white">Ganti tenant</a>
+                        <a href="{{ route('tenants.select') }}" class="mb-2 flex min-h-12 items-center rounded-xl px-3 text-sm font-semibold text-white/65 hover:bg-white/10 hover:text-white">Ganti tenant</a>
                     @endisset
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="flex min-h-11 w-full items-center rounded-xl px-3 text-left text-sm font-semibold text-white/65 hover:bg-white/10 hover:text-white">Keluar</button>
+                        <button type="submit" class="flex min-h-12 w-full items-center rounded-xl px-3 text-left text-sm font-semibold text-white/65 hover:bg-white/10 hover:text-white">Keluar</button>
                     </form>
                 </div>
             </aside>
@@ -90,8 +90,8 @@
     @unless (isset($tenant))
         <header class="border-b border-divider bg-white">
             <div class="flex min-h-16 items-center justify-between gap-4 px-5 sm:px-8">
-                <div class="flex items-center gap-3"><span class="grid size-10 place-items-center rounded-xl bg-chrome text-sm font-black text-accent">N</span><span class="text-sm font-extrabold tracking-tight">NetClean</span></div>
-                <form method="POST" action="{{ route('logout') }}">@csrf<button type="submit" class="min-h-11 rounded-control px-4 text-xs font-bold text-muted hover:bg-slate-100">Keluar</button></form>
+                <div class="flex items-center gap-3"><span class="grid size-12 place-items-center rounded-xl bg-chrome text-sm font-black text-accent">N</span><span class="text-sm font-extrabold tracking-tight">NetClean</span></div>
+                <form method="POST" action="{{ route('logout') }}">@csrf<button type="submit" class="min-h-12 rounded-control px-4 text-xs font-bold text-muted hover:bg-slate-100">Keluar</button></form>
             </div>
         </header>
     @endunless
@@ -103,14 +103,14 @@
                     <p class="mt-1 truncate text-sm font-extrabold text-ink">{{ $tenant->name }}</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <span class="inline-flex min-h-9 items-center gap-2 rounded-full border border-divider bg-white px-3 text-xs font-semibold text-muted">
+                    <span class="inline-flex min-h-12 items-center gap-2 rounded-full border border-divider bg-white px-3 text-xs font-semibold text-muted">
                         <span class="size-1.5 rounded-full bg-emerald-500"></span>
                         {{ $tenantContext->branchIds ? count($tenantContext->branchIds).' cabang' : 'Tanpa cabang' }}
                     </span>
-                    <a href="{{ route('tenants.select') }}" class="inline-flex min-h-11 items-center rounded-control border border-divider bg-white px-4 text-xs font-bold text-ink transition hover:bg-slate-50">Ganti tenant</a>
+                    <a href="{{ route('tenants.select') }}" class="inline-flex min-h-12 items-center rounded-control border border-divider bg-white px-4 text-xs font-bold text-ink transition hover:bg-slate-50">Ganti tenant</a>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="inline-flex min-h-11 items-center rounded-control px-4 text-xs font-bold text-muted transition hover:bg-slate-100 hover:text-ink">Keluar</button>
+                        <button type="submit" class="inline-flex min-h-12 items-center rounded-control px-4 text-xs font-bold text-muted transition hover:bg-slate-100 hover:text-ink">Keluar</button>
                     </form>
                 </div>
             </header>

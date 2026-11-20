@@ -4,7 +4,7 @@
 
 @section('content')
     <x-ui.page-header eyebrow="Task produksi" :title="str($task->step_code)->replace('_', ' ')->title()" :description="($task->content?->order?->order_number ?? '-').' · '.($task->location?->name ?? '-')">
-        <x-slot:actions><a href="{{ route('orders.show', $task->content?->order) }}" class="inline-flex min-h-11 items-center rounded-control border border-divider bg-white px-4 text-sm font-bold text-muted">Buka pesanan</a></x-slot:actions>
+        <x-slot:actions><a href="{{ route('orders.show', $task->content?->order) }}" class="inline-flex min-h-12 items-center rounded-control border border-divider bg-white px-4 text-sm font-bold text-muted">Buka pesanan</a></x-slot:actions>
     </x-ui.page-header>
 
     @if ($errors->any())<x-ui.alert tone="danger" class="mb-5"><ul class="list-disc pl-5">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></x-ui.alert>@endif
@@ -31,7 +31,7 @@
                     @csrf
                     <div class="flex gap-4 text-sm"><label class="flex items-center gap-2"><input type="radio" name="outcome" value="passed" checked> Lulus</label><label class="flex items-center gap-2"><input type="radio" name="outcome" value="failed"> Gagal</label></div>
                     <textarea name="notes" rows="2" placeholder="Keterangan QC" class="rounded-control border border-input px-3 py-2 text-sm"></textarea>
-                    <button class="min-h-11 rounded-control bg-brand-600 px-4 text-sm font-bold text-white hover:bg-brand-700">Simpan QC</button>
+                    <button class="min-h-12 rounded-control bg-brand-600 px-4 text-sm font-bold text-white hover:bg-brand-700">Simpan QC</button>
                 </form>
             @endif
         </section>
@@ -44,8 +44,8 @@
                     <form method="POST" action="{{ route('production.tasks.transition', $task) }}" class="grid gap-2 rounded-xl bg-slate-50 p-3">
                         @csrf
                         <input type="hidden" name="to_status" value="{{ $to }}"><input type="hidden" name="expected_version" value="{{ $task->version }}">
-                        @if (in_array($to, ['blocked', 'skipped'], true) || $task->status->value === 'blocked')<input name="reason" required placeholder="Keterangan" class="min-h-10 rounded-control border border-input px-3 text-sm">@endif
-                        <button class="min-h-10 rounded-control bg-brand-600 px-3 text-sm font-bold text-white hover:bg-brand-700">{{ $label }}</button>
+                        @if (in_array($to, ['blocked', 'skipped'], true) || $task->status->value === 'blocked')<input name="reason" required placeholder="Keterangan" class="min-h-12 rounded-control border border-input px-3 text-sm">@endif
+                        <button class="min-h-12 rounded-control bg-brand-600 px-3 text-sm font-bold text-white hover:bg-brand-700">{{ $label }}</button>
                     </form>
                 @endforeach
                 @if ($task->status->value === 'done' && ! $task->requires_qc)<p class="text-sm text-muted">Task selesai tanpa QC.</p>@endif

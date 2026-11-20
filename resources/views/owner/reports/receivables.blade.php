@@ -5,9 +5,9 @@
 @section('content')
     <x-ui.page-header eyebrow="Laporan" title="Piutang" :description="$branch->name.' per '.$asOf" />
     <form method="GET" action="{{ route('reports.receivables') }}" class="mb-5 grid gap-3 rounded-container border border-divider bg-white p-4 shadow-sm sm:grid-cols-3">
-        <select name="branch_id" class="min-h-11 rounded-control border border-input px-3 text-sm">@foreach($branches as $option)<option value="{{ $option->public_id }}" @selected($option->id === $branch->id)>{{ $option->name }}</option>@endforeach</select>
-        <input name="as_of" type="date" value="{{ $asOf }}" class="min-h-11 rounded-control border border-input px-3 text-sm">
-        <button class="min-h-11 rounded-control bg-brand-600 px-4 text-sm font-bold text-white">Tampilkan</button>
+        <select name="branch_id" aria-label="Cabang piutang" class="min-h-12 rounded-control border border-input px-3 text-sm">@foreach($branches as $option)<option value="{{ $option->public_id }}" @selected($option->id === $branch->id)>{{ $option->name }}</option>@endforeach</select>
+        <input name="as_of" type="date" value="{{ $asOf }}" aria-label="Piutang per tanggal" class="min-h-12 rounded-control border border-input px-3 text-sm">
+        <button class="min-h-12 rounded-control bg-brand-600 px-4 text-sm font-bold text-white">Tampilkan</button>
     </form>
     <div class="grid gap-4 sm:grid-cols-3"><x-ui.stat-card label="Invoice" :value="$summary['invoice_count']" /><x-ui.stat-card label="Total piutang" :value="'Rp'.number_format($summary['receivables_rupiah'], 0, ',', '.')" /><x-ui.stat-card label="Lewat jatuh tempo" :value="$summary['overdue_invoice_count']" /></div>
     <div class="mt-5 overflow-x-auto rounded-container border border-divider bg-white shadow-sm">

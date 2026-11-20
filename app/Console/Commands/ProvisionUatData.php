@@ -337,7 +337,7 @@ class ProvisionUatData extends Command
                     'service_id' => $service->public_id,
                     'tier' => 'regular',
                     'unit_price_rupiah' => $definition['unit_price_rupiah'],
-                    'effective_from' => now()->toDateString(),
+                    'effective_from' => '2026-01-01',
                 ]);
             }
 

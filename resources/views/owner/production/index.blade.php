@@ -7,22 +7,22 @@
 
     <form method="GET" action="{{ route('production.index') }}" class="mb-5 grid gap-3 rounded-container border border-divider bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4">
         <label class="grid gap-1 text-xs font-bold text-muted">Lokasi
-            <select name="location" class="min-h-11 rounded-control border border-input bg-white px-3 text-sm font-normal">
+            <select name="location" class="min-h-12 rounded-control border border-input bg-white px-3 text-sm font-normal">
                 @foreach ($locations as $location)
                     <option value="{{ $location->public_id }}" @selected($selected?->id === $location->id)>{{ $location->name }}</option>
                 @endforeach
             </select>
         </label>
         <label class="grid gap-1 text-xs font-bold text-muted">Status
-            <select name="status" class="min-h-11 rounded-control border border-input bg-white px-3 text-sm font-normal">
+            <select name="status" class="min-h-12 rounded-control border border-input bg-white px-3 text-sm font-normal">
                 <option value="">Semua status</option>
                 @foreach ($statuses as $status)
                     <option value="{{ $status->value }}" @selected(request('status') === $status->value)>{{ str($status->value)->replace('_', ' ')->title() }}</option>
                 @endforeach
             </select>
         </label>
-        <label class="flex min-h-11 items-end gap-2 pb-3 text-xs font-bold text-muted"><input type="checkbox" name="overdue" value="1" @checked(request()->boolean('overdue')) class="size-4 rounded border-input"> Hanya terlambat</label>
-        <div class="flex items-end gap-2"><button class="min-h-11 flex-1 rounded-control bg-brand-600 px-4 text-sm font-bold text-white hover:bg-brand-700">Terapkan</button><a href="{{ route('production.index') }}" class="inline-flex min-h-11 items-center rounded-control border border-divider px-4 text-sm font-bold text-muted hover:bg-slate-50">Reset</a></div>
+        <label class="flex min-h-12 items-end gap-2 pb-3 text-xs font-bold text-muted"><input type="checkbox" name="overdue" value="1" @checked(request()->boolean('overdue')) class="size-4 rounded border-input"> Hanya terlambat</label>
+        <div class="flex items-end gap-2"><button class="min-h-12 flex-1 rounded-control bg-brand-600 px-4 text-sm font-bold text-white hover:bg-brand-700">Terapkan</button><a href="{{ route('production.index') }}" class="inline-flex min-h-12 items-center rounded-control border border-divider px-4 text-sm font-bold text-muted hover:bg-slate-50">Reset</a></div>
     </form>
 
     @if ($selected === null)

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/providers.dart';
+import '../../../core/scan/scan_payload.dart';
 import '../../../core/session/session_controller.dart';
 import '../../../core/ui/formatting.dart';
 import '../../../core/ui/page_header.dart';
@@ -29,6 +30,22 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   void dispose() {
     _code.dispose();
     super.dispose();
+  }
+
+  Future<void> _openScanner() async {
+    final code = await ref
+        .read(codeScannerProvider)
+        .scan(context, title: 'Scan nota');
+    if (!mounted || code == null) {
+      return;
+    }
+    final normalized = ScanPayload.normalize(code);
+    if (normalized == null) {
+      setState(() => _error = 'Kode tidak valid. Coba scan ulang.');
+      return;
+    }
+    _code.text = normalized;
+    await _scan();
   }
 
   Future<void> _scan({bool latest = false}) async {
@@ -113,12 +130,18 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                   eyebrow: 'Cari cepat',
                   title: 'Temukan pesanan',
                   subtitle:
-                      'Gunakan nomor nota atau buka order terbaru sebagai '
-                      'fallback manual.',
+                      'Scan QR nota dengan kamera, atau masukkan nomor nota '
+                      'secara manual.',
                 ),
                 const SizedBox(height: 18),
                 _ScanHero(busy: _busy),
                 const SizedBox(height: 18),
+                FilledButton.icon(
+                  onPressed: _busy ? null : _openScanner,
+                  icon: const Icon(Icons.qr_code_scanner_rounded),
+                  label: const Text('Scan kamera'),
+                ),
+                const SizedBox(height: 12),
                 TextField(
                   key: const Key('scan-order-number'),
                   controller: _code,
@@ -226,15 +249,15 @@ class _ScanHero extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Simulasi scan',
+                          'Scan nota',
                           style: Theme.of(
                             context,
                           ).textTheme.titleLarge?.copyWith(color: Colors.white),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Kamera fisik belum tersedia. Masukkan kode nota '
-                          'untuk mencari order.',
+                          'Gunakan kamera untuk membaca QR nota. Input manual '
+                          'tetap tersedia sebagai fallback.',
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
                                 color: Colors.white.withValues(alpha: 0.65),

@@ -9,6 +9,7 @@ import '../../../core/ui/responsive.dart';
 import '../../../core/ui/status_chip.dart';
 import '../../../core/ui/theme.dart';
 import '../domain/order_history_models.dart';
+import 'receipt_preview_screen.dart';
 import 'receipt_screen.dart';
 
 class OrderDetailScreen extends ConsumerStatefulWidget {
@@ -55,7 +56,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     }
   }
 
-  Future<void> _simulatePrint() async {
+  Future<void> _openPrintPreview() async {
     final tenantId = _tenantId;
     if (tenantId == null) {
       return;
@@ -68,43 +69,15 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       if (!mounted) {
         return;
       }
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Simulasi cetak nota'),
-          content: Text(
-            'Nota ${receipt.orderNumber}\n'
-            'Total ${formatRupiah(receipt.totalRupiah)}\n'
-            'Dibayar ${formatRupiah(receipt.paidRupiah)}\n'
-            'Sisa ${formatRupiah(receipt.balanceDueRupiah)}\n\n'
-            'Printer fisik belum tersedia. Percobaan cetak akan dicatat '
-            'sebagai simulasi berhasil.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Batal'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Catat simulasi cetak'),
-            ),
-          ],
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (context) => ReceiptPreviewScreen(receipt: receipt),
         ),
       );
-      if (confirmed == true) {
-        await ref
-            .read(orderRepositoryProvider)
-            .recordPrintAttempt(
-              tenantId: tenantId,
-              orderId: widget.order.orderId,
-            );
-        _say('Cetak disimulasikan dan tercatat.');
-      }
     } on ApiException catch (error) {
       _say(error.message);
     } catch (_) {
-      _say('Simulasi cetak belum dapat dicatat.');
+      _say('Nota belum dapat dimuat.');
     } finally {
       if (mounted) {
         setState(() => _busy = false);
@@ -242,9 +215,9 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               ),
               const SizedBox(height: 10),
               OutlinedButton.icon(
-                onPressed: _busy ? null : _simulatePrint,
+                onPressed: _busy ? null : _openPrintPreview,
                 icon: const Icon(Icons.print_outlined),
-                label: const Text('Simulasi cetak nota'),
+                label: const Text('Pratinjau & cetak nota'),
               ),
             ],
           ),

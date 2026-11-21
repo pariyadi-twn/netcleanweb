@@ -215,6 +215,11 @@ class ReceiptLineSummary {
     required this.unit,
     required this.billableQuantity,
     required this.lineTotalRupiah,
+    this.measuredQuantity = '',
+    this.unitPriceRupiah = 0,
+    this.baseTotalRupiah = 0,
+    this.discountRupiah = 0,
+    this.expressSurchargeRupiah = 0,
   });
 
   factory ReceiptLineSummary.fromJson(Map<String, dynamic> json) {
@@ -223,6 +228,11 @@ class ReceiptLineSummary {
       unit: '${json['unit']}',
       billableQuantity: '${json['billable_quantity']}',
       lineTotalRupiah: _asInt(json['line_total_rupiah']),
+      measuredQuantity: '${json['measured_quantity'] ?? ''}',
+      unitPriceRupiah: _asInt(json['unit_price_rupiah']),
+      baseTotalRupiah: _asInt(json['base_total_rupiah']),
+      discountRupiah: _asInt(json['discount_rupiah']),
+      expressSurchargeRupiah: _asInt(json['express_surcharge_rupiah']),
     );
   }
 
@@ -230,6 +240,11 @@ class ReceiptLineSummary {
   final String unit;
   final String billableQuantity;
   final int lineTotalRupiah;
+  final String measuredQuantity;
+  final int unitPriceRupiah;
+  final int baseTotalRupiah;
+  final int discountRupiah;
+  final int expressSurchargeRupiah;
 }
 
 @immutable
@@ -244,6 +259,17 @@ class ReceiptSummary {
     required this.paidRupiah,
     required this.balanceDueRupiah,
     required this.lines,
+    this.orderId = '',
+    this.status = '',
+    this.acceptedAt,
+    this.branchPhone,
+    this.branchAddress,
+    this.serviceSubtotalRupiah = 0,
+    this.discountRupiah = 0,
+    this.expressSurchargeRupiah = 0,
+    this.deliveryFeeRupiah = 0,
+    this.trackingUrl,
+    this.receiptHash,
   });
 
   factory ReceiptSummary.fromJson(Map<String, dynamic> json) {
@@ -273,6 +299,17 @@ class ReceiptSummary {
                 .map(ReceiptLineSummary.fromJson)
                 .toList(growable: false)
           : const [],
+      orderId: '${json['order_id'] ?? ''}',
+      status: '${json['status'] ?? ''}',
+      acceptedAt: DateTime.tryParse('${json['accepted_at']}')?.toLocal(),
+      branchPhone: branch['phone'] as String?,
+      branchAddress: branch['address'] as String?,
+      serviceSubtotalRupiah: _asInt(totals['service_subtotal_rupiah']),
+      discountRupiah: _asInt(totals['discount_rupiah']),
+      expressSurchargeRupiah: _asInt(totals['express_surcharge_rupiah']),
+      deliveryFeeRupiah: _asInt(totals['delivery_fee_rupiah']),
+      trackingUrl: json['tracking_url'] as String?,
+      receiptHash: json['receipt_hash'] as String?,
     );
   }
 
@@ -285,6 +322,17 @@ class ReceiptSummary {
   final int paidRupiah;
   final int balanceDueRupiah;
   final List<ReceiptLineSummary> lines;
+  final String orderId;
+  final String status;
+  final DateTime? acceptedAt;
+  final String? branchPhone;
+  final String? branchAddress;
+  final int serviceSubtotalRupiah;
+  final int discountRupiah;
+  final int expressSurchargeRupiah;
+  final int deliveryFeeRupiah;
+  final String? trackingUrl;
+  final String? receiptHash;
 }
 
 int _asInt(dynamic value) {

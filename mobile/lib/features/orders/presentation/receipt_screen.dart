@@ -5,6 +5,7 @@ import '../../../core/ui/formatting.dart';
 import '../../../core/ui/responsive.dart';
 import '../../../core/ui/theme.dart';
 import '../domain/order_models.dart';
+import 'receipt_preview_screen.dart';
 
 class ReceiptScreen extends StatelessWidget {
   const ReceiptScreen({super.key, required this.receipt});
@@ -117,7 +118,18 @@ class ReceiptScreen extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 16),
-              FilledButton(
+              FilledButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (context) =>
+                        ReceiptPreviewScreen(receipt: receipt),
+                  ),
+                ),
+                icon: const Icon(Icons.print_outlined),
+                label: const Text('Pratinjau & cetak'),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('Pesanan baru'),
               ),

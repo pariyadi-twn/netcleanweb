@@ -3,13 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/providers.dart';
+import '../../../core/scan/scan_payload.dart';
 import '../../../core/session/session_controller.dart';
 import '../../../core/ui/formatting.dart';
 import '../../../core/ui/page_header.dart';
 import '../../../core/ui/responsive.dart';
 import '../../../core/ui/status_chip.dart';
 import '../../../core/ui/theme.dart';
-import '../../orders/domain/order_models.dart';
+import '../../orders/presentation/receipt_preview_screen.dart';
 import '../domain/operations_models.dart';
 
 class OperationsScreen extends ConsumerStatefulWidget {
@@ -98,6 +99,22 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
         setState(() => _busy = false);
       }
     }
+  }
+
+  Future<void> _openScanner() async {
+    final code = await ref
+        .read(codeScannerProvider)
+        .scan(context, title: 'Scan order');
+    if (!mounted || code == null) {
+      return;
+    }
+    final normalized = ScanPayload.normalize(code);
+    if (normalized == null) {
+      _say('Kode tidak valid. Coba scan ulang.');
+      return;
+    }
+    _orderNumber.text = normalized;
+    await _lookup();
   }
 
   Future<void> _loadTasks() async {
@@ -460,7 +477,7 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
     }
   }
 
-  Future<void> _simulatePrint() async {
+  Future<void> _openPrintPreview() async {
     final tenantId = _tenantId;
     final order = _order;
     if (tenantId == null || order == null) {
@@ -474,20 +491,15 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
       if (!mounted) {
         return;
       }
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => _PrintPreviewDialog(receipt: receipt),
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (context) => ReceiptPreviewScreen(receipt: receipt),
+        ),
       );
-      if (confirmed == true) {
-        await ref
-            .read(orderRepositoryProvider)
-            .recordPrintAttempt(tenantId: tenantId, orderId: order.orderId);
-        _say('Cetak disimulasikan dan tercatat.');
-      }
     } on ApiException catch (error) {
       _say(_errorMessage(error));
     } catch (_) {
-      _say('Simulasi cetak belum dapat dicatat.');
+      _say('Nota belum dapat dimuat.');
     } finally {
       if (mounted) {
         setState(() => _busy = false);
@@ -539,8 +551,8 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
                 eyebrow: 'Produksi',
                 title: 'Operasi & serah terima',
                 subtitle:
-                    'Kamera/scan fisik belum tersedia. Masukkan nomor nota '
-                    'atau gunakan order terbaru sebagai simulasi scan.',
+                    'Scan QR nota dengan kamera, atau masukkan nomor nota '
+                    'secara manual.',
               ),
               if (_busy) ...[
                 const SizedBox(height: 12),
@@ -548,10 +560,16 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
               ],
               const SizedBox(height: 16),
               _Panel(
-                title: 'Simulasi scan order',
+                title: 'Scan order',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    FilledButton.icon(
+                      onPressed: _busy ? null : _openScanner,
+                      icon: const Icon(Icons.qr_code_scanner_rounded),
+                      label: const Text('Scan kamera'),
+                    ),
+                    const SizedBox(height: 12),
                     TextField(
                       key: const Key('operations-order-number'),
                       controller: _orderNumber,
@@ -675,8 +693,8 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
                 child: const Text('Cek kesiapan'),
               ),
               OutlinedButton(
-                onPressed: _busy ? null : _simulatePrint,
-                child: const Text('Simulasi cetak'),
+                onPressed: _busy ? null : _openPrintPreview,
+                child: const Text('Pratinjau & cetak'),
               ),
               if ((_readiness?.canReady ?? false) && readyBags > 0)
                 FilledButton.tonal(
@@ -1044,16 +1062,16 @@ class _QcDialogState extends State<_QcDialog> {
   }
 }
 
-class _HandoverDialog extends StatefulWidget {
+class _HandoverDialog extends ConsumerStatefulWidget {
   const _HandoverDialog({required this.bags});
 
   final List<OrderBagSummary> bags;
 
   @override
-  State<_HandoverDialog> createState() => _HandoverDialogState();
+  ConsumerState<_HandoverDialog> createState() => _HandoverDialogState();
 }
 
-class _HandoverDialogState extends State<_HandoverDialog> {
+class _HandoverDialogState extends ConsumerState<_HandoverDialog> {
   final _name = TextEditingController();
   final _notes = TextEditingController();
   late final Set<String> _selected = widget.bags.map((bag) => bag.id).toSet();
@@ -1064,6 +1082,36 @@ class _HandoverDialogState extends State<_HandoverDialog> {
     _name.dispose();
     _notes.dispose();
     super.dispose();
+  }
+
+  Future<void> _scanBag() async {
+    final code = await ref
+        .read(codeScannerProvider)
+        .scan(context, title: 'Scan bag');
+    if (!mounted || code == null) {
+      return;
+    }
+    OrderBagSummary? match;
+    for (final bag in widget.bags) {
+      if (ScanPayload.matchesLabel(code, bag.labelCode)) {
+        match = bag;
+        break;
+      }
+    }
+    final selectedBag = match;
+    if (selectedBag == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bag tidak termasuk order ini.')),
+      );
+      return;
+    }
+    setState(() {
+      if (_selected.contains(selectedBag.id)) {
+        _selected.remove(selectedBag.id);
+      } else {
+        _selected.add(selectedBag.id);
+      }
+    });
   }
 
   void _submit() {
@@ -1094,6 +1142,15 @@ class _HandoverDialogState extends State<_HandoverDialog> {
               ),
             ),
             const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _scanBag,
+                icon: const Icon(Icons.qr_code_scanner_rounded, size: 18),
+                label: const Text('Scan bag'),
+              ),
+            ),
+            const SizedBox(height: 4),
             ...widget.bags.map(
               (bag) => CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
@@ -1273,48 +1330,6 @@ class _ResolveComplaintDialogState extends State<_ResolveComplaintDialog> {
           child: const Text('Batal'),
         ),
         FilledButton(onPressed: _submit, child: const Text('Simpan')),
-      ],
-    );
-  }
-}
-
-class _PrintPreviewDialog extends StatelessWidget {
-  const _PrintPreviewDialog({required this.receipt});
-
-  final ReceiptSummary receipt;
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Simulasi cetak nota'),
-      content: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Nota ${receipt.orderNumber}'),
-            Text('Invoice ${receipt.invoiceNumber}'),
-            Text('Pelanggan ${receipt.customerName}'),
-            Text('Total ${formatRupiah(receipt.totalRupiah)}'),
-            Text('Dibayar ${formatRupiah(receipt.paidRupiah)}'),
-            Text('Sisa ${formatRupiah(receipt.balanceDueRupiah)}'),
-            const SizedBox(height: 8),
-            const Text(
-              'Tidak ada printer fisik. Konfirmasi akan mencatat percobaan '
-              'cetak sebagai simulasi berhasil.',
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Batal'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('Catat simulasi cetak'),
-        ),
       ],
     );
   }

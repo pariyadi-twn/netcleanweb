@@ -9,6 +9,9 @@ import 'auth/auth_repository.dart';
 import 'auth/secret_store.dart';
 import 'auth/token_store.dart';
 import 'cache/app_database.dart';
+import 'printer/printer_service.dart';
+import 'printer/printer_store.dart';
+import 'scan/code_scanner.dart';
 import 'cache/cache_key_store.dart';
 import 'cache/payload_cipher.dart';
 import 'cache/secure_cache.dart';
@@ -24,6 +27,18 @@ final secretStoreProvider = Provider<SecretStore>(
 
 final tokenStoreProvider = Provider<TokenStore>((ref) {
   return TokenStore(ref.watch(secretStoreProvider));
+});
+
+final codeScannerProvider = Provider<CodeScanner>(
+  (ref) => const CameraCodeScanner(),
+);
+
+final printerStoreProvider = Provider<PrinterStore>((ref) {
+  return PrinterStore(ref.watch(secretStoreProvider));
+});
+
+final printerServiceProvider = Provider<PrinterService>((ref) {
+  return BluetoothPrinterService();
 });
 
 final apiClientProvider = Provider<ApiClient>((ref) {

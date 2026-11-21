@@ -263,12 +263,13 @@ void main() {
     expect(page.nextCursor, 'next-page');
   });
 
-  test('records a simulated receipt print attempt', () async {
+  test('records a successful receipt print attempt', () async {
     final client = MockClient((request) async {
       expect(request.method, 'POST');
       expect(request.url.path, '/api/v1/orders/order-1/receipt-prints');
       final body = jsonDecode(request.body) as Map<String, dynamic>;
       expect(body['outcome'], 'printed');
+      expect(body.containsKey('error_code'), isFalse);
       return http.Response('{}', 201);
     });
     final repository = OrderRepository(
@@ -278,6 +279,26 @@ void main() {
     await repository.recordPrintAttempt(
       tenantId: 'tenant-1',
       orderId: 'order-1',
+    );
+  });
+
+  test('records a failed receipt print attempt with an error code', () async {
+    final client = MockClient((request) async {
+      expect(request.url.path, '/api/v1/orders/order-1/receipt-prints');
+      final body = jsonDecode(request.body) as Map<String, dynamic>;
+      expect(body['outcome'], 'failed');
+      expect(body['error_code'], 'write_failed');
+      return http.Response('{}', 201);
+    });
+    final repository = OrderRepository(
+      ApiClient(client: client, baseUrl: _baseUrl),
+    );
+
+    await repository.recordPrintAttempt(
+      tenantId: 'tenant-1',
+      orderId: 'order-1',
+      outcome: 'failed',
+      errorCode: 'write_failed',
     );
   });
 
@@ -313,21 +334,38 @@ void main() {
       return http.Response(
         jsonEncode({
           'data': {
+            'order_id': 'order-1',
             'order_number': 'ORD-001',
             'invoice_number': 'INV-001',
+            'status': 'ready',
+            'accepted_at': '2026-11-16T09:00:00Z',
             'due_at': '2026-11-16T12:00:00Z',
             'customer': {'name': 'Walk-in'},
-            'branch': {'name': 'Cabang UAT'},
+            'branch': {
+              'name': 'Cabang UAT',
+              'phone': '021-123456',
+              'address': 'Jl. Contoh No. 1',
+            },
             'totals': {
+              'service_subtotal_rupiah': 28000,
+              'discount_rupiah': 0,
+              'express_surcharge_rupiah': 0,
+              'delivery_fee_rupiah': 0,
               'total_rupiah': 28000,
               'paid_rupiah': 10000,
               'balance_due_rupiah': 18000,
             },
+            'receipt_hash': 'abcdef0123456789',
             'lines': [
               {
                 'service_name': 'Kiloan',
                 'unit': 'kg',
+                'measured_quantity': '3.5',
                 'billable_quantity': '3.5',
+                'unit_price_rupiah': 8000,
+                'base_total_rupiah': 28000,
+                'discount_rupiah': 0,
+                'express_surcharge_rupiah': 0,
                 'line_total_rupiah': 28000,
               },
             ],
@@ -355,7 +393,13 @@ void main() {
     expect(payment.invoiceStatus, 'partially_paid');
     expect(payment.balanceDueRupiah, 18000);
     expect(receipt.orderNumber, 'ORD-001');
+    expect(receipt.orderId, 'order-1');
+    expect(receipt.branchPhone, '021-123456');
+    expect(receipt.branchAddress, 'Jl. Contoh No. 1');
     expect(receipt.balanceDueRupiah, 18000);
+    expect(receipt.serviceSubtotalRupiah, 28000);
+    expect(receipt.receiptHash, 'abcdef0123456789');
     expect(receipt.lines.single.serviceName, 'Kiloan');
+    expect(receipt.lines.single.unitPriceRupiah, 8000);
   });
 }

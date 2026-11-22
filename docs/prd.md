@@ -411,9 +411,9 @@ Catat COD dan barang yang dikuasai kurir sebagai tanggung jawab berbeda. Setoran
 
 **Prioritas:** P0.
 
-Dukung pembayaran bertahap, gabungan metode, dan piutang dengan izin. Alokasikan penerimaan ke invoice secara eksplisit.
+Dukung pembayaran bertahap, gabungan metode, QRIS statis dengan konfirmasi kasir, dan piutang dengan izin. Alokasikan penerimaan ke invoice secara eksplisit.
 
-**Kriteria penerimaan:** Contoh tagihan Rp71.600 dan DP Rp30.000 menghasilkan sisa Rp41.600; percobaan pending belum mengurangi sisa.
+**Kriteria penerimaan:** Contoh tagihan Rp71.600 dan DP Rp30.000 menghasilkan sisa Rp41.600; percobaan pending belum mengurangi sisa. QRIS statis P0 memakai standee fisik; kasir memverifikasi pembayaran dan mencatat `qris_manual` beserta referensi opsional. Settlement otomatis tetap melalui gateway P1/FR32.
 
 ### FR32 Gateway dan rekonsiliasi
 

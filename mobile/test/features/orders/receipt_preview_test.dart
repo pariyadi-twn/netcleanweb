@@ -47,6 +47,7 @@ void main() {
     expect(find.text('NetClean UAT'), findsOneWidget);
     expect(find.text('NOTA UAT-MAIN-20261114-000001'), findsOneWidget);
     expect(find.text('Pelanggan UAT'), findsOneWidget);
+    expect(find.text('Dibayar sebagian'), findsOneWidget);
     expect(find.text('Cuci Kiloan'), findsOneWidget);
     expect(find.text('Rp28.000'), findsWidgets);
     expect(find.text('Printer belum diatur'), findsOneWidget);

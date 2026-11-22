@@ -16,7 +16,8 @@ class RecordPaymentRequest extends ApiRequest
         return [
             'client_command_id' => ['required', 'uuid'],
             'amount_rupiah' => ['required', 'integer', 'min:1'],
-            'method' => ['required', 'string', Rule::in(['cash', 'bank_manual'])],
+            'method' => ['required', 'string', Rule::in(['cash', 'bank_manual', 'qris_manual'])],
+            'reference' => ['nullable', 'string', 'max:120'],
             'cash_session_id' => ['nullable', 'uuid'],
             'cash_received_rupiah' => ['nullable', 'integer', 'min:0'],
         ];

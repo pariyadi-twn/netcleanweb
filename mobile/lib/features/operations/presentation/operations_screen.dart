@@ -10,7 +10,9 @@ import '../../../core/ui/page_header.dart';
 import '../../../core/ui/responsive.dart';
 import '../../../core/ui/status_chip.dart';
 import '../../../core/ui/theme.dart';
+import '../../orders/domain/order_models.dart';
 import '../../orders/presentation/receipt_preview_screen.dart';
+import '../../payments/presentation/order_payment_sheet.dart';
 import '../domain/operations_models.dart';
 
 class OperationsScreen extends ConsumerStatefulWidget {
@@ -397,14 +399,69 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
     }
   }
 
+  Future<PaymentSummary?> _collectPayment(OrderLookup order) {
+    return showOrderPaymentSheet(
+      context: context,
+      invoiceId: order.invoiceId,
+      orderNumber: order.orderNumber,
+      balanceDueRupiah: order.balanceDueRupiah,
+    );
+  }
+
+  Future<void> _openPaymentSheet() async {
+    final order = _order;
+    if (order == null) {
+      return;
+    }
+    final payment = await _collectPayment(order);
+    if (payment == null || !mounted) {
+      return;
+    }
+    await _reloadOrder();
+    await _checkReadiness();
+    if (!mounted) {
+      return;
+    }
+    _say(
+      payment.balanceDueRupiah > 0
+          ? 'Pembayaran tercatat. Sisa ${formatRupiah(payment.balanceDueRupiah)}.'
+          : 'Pembayaran tercatat. Invoice lunas.',
+    );
+  }
+
   Future<void> _submitHandover() async {
     final tenantId = _tenantId;
     final locationId = _locationId;
-    final order = _order;
-    final readiness = _readiness;
+    var order = _order;
     if (tenantId == null || locationId == null || order == null) {
       return;
     }
+
+    if (order.balanceDueRupiah > 0) {
+      final session = ref.read(sessionControllerProvider).asData?.value;
+      if (session?.canManagePayments != true) {
+        _say(
+          'Pembayaran belum lunas. Minta kasir atau supervisor mencatat '
+          'pembayaran.',
+        );
+        return;
+      }
+      final payment = await _collectPayment(order);
+      if (payment == null || !mounted) {
+        return;
+      }
+      await _reloadOrder();
+      await _checkReadiness();
+      if (!mounted) {
+        return;
+      }
+      order = _order;
+      if (order == null) {
+        return;
+      }
+    }
+
+    final readiness = _readiness;
     if (readiness == null || !readiness.canReady) {
       _say('Periksa kesiapan dan pastikan semua bagian siap.');
       return;
@@ -650,6 +707,8 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
 
   Widget _orderCard(BuildContext context) {
     final order = _order!;
+    final session = ref.watch(sessionControllerProvider).asData?.value;
+    final canPay = session?.canManagePayments ?? false;
     final bags = order.bags;
     final hasUnreceived = bags.any((bag) => bag.currentLocationId == null);
     final readyBags = bags
@@ -683,6 +742,13 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
               child: const Text('Rencanakan produksi'),
             ),
           ],
+          if (order.balanceDueRupiah > 0 && !canPay) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'Pembayaran belum lunas. Minta kasir atau supervisor mencatat '
+              'pembayaran sebelum serah terima.',
+            ),
+          ],
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
@@ -692,6 +758,11 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
                 onPressed: _busy ? null : _checkReadiness,
                 child: const Text('Cek kesiapan'),
               ),
+              if (order.balanceDueRupiah > 0 && canPay)
+                FilledButton(
+                  onPressed: _busy ? null : _openPaymentSheet,
+                  child: const Text('Catat pembayaran'),
+                ),
               OutlinedButton(
                 onPressed: _busy ? null : _openPrintPreview,
                 child: const Text('Pratinjau & cetak'),

@@ -24,6 +24,7 @@ class PaymentResource extends JsonResource
             'payment_id' => $this->public_id,
             'invoice_id' => $invoice?->public_id,
             'method' => $this->method,
+            'reference' => $this->reference,
             'amount_rupiah' => $this->amount_rupiah,
             'allocated_rupiah' => (int) $this->allocations->sum('amount_rupiah'),
             'unallocated_rupiah' => $this->unallocated_rupiah,

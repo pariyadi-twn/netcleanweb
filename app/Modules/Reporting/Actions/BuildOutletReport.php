@@ -110,6 +110,7 @@ final class BuildOutletReport
                 'receipts_rupiah' => 0,
                 'cash_receipts_rupiah' => 0,
                 'bank_receipts_rupiah' => 0,
+                'qris_receipts_rupiah' => 0,
                 'payment_count' => 0,
                 'refund_rupiah' => 0,
                 'refund_count' => 0,
@@ -189,7 +190,8 @@ final class BuildOutletReport
                  count(*) as payment_count,
                  coalesce(sum(amount_rupiah), 0) as amount,
                  coalesce(sum(case when method = 'cash' then amount_rupiah else 0 end), 0) as cash_amount,
-                 coalesce(sum(case when method = 'bank_manual' then amount_rupiah else 0 end), 0) as bank_amount",
+                 coalesce(sum(case when method = 'bank_manual' then amount_rupiah else 0 end), 0) as bank_amount,
+                 coalesce(sum(case when method = 'qris_manual' then amount_rupiah else 0 end), 0) as qris_amount",
                 [$timezone],
             )
             ->groupByRaw('1')
@@ -202,6 +204,7 @@ final class BuildOutletReport
                 $daily[$key]['receipts_rupiah'] = (int) $row->amount;
                 $daily[$key]['cash_receipts_rupiah'] = (int) $row->cash_amount;
                 $daily[$key]['bank_receipts_rupiah'] = (int) $row->bank_amount;
+                $daily[$key]['qris_receipts_rupiah'] = (int) $row->qris_amount;
             }
         }
 
@@ -252,6 +255,7 @@ final class BuildOutletReport
             'receipts_rupiah' => 0,
             'cash_receipts_rupiah' => 0,
             'bank_receipts_rupiah' => 0,
+            'qris_receipts_rupiah' => 0,
             'payment_count' => 0,
             'refund_rupiah' => 0,
             'refund_count' => 0,

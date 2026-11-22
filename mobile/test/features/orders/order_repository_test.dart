@@ -314,6 +314,7 @@ void main() {
         final body = jsonDecode(request.body) as Map<String, dynamic>;
         expect(body['amount_rupiah'], 10000);
         expect(body['method'], 'bank_manual');
+        expect(body['reference'], 'TRF-1');
         expect(body.containsKey('cash_session_id'), isFalse);
         return http.Response(
           jsonEncode({
@@ -335,6 +336,7 @@ void main() {
         jsonEncode({
           'data': {
             'order_id': 'order-1',
+            'invoice_id': 'invoice-1',
             'order_number': 'ORD-001',
             'invoice_number': 'INV-001',
             'status': 'ready',
@@ -383,6 +385,7 @@ void main() {
       invoiceId: 'invoice-1',
       amountRupiah: 10000,
       method: 'bank_manual',
+      reference: 'TRF-1',
       commandId: '22222222-2222-4222-8222-222222222222',
     );
     final receipt = await repository.receipt(
@@ -394,6 +397,7 @@ void main() {
     expect(payment.balanceDueRupiah, 18000);
     expect(receipt.orderNumber, 'ORD-001');
     expect(receipt.orderId, 'order-1');
+    expect(receipt.invoiceId, 'invoice-1');
     expect(receipt.branchPhone, '021-123456');
     expect(receipt.branchAddress, 'Jl. Contoh No. 1');
     expect(receipt.balanceDueRupiah, 18000);
@@ -401,5 +405,47 @@ void main() {
     expect(receipt.receiptHash, 'abcdef0123456789');
     expect(receipt.lines.single.serviceName, 'Kiloan');
     expect(receipt.lines.single.unitPriceRupiah, 8000);
+  });
+
+  test('records a manual QRIS payment with a reference', () async {
+    final client = MockClient((request) async {
+      expect(request.url.path, '/api/v1/invoices/invoice-1/payments');
+      final body = jsonDecode(request.body) as Map<String, dynamic>;
+      expect(body['method'], 'qris_manual');
+      expect(body['reference'], 'QRIS-1');
+      expect(body.containsKey('cash_session_id'), isFalse);
+      return http.Response(
+        jsonEncode({
+          'data': {
+            'payment_id': 'payment-qris',
+            'invoice_status': 'paid',
+            'total_rupiah': 28000,
+            'paid_rupiah': 28000,
+            'balance_due_rupiah': 0,
+            'change_rupiah': 0,
+            'method': 'qris_manual',
+            'reference': 'QRIS-1',
+          },
+        }),
+        201,
+      );
+    });
+    final repository = OrderRepository(
+      ApiClient(client: client, baseUrl: _baseUrl),
+    );
+
+    final payment = await repository.recordPayment(
+      tenantId: 'tenant-1',
+      invoiceId: 'invoice-1',
+      amountRupiah: 28000,
+      method: 'qris_manual',
+      reference: 'QRIS-1',
+      commandId: '33333333-3333-4333-8333-333333333333',
+    );
+
+    expect(payment.method, 'qris_manual');
+    expect(payment.reference, 'QRIS-1');
+    expect(payment.invoiceStatus, 'paid');
+    expect(payment.balanceDueRupiah, 0);
   });
 }

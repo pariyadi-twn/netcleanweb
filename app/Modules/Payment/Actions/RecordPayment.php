@@ -26,7 +26,7 @@ final class RecordPayment
     ) {}
 
     /**
-     * @param  array{method: string, amount_rupiah: int, cash_received_rupiah?: int|null, cash_session_id?: string|null}  $attributes
+     * @param  array{method: string, amount_rupiah: int, reference?: string|null, cash_received_rupiah?: int|null, cash_session_id?: string|null}  $attributes
      */
     public function handle(Invoice $invoice, array $attributes, int $membershipId, ?User $actor = null): Payment
     {
@@ -47,6 +47,7 @@ final class RecordPayment
             }
 
             $method = (string) $attributes['method'];
+            $reference = $attributes['reference'] ?? null;
             $session = null;
             $receivedBranchId = $locked->sales_branch_id;
             if ($method === 'cash') {
@@ -67,11 +68,11 @@ final class RecordPayment
                 if (! $this->context->canAccessBranch($session->register->branch)) {
                     throw new AuthorizationException('This action is unauthorized.');
                 }
-            } elseif ($method !== 'bank_manual') {
+            } elseif (! in_array($method, ['bank_manual', 'qris_manual'], true)) {
                 throw ValidationException::withMessages(['method' => ['The payment method is not enabled in P0.']]);
             }
 
-            if ($method === 'bank_manual' && ! $this->context->canAccessBranch($locked->salesBranch)) {
+            if ($method !== 'cash' && ! $this->context->canAccessBranch($locked->salesBranch)) {
                 throw new AuthorizationException('This action is unauthorized.');
             }
 
@@ -95,6 +96,7 @@ final class RecordPayment
                 'received_branch_id' => $receivedBranchId,
                 'cash_session_id' => $session?->id,
                 'method' => $method,
+                'reference' => $reference,
                 'amount_rupiah' => $amount,
                 'currency' => 'IDR',
                 'cash_received_rupiah' => $cashReceived,
@@ -139,6 +141,7 @@ final class RecordPayment
                     'allocated_rupiah' => $allocated,
                     'unallocated_rupiah' => $unallocated,
                     'method' => $method,
+                    'reference' => $reference,
                 ],
                 actor: $actor,
             );

@@ -129,6 +129,28 @@ class PaymentTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_qris_manual_payment_is_non_cash_and_stores_a_reference(): void
+    {
+        [$tenant, $token, $invoice] = $this->scenario(71600);
+
+        $this->pay($tenant, $token, $invoice, (string) Str::uuid(), [
+            'amount_rupiah' => 71600,
+            'method' => 'qris_manual',
+            'reference' => 'QRIS-20261122-001',
+        ])->assertCreated()
+            ->assertJsonPath('data.method', 'qris_manual')
+            ->assertJsonPath('data.reference', 'QRIS-20261122-001')
+            ->assertJsonPath('data.invoice_status', 'paid')
+            ->assertJsonPath('data.balance_due_rupiah', 0);
+
+        $this->assertDatabaseHas('payments', [
+            'tenant_id' => $tenant->id,
+            'method' => 'qris_manual',
+            'reference' => 'QRIS-20261122-001',
+        ]);
+        $this->assertDatabaseCount('cash_entries', 0);
+    }
+
     public function test_payment_requires_permission_and_open_cash_session(): void
     {
         [$tenant, $token, $invoice, , $role, $user] = $this->scenario(71600);

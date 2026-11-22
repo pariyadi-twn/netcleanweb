@@ -20,6 +20,7 @@ class MyContextResource extends JsonResource
             'permission_version' => $this->resource['permission_version'],
             'branch_ids' => $this->resource['branch_ids'],
             'location_ids' => $this->resource['location_ids'],
+            'permissions' => $this->resource['permissions'],
         ];
     }
 }

@@ -2124,12 +2124,14 @@ paths:
       operationId: recordInvoicePayment
       x-release-phase: P0
       description: |
-        Hanya tunai dan transfer manual pada P0; gateway diaktifkan P1/T060.
-        Payment, allocation, cash entry jika tunai, audit, outbox, dan receipt commit atomik.
-        amount_rupiah adalah dana bersih yang diterima. cash_received_rupiah adalah uang
-        diserahkan pelanggan dan selisihnya menjadi kembalian. Kelebihan yang sengaja
-        dititipkan melebihi saldo invoice menjadi unallocated_rupiah.
-        Pembayaran tunai wajib memakai cash_session_id yang masih open.
+        Tunai, transfer manual, dan QRIS statis dengan konfirmasi manual pada P0;
+        gateway otomatis diaktifkan P1/T060. Payment, allocation, cash entry jika
+        tunai, audit, outbox, dan receipt commit atomik. amount_rupiah adalah dana
+        bersih yang diterima. cash_received_rupiah adalah uang diserahkan pelanggan
+        dan selisihnya menjadi kembalian. Kelebihan yang sengaja dititipkan melebihi
+        saldo invoice menjadi unallocated_rupiah. Pembayaran tunai wajib memakai
+        cash_session_id yang masih open. qris_manual tidak membuat cash entry dan
+        reference dapat menyimpan ID transaksi dari aplikasi pelanggan.
       parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
       requestBody:
         required: true
@@ -2141,7 +2143,8 @@ paths:
                 - type: object
                   required: [method, amount_rupiah]
                   properties:
-                    method: {type: string, enum: [cash, bank_manual]}
+                    method: {type: string, enum: [cash, bank_manual, qris_manual]}
+                    reference: {type: string, nullable: true, maxLength: 120}
                     amount_rupiah: {$ref: '#/components/schemas/PositiveMoney'}
                     cash_received_rupiah: {$ref: '#/components/schemas/Money'}
                     cash_session_id: {$ref: '#/components/schemas/PublicId'}
@@ -3887,7 +3890,8 @@ components:
       properties:
         payment_id: {$ref: '#/components/schemas/PublicId'}
         invoice_id: {$ref: '#/components/schemas/PublicId'}
-        method: {type: string, enum: [cash, bank_manual]}
+        method: {type: string, enum: [cash, bank_manual, qris_manual]}
+        reference: {type: string, nullable: true, maxLength: 120}
         amount_rupiah: {$ref: '#/components/schemas/PositiveMoney'}
         allocated_rupiah: {$ref: '#/components/schemas/Money'}
         unallocated_rupiah: {$ref: '#/components/schemas/Money'}
@@ -3919,7 +3923,7 @@ components:
         created_at: {$ref: '#/components/schemas/UtcTime'}
     OutletReportDaily:
       type: object
-      required: [business_date, sales_net_rupiah, invoice_original_rupiah, adjustment_rupiah, invoice_count, adjustment_count, receipts_rupiah, cash_receipts_rupiah, bank_receipts_rupiah, payment_count, refund_rupiah, refund_count]
+      required: [business_date, sales_net_rupiah, invoice_original_rupiah, adjustment_rupiah, invoice_count, adjustment_count, receipts_rupiah, cash_receipts_rupiah, bank_receipts_rupiah, qris_receipts_rupiah, payment_count, refund_rupiah, refund_count]
       properties:
         business_date: {type: string, format: date}
         sales_net_rupiah: {type: integer, format: int64}
@@ -3930,6 +3934,7 @@ components:
         receipts_rupiah: {$ref: '#/components/schemas/Money'}
         cash_receipts_rupiah: {$ref: '#/components/schemas/Money'}
         bank_receipts_rupiah: {$ref: '#/components/schemas/Money'}
+        qris_receipts_rupiah: {$ref: '#/components/schemas/Money'}
         payment_count: {type: integer, minimum: 0}
         refund_rupiah: {$ref: '#/components/schemas/Money'}
         refund_count: {type: integer, minimum: 0}

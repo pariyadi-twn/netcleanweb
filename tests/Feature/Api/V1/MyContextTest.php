@@ -3,11 +3,16 @@
 namespace Tests\Feature\Api\V1;
 
 use App\Models\User;
+use App\Modules\Identity\Actions\UpdateMembershipAssignments;
+use App\Modules\Identity\Enums\PermissionCode;
 use App\Modules\Identity\Models\Branch;
 use App\Modules\Identity\Models\Location;
+use App\Modules\Identity\Models\Permission;
+use App\Modules\Identity\Models\Role;
 use App\Modules\Identity\Models\Tenant;
 use App\Modules\Identity\Models\TenantMembership;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\Concerns\CreatesIdentityUsers;
 use Tests\TestCase;
 
@@ -55,6 +60,39 @@ class MyContextTest extends TestCase
 
         $this->assertArrayNotHasKey($suspendedTenant->public_id, $contexts);
         $this->assertArrayNotHasKey($otherMembership->tenant->public_id, $contexts);
+    }
+
+    public function test_context_includes_permission_codes_for_each_membership(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = User::factory()->create();
+        $membership = TenantMembership::factory()->for($tenant)->for($user)->create(['status' => 'active']);
+        $branch = Branch::factory()->for($tenant)->create();
+        $role = Role::factory()->for($tenant)->create(['code' => 'cashier', 'name' => 'Kasir']);
+        $permission = Permission::query()->firstOrCreate(
+            ['code' => PermissionCode::PaymentsManage->value],
+            ['description' => PermissionCode::PaymentsManage->name],
+        );
+        DB::table('role_permissions')->insert([
+            'tenant_id' => $tenant->id,
+            'role_id' => $role->id,
+            'permission_id' => $permission->id,
+        ]);
+        app(UpdateMembershipAssignments::class)->handle(
+            $membership,
+            [$role->id],
+            [$branch->id],
+            [],
+            $user,
+            'Set cashier permissions',
+        );
+
+        $issued = $this->issueTokenFor($user);
+
+        $this->withToken($issued['token'])
+            ->getJson('/api/v1/me/context')
+            ->assertOk()
+            ->assertJsonPath('data.0.permissions', [PermissionCode::PaymentsManage->value]);
     }
 
     public function test_context_requires_authentication_and_an_active_account(): void

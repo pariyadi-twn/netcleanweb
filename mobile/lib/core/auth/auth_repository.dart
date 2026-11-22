@@ -13,7 +13,7 @@ class AuthRepository {
     final session = await _tokens.readSession();
     if (session == null ||
         session.tenantId == null ||
-        session.branchIds.isNotEmpty) {
+        (session.branchIds.isNotEmpty && session.permissions.isNotEmpty)) {
       return session;
     }
 
@@ -35,6 +35,7 @@ class AuthRepository {
           membershipId: item['membership_id'] as String?,
           branchIds: _stringList(item['branch_ids']),
           locationIds: _stringList(item['location_ids']),
+          permissions: _stringList(item['permissions']),
         );
         await _tokens.saveSession(updated);
         return updated;
@@ -81,6 +82,7 @@ class AuthRepository {
         membershipId: selected['membership_id'] as String?,
         branchIds: _stringList(selected['branch_ids']),
         locationIds: _stringList(selected['location_ids']),
+        permissions: _stringList(selected['permissions']),
       );
     }
 

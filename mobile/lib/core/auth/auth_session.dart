@@ -10,6 +10,7 @@ class AuthSession {
     this.membershipId,
     this.branchIds = const [],
     this.locationIds = const [],
+    this.permissions = const [],
   });
 
   final String token;
@@ -19,6 +20,10 @@ class AuthSession {
   final String? membershipId;
   final List<String> branchIds;
   final List<String> locationIds;
+  final List<String> permissions;
 
   bool get isExpired => DateTime.now().toUtc().isAfter(expiresAt.toUtc());
+
+  bool get canManagePayments =>
+      permissions.isEmpty || permissions.contains('payments.manage');
 }

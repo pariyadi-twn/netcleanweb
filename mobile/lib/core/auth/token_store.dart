@@ -14,6 +14,7 @@ class TokenStore {
   static const _membershipKey = 'auth_membership_v1';
   static const _branchesKey = 'auth_branches_v1';
   static const _locationsKey = 'auth_locations_v1';
+  static const _permissionsKey = 'auth_permissions_v1';
 
   final SecretStore _secrets;
 
@@ -37,6 +38,7 @@ class TokenStore {
       membershipId: await _secrets.read(_membershipKey),
       branchIds: await _readList(_branchesKey),
       locationIds: await _readList(_locationsKey),
+      permissions: await _readList(_permissionsKey),
     );
   }
 
@@ -55,6 +57,7 @@ class TokenStore {
     }
     await _writeList(_branchesKey, session.branchIds);
     await _writeList(_locationsKey, session.locationIds);
+    await _writeList(_permissionsKey, session.permissions);
   }
 
   Future<String> installationId() async {
@@ -75,6 +78,7 @@ class TokenStore {
     await _secrets.delete(_membershipKey);
     await _secrets.delete(_branchesKey);
     await _secrets.delete(_locationsKey);
+    await _secrets.delete(_permissionsKey);
   }
 
   Future<List<String>> _readList(String key) async {

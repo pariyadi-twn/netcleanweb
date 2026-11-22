@@ -26,6 +26,17 @@ APK tersedia di `build/app/outputs/flutter-apk/app-debug.apk`. Keystore, `key.pr
 - Scanner menerima QR nota dan label bag. QR tracking pelanggan tidak dipakai untuk membuka data internal.
 - Di perangkat tanpa kamera, input manual tetap menjadi fallback.
 
+## Pembayaran saat pengambilan
+
+Order dapat dibuat tanpa pembayaran dan struk awal dicetak dengan status belum dibayar. Setelah produksi selesai, kasir atau supervisor membuka detail pesanan atau layar Operasi, lalu menekan **Catat pembayaran**.
+
+- **Tunai** memerlukan shift kas terbuka; aplikasi menampilkan kembalian.
+- **Transfer** tidak memerlukan shift kas.
+- **QRIS** memakai standee fisik di outlet. Kasir menunjukkan standee, memverifikasi notifikasi pembayaran pelanggan, mengisi ID transaksi QRIS bila ada, lalu menekan konfirmasi.
+- Handover tetap diblokir sampai saldo nol. Jika pengguna tidak berhak mencatat pembayaran, arahkan ke kasir atau supervisor.
+- QRIS statis dicatat sebagai `qris_manual` dan tidak membuat cash entry; settlement otomatis belum tersedia.
+- QRIS memerlukan migration dan deploy backend terbaru. APK ini tetap dapat memakai tunai/transfer pada backend lama, tetapi QRIS baru aktif setelah backend diperbarui.
+
 ## Printer thermal
 
 Printer P0 yang didukung: Eppos 80 mm, Smartcom portable 80 mm, dan Eppos 58 mm. Koneksi P0 memakai Bluetooth Classic. Plugin printer meminta izin `BLUETOOTH_CONNECT` dan `BLUETOOTH_SCAN` pada Android 12+; aplikasi tidak meminta izin lokasi.

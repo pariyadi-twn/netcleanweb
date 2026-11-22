@@ -74,6 +74,7 @@ class OrderRepository {
     required int amountRupiah,
     required String method,
     required String commandId,
+    String? reference,
     String? cashSessionId,
     int? cashReceivedRupiah,
   }) async {
@@ -85,6 +86,7 @@ class OrderRepository {
         'client_command_id': commandId,
         'amount_rupiah': amountRupiah,
         'method': method,
+        'reference': ?reference,
         'cash_session_id': ?cashSessionId,
         'cash_received_rupiah': ?cashReceivedRupiah,
       },

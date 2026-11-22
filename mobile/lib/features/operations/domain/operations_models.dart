@@ -38,6 +38,7 @@ class OrderLookup {
     required this.balanceDueRupiah,
     required this.dueAt,
     required this.bags,
+    this.invoiceId = '',
   });
 
   factory OrderLookup.fromJson(Map<String, dynamic> json) {
@@ -45,6 +46,7 @@ class OrderLookup {
     return OrderLookup(
       orderId: '${json['order_id']}',
       orderNumber: '${json['order_number']}',
+      invoiceId: '${json['invoice_id'] ?? ''}',
       status: '${json['operational_status']}',
       totalRupiah: _asInt(json['total_rupiah']),
       paidRupiah: _asInt(json['paid_rupiah']),
@@ -67,6 +69,7 @@ class OrderLookup {
   final int balanceDueRupiah;
   final DateTime dueAt;
   final List<OrderBagSummary> bags;
+  final String invoiceId;
 }
 
 @immutable

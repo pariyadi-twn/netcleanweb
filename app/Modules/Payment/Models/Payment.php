@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'received_branch_id',
     'cash_session_id',
     'method',
+    'reference',
     'amount_rupiah',
     'currency',
     'cash_received_rupiah',

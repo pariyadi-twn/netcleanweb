@@ -39,6 +39,7 @@ void main() {
                     'permission_version': 1,
                     'branch_ids': ['branch-public-id'],
                     'location_ids': ['location-public-id'],
+                    'permissions': ['payments.manage'],
                   },
                 ],
               }),
@@ -73,6 +74,7 @@ void main() {
         expect(saved?.membershipId, 'membership-public-id');
         expect(saved?.branchIds, ['branch-public-id']);
         expect(saved?.locationIds, ['location-public-id']);
+        expect(saved?.permissions, ['payments.manage']);
       },
     );
   }
@@ -100,6 +102,7 @@ void main() {
               'permission_version': 2,
               'branch_ids': ['branch-public-id'],
               'location_ids': ['location-public-id'],
+              'permissions': ['payments.manage'],
             },
           ],
         }),

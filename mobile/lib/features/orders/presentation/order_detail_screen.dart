@@ -8,6 +8,7 @@ import '../../../core/ui/formatting.dart';
 import '../../../core/ui/responsive.dart';
 import '../../../core/ui/status_chip.dart';
 import '../../../core/ui/theme.dart';
+import '../../payments/presentation/order_payment_sheet.dart';
 import '../domain/order_history_models.dart';
 import 'receipt_preview_screen.dart';
 import 'receipt_screen.dart';
@@ -22,7 +23,14 @@ class OrderDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
+  late OrderHistory _order;
   bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _order = widget.order;
+  }
 
   String? get _tenantId =>
       ref.read(sessionControllerProvider).asData?.value?.tenantId;
@@ -36,7 +44,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     try {
       final receipt = await ref
           .read(orderRepositoryProvider)
-          .receipt(tenantId: tenantId, orderId: widget.order.orderId);
+          .receipt(tenantId: tenantId, orderId: _order.orderId);
       if (!mounted) {
         return;
       }
@@ -65,7 +73,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     try {
       final receipt = await ref
           .read(orderRepositoryProvider)
-          .receipt(tenantId: tenantId, orderId: widget.order.orderId);
+          .receipt(tenantId: tenantId, orderId: _order.orderId);
       if (!mounted) {
         return;
       }
@@ -94,9 +102,35 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  Future<void> _openPaymentSheet() async {
+    final payment = await showOrderPaymentSheet(
+      context: context,
+      invoiceId: _order.invoiceId,
+      orderNumber: _order.orderNumber,
+      balanceDueRupiah: _order.balanceDueRupiah,
+    );
+    if (payment == null || !mounted) {
+      return;
+    }
+    setState(() {
+      _order = _order.copyWith(
+        invoiceStatus: payment.invoiceStatus,
+        paidRupiah: payment.paidRupiah,
+        balanceDueRupiah: payment.balanceDueRupiah,
+      );
+    });
+    _say(
+      payment.balanceDueRupiah > 0
+          ? 'Pembayaran tercatat. Sisa ${formatRupiah(payment.balanceDueRupiah)}.'
+          : 'Pembayaran tercatat. Invoice lunas.',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final order = widget.order;
+    final order = _order;
+    final session = ref.watch(sessionControllerProvider).asData?.value;
+    final canPay = session?.canManagePayments ?? false;
     final width = MediaQuery.sizeOf(context).width;
     final padding = Responsive.horizontalPadding(width);
 
@@ -208,6 +242,20 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                 const LinearProgressIndicator(),
               ],
               const SizedBox(height: 20),
+              if (order.balanceDueRupiah > 0 && canPay) ...[
+                FilledButton.icon(
+                  onPressed: _busy ? null : _openPaymentSheet,
+                  icon: const Icon(Icons.payments_outlined),
+                  label: const Text('Catat pembayaran'),
+                ),
+                const SizedBox(height: 10),
+              ] else if (order.balanceDueRupiah > 0) ...[
+                const Text(
+                  'Pembayaran belum lunas. Minta kasir atau supervisor '
+                  'mencatat pembayaran.',
+                ),
+                const SizedBox(height: 10),
+              ],
               FilledButton.icon(
                 onPressed: _busy ? null : _openReceipt,
                 icon: const Icon(Icons.receipt_long_outlined),

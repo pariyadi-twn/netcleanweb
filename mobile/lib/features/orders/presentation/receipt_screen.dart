@@ -45,6 +45,16 @@ class ReceiptScreen extends StatelessWidget {
                         'Invoice ${receipt.invoiceNumber}',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
+                      const SizedBox(height: 8),
+                      Text(
+                        receipt.paymentStatusLabel,
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: receipt.balanceDueRupiah > 0
+                              ? AppTheme.text
+                              : Colors.green.shade700,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                       const Divider(height: 28),
                       _ValueRow(
                         label: 'Pelanggan',

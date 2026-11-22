@@ -65,6 +65,7 @@ class OrderHistory {
     required this.dueAt,
     required this.lines,
     required this.bags,
+    this.invoiceId = '',
   });
 
   factory OrderHistory.fromJson(Map<String, dynamic> json) {
@@ -73,6 +74,7 @@ class OrderHistory {
     return OrderHistory(
       orderId: '${json['order_id']}',
       orderNumber: '${json['order_number']}',
+      invoiceId: '${json['invoice_id'] ?? ''}',
       status: '${json['operational_status']}',
       invoiceStatus: '${json['invoice_status'] ?? '-'}',
       invoiceNumber: '${json['invoice_number'] ?? '-'}',
@@ -106,6 +108,28 @@ class OrderHistory {
   final DateTime dueAt;
   final List<OrderHistoryLine> lines;
   final List<OrderHistoryBag> bags;
+  final String invoiceId;
+
+  OrderHistory copyWith({
+    String? invoiceStatus,
+    int? paidRupiah,
+    int? balanceDueRupiah,
+  }) {
+    return OrderHistory(
+      orderId: orderId,
+      orderNumber: orderNumber,
+      status: status,
+      invoiceStatus: invoiceStatus ?? this.invoiceStatus,
+      invoiceNumber: invoiceNumber,
+      totalRupiah: totalRupiah,
+      paidRupiah: paidRupiah ?? this.paidRupiah,
+      balanceDueRupiah: balanceDueRupiah ?? this.balanceDueRupiah,
+      dueAt: dueAt,
+      lines: lines,
+      bags: bags,
+      invoiceId: invoiceId,
+    );
+  }
 }
 
 @immutable

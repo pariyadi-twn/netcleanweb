@@ -247,6 +247,11 @@ class _PaperReceipt extends StatelessWidget {
               'Invoice ${receipt.invoiceNumber}',
               textAlign: TextAlign.center,
             ),
+            Text(
+              receipt.paymentStatusLabel,
+              textAlign: TextAlign.center,
+              style: boldStyle,
+            ),
             const _DashedLine(),
             _ValueRow(label: 'Pelanggan', value: receipt.customerName),
             _ValueRow(label: 'Selesai', value: formatDateTime(receipt.dueAt)),

@@ -19,12 +19,12 @@
     </div>
 
     <div class="mt-5 overflow-x-auto rounded-container border border-divider bg-white shadow-sm">
-        <table class="w-full min-w-[44rem] text-sm">
+        <table class="w-full min-w-[50rem] text-sm">
             <caption class="sr-only">Laporan harian outlet {{ $branch->name }}</caption>
-            <thead class="bg-slate-50 text-left text-[10px] uppercase tracking-wider text-muted"><tr><th class="px-4 py-3">Tanggal</th><th class="px-4 py-3 text-right">Penjualan</th><th class="px-4 py-3 text-right">Penerimaan</th><th class="px-4 py-3 text-right">Tunai</th><th class="px-4 py-3 text-right">Transfer</th><th class="px-4 py-3 text-right">Refund</th></tr></thead>
+            <thead class="bg-slate-50 text-left text-[10px] uppercase tracking-wider text-muted"><tr><th class="px-4 py-3">Tanggal</th><th class="px-4 py-3 text-right">Penjualan</th><th class="px-4 py-3 text-right">Penerimaan</th><th class="px-4 py-3 text-right">Tunai</th><th class="px-4 py-3 text-right">Transfer</th><th class="px-4 py-3 text-right">QRIS</th><th class="px-4 py-3 text-right">Refund</th></tr></thead>
             <tbody class="divide-y divide-divider">
                 @foreach($report['daily'] as $day)
-                    <tr><td class="px-4 py-3 font-semibold">{{ \Illuminate\Support\Carbon::parse($day['business_date'])->format('d M Y') }}</td><td class="px-4 py-3 text-right">Rp{{ number_format($day['sales_net_rupiah'], 0, ',', '.') }}</td><td class="px-4 py-3 text-right">Rp{{ number_format($day['receipts_rupiah'], 0, ',', '.') }}</td><td class="px-4 py-3 text-right">Rp{{ number_format($day['cash_receipts_rupiah'], 0, ',', '.') }}</td><td class="px-4 py-3 text-right">Rp{{ number_format($day['bank_receipts_rupiah'], 0, ',', '.') }}</td><td class="px-4 py-3 text-right">Rp{{ number_format($day['refund_rupiah'], 0, ',', '.') }}</td></tr>
+                    <tr><td class="px-4 py-3 font-semibold">{{ \Illuminate\Support\Carbon::parse($day['business_date'])->format('d M Y') }}</td><td class="px-4 py-3 text-right">Rp{{ number_format($day['sales_net_rupiah'], 0, ',', '.') }}</td><td class="px-4 py-3 text-right">Rp{{ number_format($day['receipts_rupiah'], 0, ',', '.') }}</td><td class="px-4 py-3 text-right">Rp{{ number_format($day['cash_receipts_rupiah'], 0, ',', '.') }}</td><td class="px-4 py-3 text-right">Rp{{ number_format($day['bank_receipts_rupiah'], 0, ',', '.') }}</td><td class="px-4 py-3 text-right">Rp{{ number_format($day['qris_receipts_rupiah'], 0, ',', '.') }}</td><td class="px-4 py-3 text-right">Rp{{ number_format($day['refund_rupiah'], 0, ',', '.') }}</td></tr>
                 @endforeach
             </tbody>
         </table>

@@ -79,6 +79,32 @@ class ReportingTest extends TestCase
         $this->assertSame($response->json('data.totals.refund_rupiah'), $daily->sum('refund_rupiah'));
     }
 
+    public function test_outlet_report_separates_manual_qris_from_bank_transfer(): void
+    {
+        [$tenant, $token, $branch, , $user] = $this->scenario();
+        $membership = TenantMembership::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+        $this->payment(
+            $tenant,
+            $branch,
+            $membership,
+            5000,
+            'qris_manual',
+            CarbonImmutable::parse('2026-11-01 03:00:00', 'UTC'),
+        );
+
+        $this->withToken($token)
+            ->withHeader('X-Tenant-ID', $tenant->public_id)
+            ->getJson('/api/v1/reports/outlet?branch_id='.$branch->public_id.'&from=2026-11-01&to=2026-11-01')
+            ->assertOk()
+            ->assertJsonPath('data.totals.receipts_rupiah', 15000)
+            ->assertJsonPath('data.totals.bank_receipts_rupiah', 10000)
+            ->assertJsonPath('data.totals.qris_receipts_rupiah', 5000)
+            ->assertJsonPath('data.daily.0.qris_receipts_rupiah', 5000);
+    }
+
     public function test_receivables_report_lists_only_outstanding_invoices_and_uses_branch_scope(): void
     {
         [$tenant, $token, $branch] = $this->scenario();

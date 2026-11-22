@@ -187,6 +187,8 @@ class PaymentSummary {
     required this.paidRupiah,
     required this.balanceDueRupiah,
     required this.changeRupiah,
+    this.method = '',
+    this.reference,
   });
 
   factory PaymentSummary.fromJson(Map<String, dynamic> json) {
@@ -197,6 +199,8 @@ class PaymentSummary {
       paidRupiah: _asInt(json['paid_rupiah']),
       balanceDueRupiah: _asInt(json['balance_due_rupiah']),
       changeRupiah: _asInt(json['change_rupiah']),
+      method: '${json['method'] ?? ''}',
+      reference: json['reference'] as String?,
     );
   }
 
@@ -206,6 +210,8 @@ class PaymentSummary {
   final int paidRupiah;
   final int balanceDueRupiah;
   final int changeRupiah;
+  final String method;
+  final String? reference;
 }
 
 @immutable
@@ -260,6 +266,7 @@ class ReceiptSummary {
     required this.balanceDueRupiah,
     required this.lines,
     this.orderId = '',
+    this.invoiceId = '',
     this.status = '',
     this.acceptedAt,
     this.branchPhone,
@@ -300,6 +307,7 @@ class ReceiptSummary {
                 .toList(growable: false)
           : const [],
       orderId: '${json['order_id'] ?? ''}',
+      invoiceId: '${json['invoice_id'] ?? ''}',
       status: '${json['status'] ?? ''}',
       acceptedAt: DateTime.tryParse('${json['accepted_at']}')?.toLocal(),
       branchPhone: branch['phone'] as String?,
@@ -323,6 +331,7 @@ class ReceiptSummary {
   final int balanceDueRupiah;
   final List<ReceiptLineSummary> lines;
   final String orderId;
+  final String invoiceId;
   final String status;
   final DateTime? acceptedAt;
   final String? branchPhone;
@@ -333,6 +342,16 @@ class ReceiptSummary {
   final int deliveryFeeRupiah;
   final String? trackingUrl;
   final String? receiptHash;
+
+  String get paymentStatusLabel {
+    if (totalRupiah <= 0 || paidRupiah >= totalRupiah) {
+      return 'Lunas';
+    }
+    if (paidRupiah <= 0) {
+      return 'Belum dibayar';
+    }
+    return 'Dibayar sebagian';
+  }
 }
 
 int _asInt(dynamic value) {

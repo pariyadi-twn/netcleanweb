@@ -115,7 +115,7 @@ Tampilkan total, dana sudah diterima, sisa, metode, nilai dibayar sekarang, sert
 
 ### 6.5 Pengambilan
 
-Scan bag atau nota, tampilkan seluruh bag serta QC dan lokasi, pilih bag utuh yang diserahkan, verifikasi syarat bayar atau persetujuan piutang, lalu catat penerima. Dialog final mencantumkan nomor pesanan dan jumlah bag. Bag yang sudah diserahkan tidak dapat dipilih ulang. Kegagalan server tidak diubah menjadi sukses lokal.
+Scan bag atau nota, tampilkan seluruh bag serta QC dan lokasi, pilih bag utuh yang diserahkan, verifikasi syarat bayar atau persetujuan piutang, lalu catat penerima. Pembayaran dapat dilakukan sebelum atau sesudah penyerahan; sisa tagihan menjadi piutang bila tenant tidak mewajibkan lunas. Dialog final mencantumkan nomor pesanan dan jumlah bag. Bag yang sudah diserahkan tidak dapat dipilih ulang. Kegagalan server tidak diubah menjadi sukses lokal.
 
 ## 7 Produksi dan multi cabang
 

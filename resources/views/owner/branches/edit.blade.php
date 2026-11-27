@@ -55,6 +55,26 @@
                     @endforeach
                 </ul>
             @endif
+
+            <form method="POST" action="{{ route('branches.locations.store', $branch) }}" class="mt-5 grid gap-3 border-t border-divider pt-5">
+                @csrf
+                <h3 class="font-bold text-ink">Tambah lokasi</h3>
+                <label class="grid gap-1 text-sm font-semibold text-ink">Kode
+                    <input name="code" value="{{ old('code') }}" required placeholder="PRODUKSI" class="min-h-12 rounded-control border border-input px-4 font-normal uppercase">
+                </label>
+                <label class="grid gap-1 text-sm font-semibold text-ink">Nama
+                    <input name="name" value="{{ old('name') }}" required placeholder="Ruang Produksi" class="min-h-12 rounded-control border border-input px-4 font-normal">
+                </label>
+                <label class="grid gap-1 text-sm font-semibold text-ink">Jenis
+                    <select name="type" class="min-h-12 rounded-control border border-input px-4 font-normal">
+                        <option value="outlet" @selected(old('type') === 'outlet')>Outlet</option>
+                        <option value="plant" @selected(old('type') === 'plant')>Pusat produksi</option>
+                        <option value="warehouse" @selected(old('type') === 'warehouse')>Gudang</option>
+                        <option value="rack" @selected(old('type') === 'rack')>Rak</option>
+                    </select>
+                </label>
+                <button type="submit" class="min-h-12 rounded-control bg-brand-600 px-5 font-semibold text-white hover:bg-brand-700">Tambah lokasi</button>
+            </form>
         </x-ui.panel>
     </div>
 @endsection

@@ -23,6 +23,16 @@
                 <label class="grid gap-1 text-sm font-semibold text-ink">Nama organisasi
                     <input name="name" value="{{ old('name', $tenant->name) }}" required class="min-h-12 rounded-control border border-input px-4 font-normal">
                 </label>
+                <label class="grid gap-1 text-sm font-semibold text-ink">Mode produksi
+                    <select name="production_mode" class="min-h-12 rounded-control border border-input px-4 font-normal">
+                        <option value="simple" @selected(old('production_mode', $tenant->production_mode->value) === 'simple')>Ringkas — satu tombol selesai per pesanan</option>
+                        <option value="detailed" @selected(old('production_mode', $tenant->production_mode->value) === 'detailed')>Rinci — tahap dan QC per bagian</option>
+                    </select>
+                </label>
+                <label class="flex items-start gap-3 rounded-control border border-divider px-4 py-3 text-sm text-ink">
+                    <input type="checkbox" name="require_payment_before_handover" value="1" @checked(old('require_payment_before_handover', $tenant->require_payment_before_handover)) class="mt-0.5 size-4 rounded border-input">
+                    <span><span class="block font-semibold">Wajib lunas sebelum serah terima</span><span class="mt-1 block text-xs text-muted">Jika tidak dicentang, cucian boleh diserahkan lebih dulu dan sisa tagihan menjadi piutang.</span></span>
+                </label>
                 <label class="grid gap-1 text-sm font-semibold text-ink">Keterangan
                     <input name="reason" value="{{ old('reason') }}" class="min-h-12 rounded-control border border-input px-4 font-normal">
                 </label>

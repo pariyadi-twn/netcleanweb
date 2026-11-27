@@ -369,13 +369,15 @@ paths:
                     type: array
                     items:
                       type: object
-                      required: [tenant_id, membership_id, permission_version, branch_ids, location_ids]
+                      required: [tenant_id, membership_id, permission_version, branch_ids, location_ids, production_mode]
                       properties:
                         tenant_id: {$ref: '#/components/schemas/PublicId'}
                         membership_id: {$ref: '#/components/schemas/PublicId'}
                         permission_version: {type: integer, format: int64, minimum: 1}
                         branch_ids: {type: array, items: {$ref: '#/components/schemas/PublicId'}}
                         location_ids: {type: array, items: {$ref: '#/components/schemas/PublicId'}}
+                        production_mode: {type: string, enum: [simple, detailed]}
+                        require_payment_before_handover: {type: boolean}
                   meta: {$ref: '#/components/schemas/Meta'}
         '401': {$ref: '#/components/responses/Error'}
   /me/subscription:
@@ -2360,6 +2362,45 @@ paths:
       responses:
         '200':
           description: Hasil readiness per bag content
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: {$ref: '#/components/schemas/OrderReadiness'}
+        default: {$ref: '#/components/responses/Error'}
+  /orders/{id}/production-summary:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    get:
+      tags: [Production]
+      operationId: getOrderProductionSummary
+      x-release-phase: P0
+      security: [{BearerToken: [], TenantContext: []}]
+      summary: Ringkasan tahap produksi dan tindakan berikutnya untuk mode ringkas
+      responses:
+        '200':
+          description: Tahap Diterima/Diproses/Siap diambil/Diserahkan, progres, dan sisa tagihan
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: {type: object, additionalProperties: true}
+        default: {$ref: '#/components/responses/Error'}
+  /orders/{id}/production-complete:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    post:
+      tags: [Production]
+      operationId: completeOrderProduction
+      x-release-phase: P0
+      security: [{BearerToken: [], TenantContext: []}]
+      summary: Selesaikan seluruh tahap produksi wajib dalam satu tindakan
+      description: Auto-plan jika belum ada task. QC wajib harus sudah lulus. Membutuhkan production.view dan scope lokasi.
+      responses:
+        '200':
+          description: Readiness terbaru setelah seluruh tahap selesai
           content:
             application/json:
               schema:

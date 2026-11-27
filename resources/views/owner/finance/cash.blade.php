@@ -23,6 +23,25 @@
             <x-ui.alert tone="warning">Belum ada laci kas dalam scope.</x-ui.alert>
         @endforelse
     </div>
+    @if ($canManage)
+        <form method="POST" action="{{ route('finance.cash.registers.store') }}" class="mt-6 grid gap-3 rounded-container border border-divider bg-white p-5 shadow-sm sm:grid-cols-3">
+            @csrf
+            <h2 class="font-extrabold text-ink sm:col-span-3">Tambah laci kas</h2>
+            <label class="grid gap-1 text-sm font-semibold text-ink">Cabang
+                <select name="branch_id" class="min-h-12 rounded-control border border-input px-3 font-normal">
+                    @foreach ($branches as $branch)
+                        <option value="{{ $branch->public_id }}">{{ $branch->name }}</option>
+                    @endforeach
+                </select>
+            </label>
+            <label class="grid gap-1 text-sm font-semibold text-ink">Kode laci
+                <input name="code" value="{{ old('code') }}" required placeholder="KASIR-2" class="min-h-12 rounded-control border border-input px-3 font-normal uppercase">
+            </label>
+            <div class="flex items-end">
+                <button class="min-h-12 w-full rounded-control bg-brand-600 px-4 text-sm font-bold text-white">Tambah laci</button>
+            </div>
+        </form>
+    @endif
     @if ($canManage && $openSessions->isNotEmpty())
         <form method="POST" action="{{ route('finance.cash.transfer') }}" class="mt-6 grid gap-3 rounded-container border border-divider bg-white p-5 shadow-sm sm:grid-cols-2 lg:grid-cols-5">
             @csrf

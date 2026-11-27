@@ -181,9 +181,44 @@ class HandoverTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['tenant_id' => $tenant->id, 'action' => 'handover.completed']);
     }
 
-    public function test_unpaid_order_requires_active_credit_approval_and_location_is_scoped(): void
+    public function test_unpaid_order_can_be_handed_over_and_location_is_scoped(): void
+    {
+        [$tenant, $token, $order, $location, $bags] = $this->scenario(100000, paid: false);
+
+        $this->withToken($token)
+            ->withHeader('X-Tenant-ID', $tenant->public_id)
+            ->postJson('/api/v1/orders/'.$order->public_id.'/handovers', [
+                'bag_ids' => [$bags[0]->public_id],
+                'location_id' => $location->public_id,
+                'recipient_name' => 'Penerima',
+                'verification_method' => 'otp',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.order.operational_status', 'partially_handed_over')
+            ->assertJsonPath('data.handover.credit_approval_id', null);
+
+        $this->assertDatabaseHas('handovers', [
+            'tenant_id' => $tenant->id,
+            'order_id' => $order->id,
+            'credit_approval_id' => null,
+        ]);
+
+        $otherLocation = Location::factory()->for($tenant)->create();
+        $this->withToken($token)
+            ->withHeader('X-Tenant-ID', $tenant->public_id)
+            ->postJson('/api/v1/orders/'.$order->public_id.'/handovers', [
+                'bag_ids' => [$bags[1]->public_id],
+                'location_id' => $otherLocation->public_id,
+                'recipient_name' => 'Penerima',
+                'verification_method' => 'receipt',
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_strict_tenant_requires_payment_or_credit_before_handover(): void
     {
         [$tenant, $token, $order, $location, $bags, $membership] = $this->scenario(100000, paid: false);
+        $tenant->forceFill(['require_payment_before_handover' => true])->save();
 
         $this->withToken($token)
             ->withHeader('X-Tenant-ID', $tenant->public_id)
@@ -218,17 +253,6 @@ class HandoverTest extends TestCase
             ])
             ->assertCreated()
             ->assertJsonPath('data.handover.credit_approval_id', $approval->public_id);
-
-        $otherLocation = Location::factory()->for($tenant)->create();
-        $this->withToken($token)
-            ->withHeader('X-Tenant-ID', $tenant->public_id)
-            ->postJson('/api/v1/orders/'.$order->public_id.'/handovers', [
-                'bag_ids' => [$bags[1]->public_id],
-                'location_id' => $otherLocation->public_id,
-                'recipient_name' => 'Penerima',
-                'verification_method' => 'receipt',
-            ])
-            ->assertForbidden();
     }
 
     /** @return array{Tenant, string, Order, Location, array<int, Bag>, TenantMembership} */

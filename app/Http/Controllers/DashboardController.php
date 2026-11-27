@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Modules\Cash\Models\CashRegister;
 use App\Modules\Cash\Models\CashSession;
+use App\Modules\Catalog\Models\PriceEntry;
+use App\Modules\Catalog\Models\Service;
 use App\Modules\Identity\Authorization\TenantContext;
 use App\Modules\Identity\Enums\PermissionCode;
 use App\Modules\Identity\Models\Branch;
 use App\Modules\Identity\Models\Location;
 use App\Modules\Identity\Models\Tenant;
+use App\Modules\Identity\Models\TenantMembership;
 use App\Modules\Order\Enums\OrderStatus;
 use App\Modules\Order\Models\Order;
 use App\Modules\Production\Enums\ProductionTaskStatus;
@@ -67,15 +71,47 @@ class DashboardController extends Controller
                 ->get()
             : collect();
 
+        $locationCount = Location::query()->whereIn('id', $context->locationIds)->count();
+
+        $checklist = [
+            [
+                'label' => 'Lokasi produksi siap',
+                'description' => 'Minimal satu outlet atau pusat produksi dalam scope.',
+                'done' => $locationCount > 0,
+                'route' => $context->can(PermissionCode::BranchesManage) ? route('branches.index') : null,
+            ],
+            [
+                'label' => 'Layanan dan harga aktif',
+                'description' => 'Layanan kiloan dan harga berlaku sudah tersedia.',
+                'done' => Service::query()->where('tenant_id', $context->tenantId)->where('is_active', true)->exists()
+                    && PriceEntry::query()->where('tenant_id', $context->tenantId)->exists(),
+                'route' => $context->can(PermissionCode::CatalogView) ? route('catalog.index') : null,
+            ],
+            [
+                'label' => 'Laci kas siap',
+                'description' => 'Diperlukan untuk menerima pembayaran tunai.',
+                'done' => CashRegister::query()->where('tenant_id', $context->tenantId)->whereIn('branch_id', $context->branchIds)->exists(),
+                'route' => $context->can(PermissionCode::CashManage) ? route('finance.cash.index') : null,
+            ],
+            [
+                'label' => 'Akun staf tambahan',
+                'description' => 'Opsional; bisa dipakai untuk kasir atau operator.',
+                'done' => TenantMembership::query()->where('tenant_id', $context->tenantId)->where('status', 'active')->count() > 1,
+                'route' => $context->can(PermissionCode::MembershipsView) ? route('staff.index') : null,
+            ],
+        ];
+
         return view('dashboard', [
             'user' => $request->user(),
             'tenant' => Tenant::query()->findOrFail($context->tenantId),
             'branchCount' => Branch::query()->whereIn('id', $context->branchIds)->count(),
-            'locationCount' => Location::query()->whereIn('id', $context->locationIds)->count(),
+            'locationCount' => $locationCount,
             'pendingOrders' => $pendingOrders,
             'activeTasks' => $activeTasks,
             'openCashSessions' => $openCashSessions,
             'recentOrders' => $recentOrders,
+            'checklist' => $checklist,
+            'checklistComplete' => collect($checklist)->every(fn (array $item): bool => $item['done']),
         ]);
     }
 }

@@ -36,6 +36,8 @@ class OrganizationController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:150'],
             'timezone' => ['nullable', 'string', 'timezone'],
+            'production_mode' => ['sometimes', 'in:simple,detailed'],
+            'require_payment_before_handover' => ['nullable', 'boolean'],
             'reason' => ['nullable', 'string', 'max:1000'],
         ]);
 
@@ -44,6 +46,10 @@ class OrganizationController extends Controller
             [
                 'name' => $validated['name'],
                 'timezone' => $validated['timezone'] ?? ($tenant->timezone ?: 'Asia/Jakarta'),
+                'production_mode' => $validated['production_mode'] ?? $tenant->production_mode->value,
+                'require_payment_before_handover' => $request->has('require_payment_before_handover')
+                    ? $request->boolean('require_payment_before_handover')
+                    : (bool) $tenant->require_payment_before_handover,
             ],
             $request->user(),
             $validated['reason'] ?? null,

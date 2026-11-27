@@ -73,8 +73,10 @@ Route::middleware(['auth', 'active'])->group(function (): void {
             Route::get('/branches', [BranchController::class, 'index'])->name('branches.index');
             Route::get('/branches/{branch}', [BranchController::class, 'edit'])->name('branches.edit');
             Route::put('/branches/{branch}', [BranchController::class, 'update'])->name('branches.update');
+            Route::post('/branches/{branch}/locations', [BranchController::class, 'storeLocation'])->name('branches.locations.store');
 
             Route::get('/staff', [StaffController::class, 'index'])->name('staff.index');
+            Route::post('/staff', [StaffController::class, 'store'])->name('staff.store');
             Route::get('/staff/{membership}', [StaffController::class, 'edit'])->name('staff.edit');
             Route::put('/staff/{membership}', [StaffController::class, 'update'])->name('staff.update');
 
@@ -102,6 +104,7 @@ Route::middleware(['auth', 'active'])->group(function (): void {
             Route::get('/orders/{order}/receipt', [OrderController::class, 'receipt'])->name('orders.receipt');
             Route::post('/orders/{order}/payments', [OrderController::class, 'recordPayment'])->name('orders.payments.store');
             Route::post('/orders/{order}/production-tasks', [ProductionController::class, 'plan'])->name('orders.production.plan');
+            Route::post('/orders/{order}/production-complete', [ProductionController::class, 'complete'])->name('orders.production.complete');
 
             Route::get('/production', [ProductionController::class, 'index'])->name('production.index');
             Route::get('/production/tasks/{task}', [ProductionController::class, 'show'])->name('production.tasks.show');
@@ -110,6 +113,7 @@ Route::middleware(['auth', 'active'])->group(function (): void {
 
             Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');
             Route::get('/finance/cash', [FinanceController::class, 'cash'])->name('finance.cash.index');
+            Route::post('/finance/cash/registers', [FinanceController::class, 'storeRegister'])->name('finance.cash.registers.store');
             Route::post('/finance/cash/{register}/open', [FinanceController::class, 'openCash'])->name('finance.cash.open');
             Route::post('/finance/cash/{session}/close', [FinanceController::class, 'closeCash'])->name('finance.cash.close');
             Route::post('/finance/cash/{session}/reopen', [FinanceController::class, 'reopenCash'])->name('finance.cash.reopen');

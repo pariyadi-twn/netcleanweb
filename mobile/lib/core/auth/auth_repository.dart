@@ -36,6 +36,9 @@ class AuthRepository {
           branchIds: _stringList(item['branch_ids']),
           locationIds: _stringList(item['location_ids']),
           permissions: _stringList(item['permissions']),
+          productionMode: '${item['production_mode'] ?? 'detailed'}',
+          requirePaymentBeforeHandover:
+              item['require_payment_before_handover'] == true,
         );
         await _tokens.saveSession(updated);
         return updated;
@@ -83,6 +86,9 @@ class AuthRepository {
         branchIds: _stringList(selected['branch_ids']),
         locationIds: _stringList(selected['location_ids']),
         permissions: _stringList(selected['permissions']),
+        productionMode: '${selected['production_mode'] ?? 'detailed'}',
+        requirePaymentBeforeHandover:
+            selected['require_payment_before_handover'] == true,
       );
     }
 

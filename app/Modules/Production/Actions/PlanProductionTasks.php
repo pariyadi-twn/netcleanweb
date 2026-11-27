@@ -27,9 +27,14 @@ final class PlanProductionTasks
     /**
      * @return list<ProductionTask>
      */
-    public function handle(Order $order, Location $location, int $membershipId, ?User $actor = null): array
-    {
-        return DB::transaction(function () use ($order, $location, $actor): array {
+    public function handle(
+        Order $order,
+        Location $location,
+        int $membershipId,
+        ?User $actor = null,
+        bool $enforceLocationAccess = true,
+    ): array {
+        return DB::transaction(function () use ($order, $location, $actor, $enforceLocationAccess): array {
             $locked = Order::query()
                 ->where('tenant_id', $order->tenant_id)
                 ->whereKey($order->id)
@@ -39,7 +44,8 @@ final class PlanProductionTasks
             if ($locked->operational_status->value === 'cancelled') {
                 throw new ApiException('ORDER_CANCELLED', 'Cancelled orders cannot be planned.', 409);
             }
-            if ($location->tenant_id !== $locked->tenant_id || ! $this->context->canAccessLocation($location)) {
+            if ($location->tenant_id !== $locked->tenant_id
+                || ($enforceLocationAccess && ! $this->context->canAccessLocation($location))) {
                 throw new AuthorizationException('This action is unauthorized.');
             }
 

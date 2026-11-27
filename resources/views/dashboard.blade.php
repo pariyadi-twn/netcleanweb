@@ -24,6 +24,34 @@
         <x-ui.stat-card label="Tugas produksi" :value="number_format($activeTasks, 0, ',', '.')" description="Task queued, berjalan, atau blocked." />
     </div>
 
+    @unless ($checklistComplete)
+        <section class="mt-5 rounded-container border border-amber-200 bg-white p-5 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h2 class="text-base font-extrabold tracking-tight text-ink">Siapkan usaha Anda</h2>
+                    <p class="mt-1 text-sm text-muted">Beberapa langkah singkat agar kasir dan produksi bisa langsung dipakai.</p>
+                </div>
+                <x-ui.status-chip tone="warning">{{ collect($checklist)->where('done', true)->count() }}/{{ count($checklist) }} selesai</x-ui.status-chip>
+            </div>
+            <ul class="mt-4 grid gap-2 sm:grid-cols-2">
+                @foreach ($checklist as $item)
+                    <li class="flex items-start gap-3 rounded-control border border-divider p-3">
+                        <span class="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-[11px] font-bold {{ $item['done'] ? 'bg-success-bg text-success-text' : 'bg-slate-100 text-muted' }}">
+                            {{ $item['done'] ? '✓' : '·' }}
+                        </span>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-bold text-ink">{{ $item['label'] }}</p>
+                            <p class="mt-1 text-xs text-muted">{{ $item['description'] }}</p>
+                            @if (! $item['done'] && $item['route'])
+                                <a href="{{ $item['route'] }}" class="mt-2 inline-flex text-xs font-bold text-brand-700 hover:text-brand-800">Buka pengaturan &rarr;</a>
+                            @endif
+                        </div>
+                    </li>
+                @endforeach
+            </ul>
+        </section>
+    @endunless
+
     <div class="mt-5 grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
         <section class="rounded-container border border-divider bg-white p-5 shadow-sm">
             <div class="flex items-center justify-between gap-4">

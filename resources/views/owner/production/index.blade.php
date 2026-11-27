@@ -5,14 +5,23 @@
 @section('content')
     <x-ui.page-header eyebrow="Operasional" title="Produksi" description="Pantau antrean task, tenggat, dan QC per lokasi kerja." />
 
+    @if ($tenant->production_mode->value === 'simple')
+        <x-ui.alert tone="info" class="mb-5">Mode ringkas aktif. Selesaikan cucian dari halaman detail pesanan dengan satu tombol; antrean rinci di bawah tetap tersedia untuk pengawasan.</x-ui.alert>
+    @endif
+
     <form method="GET" action="{{ route('production.index') }}" class="mb-5 grid gap-3 rounded-container border border-divider bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4">
-        <label class="grid gap-1 text-xs font-bold text-muted">Lokasi
-            <select name="location" class="min-h-12 rounded-control border border-input bg-white px-3 text-sm font-normal">
-                @foreach ($locations as $location)
-                    <option value="{{ $location->public_id }}" @selected($selected?->id === $location->id)>{{ $location->name }}</option>
-                @endforeach
-            </select>
-        </label>
+        @if ($locations->count() > 1)
+            <label class="grid gap-1 text-xs font-bold text-muted">Lokasi
+                <select name="location" class="min-h-12 rounded-control border border-input bg-white px-3 text-sm font-normal">
+                    @foreach ($locations as $location)
+                        <option value="{{ $location->public_id }}" @selected($selected?->id === $location->id)>{{ $location->name }}</option>
+                    @endforeach
+                </select>
+            </label>
+        @elseif ($selected !== null)
+            <input type="hidden" name="location" value="{{ $selected->public_id }}">
+            <div class="grid gap-1 text-xs font-bold text-muted">Lokasi<div class="flex min-h-12 items-center rounded-control border border-divider bg-slate-50 px-3 text-sm font-normal text-ink">{{ $selected->name }}</div></div>
+        @endif
         <label class="grid gap-1 text-xs font-bold text-muted">Status
             <select name="status" class="min-h-12 rounded-control border border-input bg-white px-3 text-sm font-normal">
                 <option value="">Semua status</option>

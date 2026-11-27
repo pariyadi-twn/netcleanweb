@@ -49,7 +49,23 @@
 
             <section class="rounded-container border border-divider bg-white p-5 shadow-sm">
                 <h2 class="text-base font-extrabold text-ink">Produksi</h2>
-                @if ($tasks->isEmpty())
+                @if ($tenant->production_mode->value === 'simple')
+                    @php
+                        $openTasks = $tasks->filter(fn ($task) => ! in_array($task->status->value, ['done', 'skipped'], true));
+                        $doneTasks = $tasks->filter(fn ($task) => in_array($task->status->value, ['done', 'skipped'], true));
+                    @endphp
+                    <div class="mt-3 flex flex-wrap items-center gap-3">
+                        <x-ui.status-chip :tone="$openTasks->isEmpty() ? 'success' : 'warning'">{{ $openTasks->isEmpty() ? 'Siap diambil' : 'Sedang diproses' }}</x-ui.status-chip>
+                        <span class="text-sm text-muted">{{ $doneTasks->count() }}/{{ $tasks->count() }} langkah selesai</span>
+                    </div>
+                    @if (! in_array($order->operational_status->value, ['completed', 'partially_handed_over', 'cancelled'], true))
+                        <form method="POST" action="{{ route('orders.production.complete', $order) }}" class="mt-4">
+                            @csrf
+                            <button type="submit" class="min-h-12 w-full rounded-control bg-brand-600 px-4 text-sm font-bold text-white hover:bg-brand-700 sm:w-auto">Selesaikan cucian</button>
+                        </form>
+                        <p class="mt-2 text-xs text-muted">Mode ringkas menyelesaikan seluruh tahap wajib sekaligus. Setelah siap, serahkan barang dan pembayaran bisa dilakukan kapan saja.</p>
+                    @endif
+                @elseif ($tasks->isEmpty())
                     <p class="mt-3 text-sm text-muted">Belum ada tugas produksi untuk order ini.</p>
                 @else
                     <div class="mt-4 divide-y divide-divider">
@@ -142,6 +158,7 @@
             @if ($canHandover && ! in_array($order->operational_status->value, ['completed', 'cancelled'], true) && $order->bags->where('custody_status', '!=', 'handed_over')->isNotEmpty())
                 <section class="rounded-container border border-divider bg-white p-5 shadow-sm">
                     <h2 class="text-base font-extrabold text-ink">Serah terima</h2>
+                    <p class="mt-1 text-xs text-muted">{{ $tenant->require_payment_before_handover ? 'Pesanan harus lunas atau memiliki credit approval sebelum diserahkan.' : 'Barang boleh diserahkan lebih dulu; sisa tagihan otomatis menjadi piutang dan bisa dibayar setelah cucian selesai.' }}</p>
                     <form method="POST" action="{{ route('orders.handover', $order) }}" class="mt-3 grid gap-2">
                         @csrf
                         @foreach($order->bags->where('custody_status', '!=', 'handed_over') as $bag)
@@ -181,6 +198,7 @@
             @if ($tenantContext->can(\App\Modules\Identity\Enums\PermissionCode::PaymentsManage) && $balance > 0 && $order->invoice)
                 <section class="rounded-container border border-divider bg-white p-5 shadow-sm">
                     <h2 class="text-base font-extrabold text-ink">Catat pembayaran</h2>
+                    <p class="mt-1 text-xs text-muted">Bisa dibayar sekarang, sebagian (DP), atau setelah cucian selesai.</p>
                     <form method="POST" action="{{ route('orders.payments.store', $order) }}" class="mt-3 grid gap-2">
                         @csrf
                         <input name="amount_rupiah" type="number" min="1" value="{{ $balance }}" required aria-label="Nominal pembayaran" class="min-h-12 rounded-control border border-input px-3 text-sm">

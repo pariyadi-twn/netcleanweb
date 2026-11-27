@@ -40,6 +40,8 @@ void main() {
                     'branch_ids': ['branch-public-id'],
                     'location_ids': ['location-public-id'],
                     'permissions': ['payments.manage'],
+                    'production_mode': 'simple',
+                    'require_payment_before_handover': false,
                   },
                 ],
               }),
@@ -75,6 +77,9 @@ void main() {
         expect(saved?.branchIds, ['branch-public-id']);
         expect(saved?.locationIds, ['location-public-id']);
         expect(saved?.permissions, ['payments.manage']);
+        expect(saved?.productionMode, 'simple');
+        expect(saved?.usesSimpleProduction, isTrue);
+        expect(saved?.requirePaymentBeforeHandover, isFalse);
       },
     );
   }

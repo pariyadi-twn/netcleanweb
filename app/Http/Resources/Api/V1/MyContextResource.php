@@ -21,6 +21,8 @@ class MyContextResource extends JsonResource
             'branch_ids' => $this->resource['branch_ids'],
             'location_ids' => $this->resource['location_ids'],
             'permissions' => $this->resource['permissions'],
+            'production_mode' => $this->resource['production_mode'] ?? 'detailed',
+            'require_payment_before_handover' => $this->resource['require_payment_before_handover'] ?? false,
         ];
     }
 }

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Identity\Authorization\TenantContext;
 use App\Modules\Identity\Models\Location;
 use App\Modules\Order\Models\Order;
+use App\Modules\Production\Actions\CompleteOrderProduction;
 use App\Modules\Production\Actions\PlanProductionTasks;
 use App\Modules\Production\Actions\RecordQcResult;
 use App\Modules\Production\Actions\TransitionProductionTask;
@@ -120,6 +121,44 @@ class ProductionController extends Controller
         }
 
         return back()->with('status', $validated['outcome'] === 'passed' ? 'QC lulus dicatat.' : 'QC gagal dicatat.');
+    }
+
+    public function complete(
+        Request $request,
+        string $order,
+        TenantContext $context,
+        PlanProductionTasks $plan,
+        CompleteOrderProduction $complete,
+    ): RedirectResponse {
+        $orderModel = Order::query()
+            ->where('tenant_id', $context->tenantId)
+            ->where('public_id', $order)
+            ->firstOrFail();
+        Gate::authorize('view', $orderModel);
+        Gate::authorize('viewAny', ProductionTask::class);
+
+        $tasks = ProductionTask::query()
+            ->where('tenant_id', $context->tenantId)
+            ->whereIn('bag_content_id', $orderModel->bags()->with('contents')->get()->flatMap->contents->pluck('id'))
+            ->exists();
+
+        if (! $tasks) {
+            $location = $orderModel->salesBranch?->tenant?->defaultProductionLocation();
+
+            if ($location === null || ! $context->canAccessLocation($location)) {
+                return back()->withErrors(['production' => 'Belum ada lokasi produksi yang dapat dipakai.']);
+            }
+
+            $plan->handle($orderModel, $location, $context->membershipId, $request->user());
+        }
+
+        try {
+            $complete->handle($orderModel->refresh(), $context->membershipId, $request->user());
+        } catch (ApiException $exception) {
+            return back()->withErrors(['production' => $exception->getMessage()]);
+        }
+
+        return back()->with('status', 'Cucian selesai diproses.');
     }
 
     public function plan(Request $request, string $order, TenantContext $context, PlanProductionTasks $plan): RedirectResponse

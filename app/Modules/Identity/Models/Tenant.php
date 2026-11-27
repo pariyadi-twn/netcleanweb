@@ -2,6 +2,7 @@
 
 namespace App\Modules\Identity\Models;
 
+use App\Modules\Identity\Enums\ProductionMode;
 use App\Modules\Identity\Enums\TenantStatus;
 use App\Support\Database\HasPublicUuid;
 use Database\Factories\TenantFactory;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'slug', 'timezone'])]
+#[Fillable(['name', 'slug', 'timezone', 'production_mode', 'require_payment_before_handover'])]
 #[UseFactory(TenantFactory::class)]
 class Tenant extends Model
 {
@@ -35,9 +36,24 @@ class Tenant extends Model
         return $this->hasMany(TenantMembership::class);
     }
 
+    public function defaultProductionLocation(): ?Location
+    {
+        return $this->locations()
+            ->where('is_active', true)
+            ->orderByRaw("CASE WHEN type = 'plant' THEN 0 WHEN type = 'outlet' THEN 1 ELSE 2 END")
+            ->orderBy('id')
+            ->first();
+    }
+
     /** @return array<string, string> */
     protected function casts(): array
     {
-        return ['status' => TenantStatus::class, 'data_generation' => 'integer', 'version' => 'integer'];
+        return [
+            'status' => TenantStatus::class,
+            'production_mode' => ProductionMode::class,
+            'require_payment_before_handover' => 'boolean',
+            'data_generation' => 'integer',
+            'version' => 'integer',
+        ];
     }
 }

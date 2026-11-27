@@ -15,6 +15,8 @@ class TokenStore {
   static const _branchesKey = 'auth_branches_v1';
   static const _locationsKey = 'auth_locations_v1';
   static const _permissionsKey = 'auth_permissions_v1';
+  static const _productionModeKey = 'auth_production_mode_v1';
+  static const _paymentBeforeHandoverKey = 'auth_payment_before_handover_v1';
 
   final SecretStore _secrets;
 
@@ -39,6 +41,9 @@ class TokenStore {
       branchIds: await _readList(_branchesKey),
       locationIds: await _readList(_locationsKey),
       permissions: await _readList(_permissionsKey),
+      productionMode: await _secrets.read(_productionModeKey) ?? 'detailed',
+      requirePaymentBeforeHandover:
+          await _secrets.read(_paymentBeforeHandoverKey) == '1',
     );
   }
 
@@ -58,6 +63,11 @@ class TokenStore {
     await _writeList(_branchesKey, session.branchIds);
     await _writeList(_locationsKey, session.locationIds);
     await _writeList(_permissionsKey, session.permissions);
+    await _secrets.write(_productionModeKey, session.productionMode);
+    await _secrets.write(
+      _paymentBeforeHandoverKey,
+      session.requirePaymentBeforeHandover ? '1' : '0',
+    );
   }
 
   Future<String> installationId() async {
@@ -79,6 +89,8 @@ class TokenStore {
     await _secrets.delete(_branchesKey);
     await _secrets.delete(_locationsKey);
     await _secrets.delete(_permissionsKey);
+    await _secrets.delete(_productionModeKey);
+    await _secrets.delete(_paymentBeforeHandoverKey);
   }
 
   Future<List<String>> _readList(String key) async {

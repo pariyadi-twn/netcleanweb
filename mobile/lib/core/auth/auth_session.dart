@@ -11,6 +11,8 @@ class AuthSession {
     this.branchIds = const [],
     this.locationIds = const [],
     this.permissions = const [],
+    this.productionMode = 'detailed',
+    this.requirePaymentBeforeHandover = false,
   });
 
   final String token;
@@ -21,9 +23,13 @@ class AuthSession {
   final List<String> branchIds;
   final List<String> locationIds;
   final List<String> permissions;
+  final String productionMode;
+  final bool requirePaymentBeforeHandover;
 
   bool get isExpired => DateTime.now().toUtc().isAfter(expiresAt.toUtc());
 
   bool get canManagePayments =>
       permissions.isEmpty || permissions.contains('payments.manage');
+
+  bool get usesSimpleProduction => productionMode == 'simple';
 }

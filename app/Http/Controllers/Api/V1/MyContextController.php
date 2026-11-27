@@ -43,6 +43,8 @@ class MyContextController extends Controller
                     'branch_ids' => $membership->branches->pluck('public_id')->values()->all(),
                     'location_ids' => $membership->locations->pluck('public_id')->values()->all(),
                     'permissions' => $context?->permissions ?? [],
+                    'production_mode' => $membership->tenant->production_mode->value,
+                    'require_payment_before_handover' => (bool) $membership->tenant->require_payment_before_handover,
                 ];
             });
         });

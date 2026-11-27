@@ -68,6 +68,17 @@ class OperationsRepository {
     );
   }
 
+  Future<OrderReadiness> completeProduction({
+    required String tenantId,
+    required String orderId,
+  }) async {
+    final payload = await _api.post(
+      '/orders/$orderId/production-complete',
+      tenantId: tenantId,
+    );
+    return OrderReadiness.fromJson(_data(payload));
+  }
+
   Future<ProductionTaskSummary> transition({
     required String tenantId,
     required ProductionTaskSummary task,

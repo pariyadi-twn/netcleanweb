@@ -273,4 +273,45 @@ void main() {
     expect(readiness.contents.single.qcPassed, isTrue);
     expect(handover.orderStatus, 'completed');
   });
+
+  test('completes all production stages in simple mode', () async {
+    late http.Request captured;
+    final client = MockClient((request) async {
+      captured = request;
+      return http.Response(
+        jsonEncode({
+          'data': {
+            'order_id': 'order-1',
+            'order_number': 'ORD-001',
+            'operational_status': 'ready',
+            'can_ready': true,
+            'partially_ready': false,
+            'contents': [
+              {
+                'bag_content_id': 'content-1',
+                'ready': true,
+                'qc_passed': true,
+                'qc_required': false,
+                'open_required_tasks': 0,
+              },
+            ],
+          },
+        }),
+        200,
+      );
+    });
+    final repository = OperationsRepository(
+      ApiClient(client: client, baseUrl: _baseUrl),
+    );
+
+    final readiness = await repository.completeProduction(
+      tenantId: 'tenant-1',
+      orderId: 'order-1',
+    );
+
+    expect(captured.method, 'POST');
+    expect(captured.url.path, '/api/v1/orders/order-1/production-complete');
+    expect(captured.headers['X-Tenant-ID'], 'tenant-1');
+    expect(readiness.canReady, isTrue);
+  });
 }

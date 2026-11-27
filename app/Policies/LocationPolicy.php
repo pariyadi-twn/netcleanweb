@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\User;
 use App\Modules\Identity\Authorization\TenantContext;
 use App\Modules\Identity\Enums\PermissionCode;
+use App\Modules\Identity\Models\Branch;
 use App\Modules\Identity\Models\Location;
 
 class LocationPolicy
@@ -15,6 +16,14 @@ class LocationPolicy
     {
         return $user->id === $this->context->userId
             && $this->context->can(PermissionCode::LocationsView);
+    }
+
+    public function create(User $user, Branch $branch): bool
+    {
+        return $user->id === $this->context->userId
+            && $branch->tenant_id === $this->context->tenantId
+            && $this->context->canAccessBranch($branch)
+            && $this->context->can(PermissionCode::LocationsManage);
     }
 
     public function view(User $user, Location $location): bool

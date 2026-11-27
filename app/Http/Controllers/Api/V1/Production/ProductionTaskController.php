@@ -11,8 +11,11 @@ use App\Http\Resources\Api\V1\ProductionTaskResource;
 use App\Http\Resources\Api\V1\QcResultResource;
 use App\Modules\Identity\Authorization\TenantContext;
 use App\Modules\Identity\Models\Location;
+use App\Modules\Identity\Models\Tenant;
 use App\Modules\Order\Models\Order;
 use App\Modules\Production\Actions\AssessOrderReadiness;
+use App\Modules\Production\Actions\CompleteOrderProduction;
+use App\Modules\Production\Actions\OrderProductionSummary;
 use App\Modules\Production\Actions\PlanProductionTasks;
 use App\Modules\Production\Actions\RecordQcResult;
 use App\Modules\Production\Actions\TransitionProductionTask;
@@ -87,6 +90,55 @@ class ProductionTaskController extends Controller
             'data' => ProductionTaskResource::collection((new ProductionTask)->newCollection($tasks)->load(['content.orderLine', 'content.order', 'content.bag', 'location']))->resolve($request),
             'meta' => ['correlation_id' => CorrelationId::current()],
         ], 201);
+    }
+
+    public function summary(string $order, OrderProductionSummary $summary): JsonResponse
+    {
+        $context = app(TenantContext::class);
+        $model = Order::query()
+            ->where('tenant_id', $context->tenantId)
+            ->where('public_id', Str::lower($order))
+            ->with('invoice.adjustments', 'invoice.allocations')
+            ->firstOrFail();
+        Gate::authorize('viewAny', ProductionTask::class);
+
+        return response()->json([
+            'data' => $summary->snapshot($model),
+            'meta' => ['correlation_id' => CorrelationId::current()],
+        ]);
+    }
+
+    public function complete(
+        string $order,
+        CompleteOrderProduction $complete,
+        PlanProductionTasks $plan,
+    ): JsonResponse {
+        $context = app(TenantContext::class);
+        $model = Order::query()
+            ->where('tenant_id', $context->tenantId)
+            ->where('public_id', Str::lower($order))
+            ->firstOrFail();
+        Gate::authorize('viewAny', ProductionTask::class);
+
+        $planned = ProductionTask::query()
+            ->where('tenant_id', $context->tenantId)
+            ->whereIn('bag_content_id', $model->bags()->with('contents')->get()->flatMap->contents->pluck('id'))
+            ->exists();
+
+        if (! $planned) {
+            $location = Tenant::query()->whereKey($context->tenantId)->firstOrFail()->defaultProductionLocation();
+
+            if ($location !== null && $context->canAccessLocation($location)) {
+                $plan->handle($model, $location, $context->membershipId, request()->user());
+            }
+        }
+
+        $readiness = $complete->handle($model, $context->membershipId, request()->user());
+
+        return response()->json([
+            'data' => $readiness,
+            'meta' => ['correlation_id' => CorrelationId::current()],
+        ]);
     }
 
     public function recordQc(

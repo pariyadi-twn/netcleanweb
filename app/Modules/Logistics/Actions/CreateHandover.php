@@ -8,6 +8,7 @@ use App\Modules\Identity\Audit\AuditRecorder;
 use App\Modules\Identity\Authorization\TenantContext;
 use App\Modules\Identity\Enums\AuditAction;
 use App\Modules\Identity\Models\Location;
+use App\Modules\Identity\Models\Tenant;
 use App\Modules\Logistics\Models\CustodyEvent;
 use App\Modules\Logistics\Models\Handover;
 use App\Modules\Logistics\Models\HandoverLine;
@@ -89,8 +90,15 @@ final class CreateHandover
                     ->where('status', 'active')
                     ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))
                     ->first();
+
                 if ($creditApproval === null || $creditApproval->limit_rupiah < $balance) {
-                    throw new ApiException('PAYMENT_OR_CREDIT_REQUIRED', 'Outstanding balance requires full payment or an active credit approval.', 409);
+                    $tenant = Tenant::query()->whereKey($locked->tenant_id)->firstOrFail();
+
+                    if ($tenant->require_payment_before_handover) {
+                        throw new ApiException('PAYMENT_OR_CREDIT_REQUIRED', 'Outstanding balance requires full payment or an active credit approval.', 409);
+                    }
+
+                    $creditApproval = null;
                 }
             }
 

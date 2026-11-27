@@ -27,6 +27,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class FinanceController extends Controller
@@ -90,7 +91,47 @@ class FinanceController extends Controller
             'sessions' => $sessions,
             'openSessions' => CashSession::query()->where('tenant_id', $context->tenantId)->where('status', 'open')->whereHas('register', fn ($query) => $query->whereIn('branch_id', $context->branchIds))->with('register.branch')->get(),
             'canManage' => $context->can(PermissionCode::CashManage),
+            'branches' => Branch::query()->where('tenant_id', $context->tenantId)->whereIn('id', $context->branchIds)->orderBy('name')->get(),
         ]);
+    }
+
+    public function storeRegister(Request $request, TenantContext $context): RedirectResponse
+    {
+        $request->merge(['code' => mb_strtoupper(trim((string) $request->input('code')))]);
+
+        $validated = $request->validate([
+            'branch_id' => ['required', 'uuid'],
+            'code' => ['required', 'string', 'max:40', 'regex:/^[A-Z0-9][A-Z0-9_-]*$/'],
+        ]);
+
+        $branch = Branch::query()
+            ->where('tenant_id', $context->tenantId)
+            ->where('public_id', $validated['branch_id'])
+            ->firstOrFail();
+        abort_unless($context->canAccessBranch($branch), 403);
+        Gate::authorize('create', [CashRegister::class, $branch]);
+
+        $exists = CashRegister::query()
+            ->where('tenant_id', $context->tenantId)
+            ->where('branch_id', $branch->id)
+            ->where('code', $validated['code'])
+            ->exists();
+
+        if ($exists) {
+            throw ValidationException::withMessages(['code' => ['Kode laci sudah dipakai pada cabang ini.']]);
+        }
+
+        $register = new CashRegister([
+            'branch_id' => $branch->id,
+            'code' => $validated['code'],
+            'is_active' => true,
+        ]);
+        $register->tenant_id = $context->tenantId;
+        $register->save();
+
+        return redirect()
+            ->route('finance.cash.index')
+            ->with('status', 'Laci kas baru ditambahkan.');
     }
 
     public function openCash(Request $request, string $register, TenantContext $context, OpenCashSession $open): RedirectResponse

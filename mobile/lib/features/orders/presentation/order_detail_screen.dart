@@ -102,6 +102,44 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  Future<void> _completeProduction() async {
+    final tenantId = _tenantId;
+    if (tenantId == null) {
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final readiness = await ref
+          .read(operationsRepositoryProvider)
+          .completeProduction(tenantId: tenantId, orderId: _order.orderId);
+      final page = await ref
+          .read(orderRepositoryProvider)
+          .searchOrders(
+            tenantId: tenantId,
+            orderNumber: _order.orderNumber,
+          );
+      if (!mounted) {
+        return;
+      }
+      if (page.items.isNotEmpty) {
+        setState(() => _order = page.items.first);
+      }
+      _say(
+        readiness.canReady
+            ? 'Cucian selesai diproses dan siap diambil.'
+            : 'Progres produksi diperbarui.',
+      );
+    } on ApiException catch (error) {
+      _say(error.message);
+    } catch (_) {
+      _say('Produksi belum dapat diselesaikan.');
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
+  }
+
   Future<void> _openPaymentSheet() async {
     final payment = await showOrderPaymentSheet(
       context: context,
@@ -131,6 +169,14 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     final order = _order;
     final session = ref.watch(sessionControllerProvider).asData?.value;
     final canPay = session?.canManagePayments ?? false;
+    final canCompleteProduction =
+        session?.usesSimpleProduction == true &&
+        !const {
+          'ready',
+          'completed',
+          'partially_handed_over',
+          'cancelled',
+        }.contains(order.status);
     final width = MediaQuery.sizeOf(context).width;
     final padding = Responsive.horizontalPadding(width);
 
@@ -143,6 +189,34 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             padding: EdgeInsets.fromLTRB(padding, 18, padding, 32),
             children: [
               _OrderSummary(order: order),
+              if (canCompleteProduction) ...[
+                const SizedBox(height: 16),
+                Card(
+                  color: AppTheme.primarySoft,
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Mode ringkas',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Selesaikan seluruh tahap cuci sekaligus. Pembayaran tetap bisa dilakukan sekarang, sebagian, atau setelah cucian selesai.',
+                        ),
+                        const SizedBox(height: 14),
+                        FilledButton.icon(
+                          onPressed: _busy ? null : _completeProduction,
+                          icon: const Icon(Icons.task_alt_rounded),
+                          label: const Text('Selesaikan cucian'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
               Card(
                 child: Padding(

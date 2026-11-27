@@ -88,6 +88,8 @@ class ProvisionUatData extends Command
                     'branch_timezone' => 'Asia/Jakarta',
                     'branch_address' => 'Jl. Data Sintetis No. 51, Jakarta',
                     'branch_phone' => '080000000051',
+                    'starter_defaults' => false,
+                    'production_mode' => 'detailed',
                 ], (string) Str::uuid()),
             );
             $tenant = $result['tenant'];

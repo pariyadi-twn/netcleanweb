@@ -314,6 +314,34 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
     }
   }
 
+  Future<void> _completeProduction() async {
+    final tenantId = _tenantId;
+    final order = _order;
+    if (tenantId == null || order == null) {
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final readiness = await ref
+          .read(operationsRepositoryProvider)
+          .completeProduction(tenantId: tenantId, orderId: order.orderId);
+      await _lookup();
+      _say(
+        readiness.canReady
+            ? 'Cucian selesai diproses dan siap diambil.'
+            : 'Progres produksi diperbarui.',
+      );
+    } on ApiException catch (error) {
+      _say(_errorMessage(error));
+    } catch (_) {
+      _say('Produksi belum dapat diselesaikan.');
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
+  }
+
   Future<void> _transition(ProductionTaskSummary task, String status) async {
     final tenantId = _tenantId;
     if (tenantId == null) {
@@ -709,6 +737,14 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
     final order = _order!;
     final session = ref.watch(sessionControllerProvider).asData?.value;
     final canPay = session?.canManagePayments ?? false;
+    final simpleMode = session?.usesSimpleProduction ?? false;
+    final canComplete = simpleMode &&
+        !const {
+          'ready',
+          'completed',
+          'partially_handed_over',
+          'cancelled',
+        }.contains(order.status);
     final bags = order.bags;
     final hasUnreceived = bags.any((bag) => bag.currentLocationId == null);
     final readyBags = bags
@@ -735,18 +771,26 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
               child: const Text('Terima bag di lokasi'),
             ),
           ],
-          if (!hasUnreceived && _tasks.isEmpty) ...[
+          if (!hasUnreceived && _tasks.isEmpty && !simpleMode) ...[
             const SizedBox(height: 12),
             FilledButton(
               onPressed: _busy ? null : _planTasks,
               child: const Text('Rencanakan produksi'),
             ),
           ],
+          if (canComplete) ...[
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: _busy ? null : _completeProduction,
+              icon: const Icon(Icons.task_alt_rounded),
+              label: const Text('Selesaikan cucian'),
+            ),
+          ],
           if (order.balanceDueRupiah > 0 && !canPay) ...[
             const SizedBox(height: 8),
             const Text(
-              'Pembayaran belum lunas. Minta kasir atau supervisor mencatat '
-              'pembayaran sebelum serah terima.',
+              'Belum lunas. Pembayaran bisa dicatat kasir sekarang atau '
+              'setelah cucian selesai; sisa menjadi piutang.',
             ),
           ],
           const SizedBox(height: 12),
@@ -780,6 +824,31 @@ class _OperationsScreenState extends ConsumerState<OperationsScreen> {
   }
 
   Widget _tasksCard(BuildContext context) {
+    final session = ref.watch(sessionControllerProvider).asData?.value;
+    if (session?.usesSimpleProduction ?? false) {
+      final done = _tasks
+          .where((task) => task.status == 'done' || task.status == 'skipped')
+          .length;
+      return _Panel(
+        title: 'Progres produksi',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              _tasks.isEmpty
+                  ? 'Tekan Selesaikan cucian untuk memproses seluruh tahap.'
+                  : '$done dari ${_tasks.length} langkah selesai.',
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Pembayaran tidak harus lunas sebelum barang diserahkan.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+      );
+    }
+
     return _Panel(
       title: 'Tugas produksi',
       child: _tasks.isEmpty

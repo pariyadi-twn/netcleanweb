@@ -6,6 +6,7 @@ use App\Exceptions\ApiException;
 use App\Models\User;
 use App\Modules\Identity\Authorization\ProvisioningScope;
 use App\Modules\Identity\Enums\MembershipStatus;
+use App\Modules\Identity\Enums\ProductionMode;
 use App\Modules\Identity\Enums\ProvisioningStatus;
 use App\Modules\Identity\Enums\RoleCode;
 use App\Modules\Identity\Enums\TenantStatus;
@@ -27,6 +28,7 @@ final class ProvisionTenant
         private readonly ProvisioningScope $scope,
         private readonly SyncRolePermissions $syncPermissions,
         private readonly UpdateMembershipAssignments $assignments,
+        private readonly ProvisionStarterDefaults $starterDefaults,
     ) {}
 
     /**
@@ -74,6 +76,8 @@ final class ProvisionTenant
                 'slug' => $this->slug($payload),
                 'timezone' => $payload['timezone'],
                 'status' => TenantStatus::Active->value,
+                'production_mode' => (ProductionMode::tryFrom((string) ($payload['production_mode'] ?? '')) ?? ProductionMode::Simple)->value,
+                'require_payment_before_handover' => false,
             ]);
 
             $tenant = Tenant::query()->findOrFail($tenantId);
@@ -113,11 +117,15 @@ final class ProvisionTenant
                 'invited_by_user_id' => null,
             ])->save();
 
+            $starterLocation = ($payload['starter_defaults'] ?? true) === false
+                ? null
+                : $this->starterDefaults->handle($tenant, $branch, $user);
+
             $this->assignments->handle(
                 $membership,
                 [$ownerRole->id],
                 [$branch->id],
-                [],
+                $starterLocation === null ? [] : [$starterLocation->id],
                 $user,
                 'Initial owner assignment',
             );

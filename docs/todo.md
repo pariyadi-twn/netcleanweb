@@ -1,12 +1,12 @@
 # Backlog Pelaksanaan Pengembangan Laundry SaaS
 
-Versi 4.1 · 31 Oktober 2026 · Fondasi backend P0, upload, kondisi awal, observabilitas, dan shift kas terverifikasi
+Versi 4.2 · 28 November 2026 · Fondasi backend P0, onboarding laundry kecil, mode ringkas produksi, dan piutang pasca-serah-terima terverifikasi
 
 [PRD](prd.md) · [TRD](trd.md) · [Database](erd.md) · [UI UX](ui_guidelines.md) · [Aturan AI](agents.md) · [Keamanan](security.md) · [Rencana](todo.md)
 
 ## Ringkasan hasil kajian
 
-Backlog ini disusun dari seluruh tujuh berkas Markdown dalam `docs`. ID **T001–T072 dipertahankan**, lalu **T073–T080** ditambahkan untuk kebutuhan yang sebelumnya belum mempunyai task khusus atau perlu gerbang penerimaan tersendiri. Total **80 task utama**: **58 menuju pilot P0**, **2 sesudah pilot menuju rilis berbayar**, **14 untuk jaringan P1**, dan **6 untuk ekspansi atau evaluasi P2**. Status pelaksanaan mengikuti checkbox dan bukti task; adanya dokumentasi atau kerangka Laravel bukan bukti fitur selesai.
+Backlog ini disusun dari seluruh tujuh berkas Markdown dalam `docs`. ID **T001–T072 dipertahankan**, lalu **T073–T080** ditambahkan untuk kebutuhan yang sebelumnya belum mempunyai task khusus atau perlu gerbang penerimaan tersendiri, serta **T081–T082** untuk penyederhanaan onboarding dan produksi laundry kecil. Total **82 task utama**: **60 menuju pilot P0**, **2 sesudah pilot menuju rilis berbayar**, **14 untuk jaringan P1**, dan **6 untuk ekspansi atau evaluasi P2**. Status pelaksanaan mengikuti checkbox dan bukti task; adanya dokumentasi atau kerangka Laravel bukan bukti fitur selesai.
 
 | Sumber yang dipelajari | Kebutuhan yang diturunkan ke backlog |
 |---|---|
@@ -33,9 +33,9 @@ Backlog ini disusun dari seluruh tujuh berkas Markdown dalam `docs`. ID **T001�
 | Tahap | Prioritas pelaksanaan | Task utama | Jumlah | Hasil yang dapat diterima |
 |---|---|---|---|---|
 | A. Discovery | P0, pembuka keputusan | T001–T006 | 6 | SOP, fixture aturan bisnis, perangkat, kebijakan data, dan prototype kasir |
-| B. Fondasi | P0, pembuka implementasi | T007–T020, T073 | 15 | Identitas, tenant boundary, kontrak API, kuota, audit, retry, worker, dan storage |
+| B. Fondasi | P0, pembuka implementasi | T007–T020, T073, T081 | 16 | Identitas, tenant boundary, kontrak API, kuota, audit, retry, worker, dan storage |
 | C. Penerimaan | P0 | T021–T033, T074–T076 | 16 | Pelanggan → quote → order/invoice → label/nota, tracking, dan draft mobile |
-| D. Operasional | P0 | T034–T045, T077 | 13 | Produksi, QC, uang, handover, laporan, notifikasi, dan administrasi |
+| D. Operasional | P0 | T034–T045, T077, T082 | 14 | Produksi, QC, uang, handover, laporan, notifikasi, dan administrasi |
 | E. Verifikasi pilot | P0, gerbang pilot | T046–T052, T079 | 8 | Bukti integritas, perangkat, beban, restore, rollout, UAT, dan keputusan pilot |
 | E. Observasi dan komersial | Gerbang berbayar sesudah pilot | T080, T078 | 2 | Pengukuran empat minggu, biaya nyata, DEC08, dan keputusan berbayar |
 | F. Jaringan | P1 | T053–T066 | 14 | Pusat produksi, transfer, kurir, gateway, inventori, B2B, dan konsolidasi |
@@ -51,6 +51,7 @@ P0/P1/P2 untuk FR tetap mengikuti PRD. Penempatan T078 dan T080 sesudah pilot ad
 4. **Pemisahan bukti:** T051 mencakup pelatihan dan UAT sebelum pilot; T052 memutuskan masuk pilot; T080 mengukur operasi empat minggu sesudahnya. Tidak ada syarat empat minggu operasi sebelum pilot boleh dimulai.
 5. **Migration dan rilis:** T079 membuktikan upgrade, kompatibilitas rollout, smoke, dan rollback aplikasi. T050 tetap khusus pemulihan data dan replay pekerjaan.
 6. **Dependensi uang:** T040 → T038 → T039 → T031, serta T035 + T038 → T037. Pembatalan final dan handover tidak diambil hanya karena tampil lebih awal dalam dokumen.
+7. **Penyederhanaan laundry kecil:** T081 menyiapkan tenant baru langsung siap pakai; T082 menambahkan mode ringkas dengan auto-plan dan satu tombol selesai. Piutang dan pembayaran setelah cucian selesai tetap tersedia; tenant dapat mengaktifkan wajib lunas.
 
 ## 1 Cara menggunakan backlog
 
@@ -447,6 +448,13 @@ Untuk fitur backend yang dipakai Flutter/web, task baru selesai setelah kontrak 
 - [x] **T032 Bangun cache draft lokal dan replay**
   Rujukan: NFR05 NFR09 FR18 TR08 SEC10. Dependensi: T005, T010, T017, T023, T026, T074. Selesai jika: Draft, UUID command, payload immutable, versi, dependensi, serta antrean foto tahan restart dan terisolasi. Layar sinkronisasi menunjukkan pending/berhasil/konflik/ditolak; 401 menghentikan replay, 403 mengunci scope, 409 meminta resolusi, 429 menunggu, dan timeout mengulang key yang sama. Quote baru memerlukan persetujuan dan command baru; command turunan gagal tidak dikirim. Draft belum mempunyai nomor nota server; uang, transfer, dan handover final tidak disahkan offline.
 
+- [x] **T081 Provisioning default starter dan onboarding laundry kecil**
+  Rujukan: FR01 FR05 FR07 FR08 FR09 FR13 FR31; PRD bagian 2 dan 4.2. Prioritas: P0. Dependensi: T009, T011, T012, T021, T022, T025, T040. Selesai jika: Registrasi baru menghasilkan lokasi outlet, laci kas, workflow standar, layanan kiloan/satuan, harga tenant berlaku, kalender cabang, dan assignment owner; owner dapat menambah lokasi/laci dari konsol; checklist onboarding tampil sampai setup lengkap.
+
+  Status selesai 28 November 2026. `ProvisionTenant` memanggil `ProvisionStarterDefaults`, membuat lokasi `OUTLET`, laci `KASIR-1`, workflow `standar` tiga langkah tanpa QC wajib, layanan `kiloan` (Rp8.000/kg, min 3 kg) dan `bed-cover` (Rp25.000/potong), price book tenant, serta kalender Senin–Sabtu 08.00–20.00 dengan cut-off 15.00. Owner otomatis ditugaskan ke lokasi tersebut. Role awal `kasir` dan `operator` beserta permission operasional dibuat agar owner dapat menambah staf tanpa menyusun izin dari nol. `tenants.production_mode` default untuk registrasi baru adalah `simple`; tenant lama tetap `detailed` sampai diubah owner. Konsol owner mendapat form tambah lokasi, form tambah laci kas, form tambah akun staf, dan checklist setup di dashboard.
+
+  Verifikasi: `StarterDefaultsTest` lulus **2 test/35 assertion** untuk kelengkapan default, assignment owner, role kasir/operator, tambah lokasi, tambah laci, tambah staf beserta penugasan, dan checklist dashboard. `RegistrationTest`, `ProvisioningTest`, dan `HandoverTest` tetap lulus setelah perubahan.
+
 - [ ] **T033 Bangun layar kasir dan admin dasar**
   Rujukan: FR01 FR05 FR07 FR09 FR13 FR15 NFR10 TR02. Dependensi: T006, T011, T012, T021, T022, T023, T024, T025, T026, T028, T029, T032, T075. Selesai jika: Flutter kasir mempunyai beranda, pelanggan, pesanan baru/detail, scan, dan sinkronisasi; web pemilik mempunyai pengelolaan awal organisasi/cabang/staf/katalog/pelanggan dan shell admin. Alur ringkas dapat dipakai tanpa menu jaringan, memakai komponen standar, dan tidak menampilkan data tenant lama saat berpindah konteks. Layar transaksi lanjutan dilengkapi pada task modul T034–T045, bukan dianggap selesai oleh shell ini.
 
@@ -483,6 +491,8 @@ Untuk fitur backend yang dipakai Flutter/web, task baru selesai setelah kontrak 
   Ekspansi konsol owner 16 November 2026: shell baru dengan sidebar navy, drawer mobile, konteks tenant, navigasi permission-aware, dan desain responsif. Menu Pesanan, Produksi, Keuangan, Laporan, dan Pengaturan kini memiliki route/controller/view aktif; Pengaturan menjadi hub. Halaman Pesanan mencakup daftar, detail, pembatalan, pembayaran, serah terima, credit approval, revisi, dan komplain/rewash. Produksi mencakup antrean per lokasi, task detail, transisi, QC, dan perencanaan dari order. Keuangan mencakup kas/shift, pembayaran, refund, biaya, payment record, dan refund request. Laporan mencakup outlet, piutang, ekspor, dan unduh. Web console dibatasi untuk owner/supervisor/platform admin melalui `web.console`; kasir/operator tetap mobile-first. Verifikasi lokal: 286 test/2.200 assertion lulus.
 
   Belum selesai: kamera/BT dan printer fisik (T048), bukti foto/attachment fisik, draft offline, serta UAT perangkat. Karena itu T033 tetap belum dicentang.
+
+  Catatan 28 November 2026: lingkup pilot dipisahkan. Jalur pilot mencakup mobile kasir, tambah lokasi/laci, dan checklist onboarding (T081); polish konsol owner lanjutan serta state offline lanjutan dapat diselesaikan sesudah pilot. T033 tetap terbuka sampai bukti perangkat, foto, dan draft offline tersedia.
 
 ## Fase D Produksi uang dan pengelolaan P0
 
@@ -522,6 +532,8 @@ Untuk fitur backend yang dipakai Flutter/web, task baru selesai setelah kontrak 
 
 
   Verifikasi backend: `HandoverTest` lulus **2 test/16 assertion** untuk partial lalu completed, larangan double handover, custody event, pembayaran lunas, penolakan saldo tanpa credit, credit approval aktif, dan location scope. Seluruh suite lulus **220 test/1774 assertion**; OpenAPI memuat **107 path/125 operasi**; route handover terdaftar.
+
+  Keputusan 28 November 2026: handover boleh menyisakan saldo sebagai piutang dan pembayaran dapat dicatat setelah cucian diserahkan. `require_payment_before_handover` default `false`; tenant dapat mengaktifkan wajib lunas. `HandoverTest` kini lulus **8 test/60 assertion** untuk kedua perilaku.
 
 - [x] **T038 Bangun pembayaran DP dan alokasi**
   Rujukan: FR31 TR06 SEC06. Dependensi: T003, T017, T026, T040. Selesai jika: Total contoh Rp71.600, DP Rp30.000, sisa Rp41.600; tunai dan transfer manual tervalidasi mendukung pembayaran bertahap/gabungan metode. Payment, allocation, cash entry jika tunai, audit, outbox, serta receipt commit bersama. Uang diserahkan/kembalian dibedakan dari dana bersih; dana titipan menjadi unallocated credit. Piutang memerlukan permission dan credit approval. Tidak ada payment sah dari attempt pending; gateway diaktifkan pada T060/P1.
@@ -589,6 +601,13 @@ Untuk fitur backend yang dipakai Flutter/web, task baru selesai setelah kontrak 
 
   Verifikasi parsial: `NotificationDeliveryTest` lulus **4 test/17 assertion** untuk consent service vs marketing, delivery email unik/idempoten, PII minimal, adapter Kirimdev + provider reference, penolakan tanpa consent, dan rekonsiliasi platform admin. Seluruh suite lulus **235 test/1858 assertion**; OpenAPI memuat **108 path/126 operasi**; Pint bersih.
 
+- [x] **T082 Bangun mode ringkas produksi dan auto-plan**
+  Rujukan: FR19 FR20 FR22 FR24 FR31; PRD 4.2 dan UI bagian 7. Prioritas: P0. Dependensi: T026, T034, T035, T037, T038, T081. Selesai jika: Tenant dapat memilih mode `simple` atau `detailed`; mode simple membuat rencana produksi otomatis saat order diterima, menampilkan empat tahap ringkas, dan menyediakan satu tindakan menyelesaikan seluruh tahap wajib. QC tetap opsional untuk workflow starter. Piutang dan pembayaran setelah cucian selesai tetap tersedia.
+
+  Status selesai 28 November 2026. `AcceptOrder` memanggil `PlanProductionTasks` secara otomatis untuk tenant mode simple pada lokasi produksi bawaan. Endpoint `GET /orders/{order}/production-summary` memberi tahap `Diterima/Diproses/Siap diambil/Diserahkan`, progres, tindakan berikutnya, sisa tagihan, dan `can_pay_later`. Endpoint `POST /orders/{order}/production-complete` menyelesaikan seluruh tugas attempt aktif secara berurutan sambil tetap memeriksa prasyarat, QC, dan scope lokasi. Web owner dan mobile memakai tombol **Selesaikan cucian** tanpa harus membuka task per tahap. `tenants.require_payment_before_handover` default `false`, sehingga serah terima boleh menyisakan piutang; owner dapat mengaktifkannya dari profil organisasi. Mode detailed tidak berubah.
+
+  Verifikasi: `SimpleProductionTest` lulus **1 test/27 assertion** untuk auto-plan tiga tugas, ringkasan, penyelesaian penuh, kesiapan, serah terima tanpa pelunasan, dan pembayaran setelah order `completed`. `HandoverTest` lulus **8 test/60 assertion** untuk piutang default dan tenant wajib lunas. `StarterDefaultsTest` lulus **2 test/35 assertion**.
+
 ## Fase E Pilot dan pengujian
 
 **Rentang usulan baseline:** Minggu 10 sampai 12 untuk persiapan/UAT dan keputusan masuk pilot, setelah dependensi siap. T080 memerlukan sedikitnya empat minggu operasi pilot sesudah T052; waktu tersebut tidak dipadatkan ke rentang persiapan. **Hasil:** Risiko inti diuji, pilot diotorisasi berdasarkan bukti, lalu hasil operasional dan komersial diukur sebelum berbayar.
@@ -637,6 +656,8 @@ Untuk fitur backend yang dipakai Flutter/web, task baru selesai setelah kontrak 
 - [ ] **T052 Putuskan rilis pilot P0 berdasarkan bukti**
   Rujukan: Seluruh FR P0 NFR01–NFR10 SEC01–SEC16 sesuai fase. Dependensi: T045, T046, T047, T048, T049, T050, T051, T073, T074, T075, T076, T077, T079. Selesai jika: Semua FR P0 mempunyai implementasi dan bukti yang diwajibkan; gerbang G01–G07/G09 sesuai fase dinilai, gap terhadap target NFR dicatat beserta keputusan penerimaan, dan pemilik keputusan mengotorisasi pilot. Cakupan pilot, tenant/lokasi, build, dukungan, observasi, serta rollback jelas. Checkbox ini hanya menutup keputusan masuk pilot; rilis berbayar menunggu T080 dan T078.
 
+  Catatan 28 November 2026: untuk pilot laundry kecil, bukti prioritas adalah isolasi tenant, ledger uang, penguasaan barang, restore, satu kanal notifikasi, dan satu perangkat/printer. Profil beban penuh T049 serta matriks T046 lanjutan dapat diselesaikan selama pilot dengan risk acceptance tertulis; bukti perangkat fisik tetap T048. T053/T054 tidak memblokir pilot.
+
 - [ ] **T080 Ukur hasil dan biaya empat minggu operasi pilot**
   Rujukan: PRD bagian 8, DEC08 NFR07; TR13 TR14. Prioritas: Gerbang berbayar sesudah pilot. Dependensi: T020, T042, T051, T052. Selesai jika: Sedikitnya empat minggu operasi nyata dicatat dengan baseline, periode, sampel, serta definisi metrik yang jelas. Ukur median penerimaan pesanan ulang target ≤60 detik; ketepatan waktu target ≥95 persen memakai janji awal dan mengecualikan pembatalan dengan revisi/rewash dilaporkan tersendiri; seluruh selisih kas mempunyai alasan/penanggung jawab; target ≥80 persen staf aktif sesuai peran; serta seluruh order terkonfirmasi mempunyai snapshot wajib. Catat availability pilot target 99,5 persen dan biaya infrastruktur, provider, storage, onboarding, serta dukungan. Hasil/gap dilaporkan apa adanya; task tidak selesai dari simulasi atau karena tanggal target sudah lewat.
 
@@ -650,8 +671,12 @@ Untuk fitur backend yang dipakai Flutter/web, task baru selesai setelah kontrak 
 - [ ] **T053 Bangun penugasan pusat produksi**
   Rujukan: FR25. Dependensi: T012, T027, T034, T052. Selesai jika: Lokasi dapat berbeda dari cabang penjualan; perubahan tugas tidak memindahkan omzet asal.
 
+  Catatan 28 November 2026: tidak memblokir pilot laundry kecil dengan satu lokasi; dikerjakan setelah kebutuhan jaringan terbukti.
+
 - [ ] **T054 Bangun batch dan kapasitas**
   Rujukan: FR21. Dependensi: T034, T035, T053. Selesai jika: Alokasi fisik tidak melampaui sisa dan unit kapasitas konsisten; attempt rewash tertelusur.
+
+  Catatan 28 November 2026: fitur P1; mode ringkas T082 menjadi jalur utama outlet kecil sampai batch benar-benar dibutuhkan.
 
 - [ ] **T055 Bangun dispatch manifest**
   Rujukan: FR26. Dependensi: T017, T027, T053. Selesai jika: Bag dalam perjalanan tidak dapat didispatch lagi; isi terkunci dan custody tercatat. Jika pelacakan per potong telah divalidasi, `garments` P1 beserta identitas, relasi content, dan scan item dimodelkan tanpa mencampurkan jumlah potong dengan kg; fitur opsional ini tidak dipaksakan pada penerimaan kiloan P0.
@@ -934,6 +959,12 @@ Mulai **T001 dan T007**; keduanya tidak mempunyai dependensi. T002–T005 mengik
 ## Keputusan dan perubahan rencana
 
 DEC01–DEC08 tercantum pada PRD. Jika belum diputuskan, catat opsi, pemilik keputusan, dampak, dan pekerjaan independen yang tetap dapat dilakukan. Perubahan aturan bisnis memperbarui PRD; schema memperbarui ERD; kontrak dan runtime memperbarui TRD; state tampilan memperbarui UI; kontrol memperbarui security. Jangan mencentang task hanya karena dokumennya telah ditulis.
+
+### Catatan penyusunan versi 4.2
+
+- T081 menambahkan provisioning default yang langsung siap dipakai, role kasir/operator, tambah lokasi/laci, dan tambah staf.
+- T082 menambahkan mode ringkas produksi, auto-plan, ringkasan tahap, dan penyelesaian satu tindakan tanpa menghapus mode rinci.
+- Handover default boleh menyisakan piutang; tenant dapat mengaktifkan wajib lunas. Pembayaran setelah cucian selesai tetap diizinkan.
 
 ### Catatan penyusunan versi 1.2
 

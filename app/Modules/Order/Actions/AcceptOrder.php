@@ -7,7 +7,9 @@ use App\Models\User;
 use App\Modules\Catalog\Models\Service;
 use App\Modules\Identity\Audit\AuditRecorder;
 use App\Modules\Identity\Enums\AuditAction;
+use App\Modules\Identity\Enums\ProductionMode;
 use App\Modules\Identity\Models\Branch;
+use App\Modules\Identity\Models\Tenant;
 use App\Modules\Operations\Actions\EnsureBranchAcceptsOrders;
 use App\Modules\Operations\Outbox\OutboxWriter;
 use App\Modules\Order\Enums\DiscountApprovalStatus;
@@ -24,8 +26,10 @@ use App\Modules\Order\Models\OrderEvent;
 use App\Modules\Order\Models\OrderLine;
 use App\Modules\Order\Models\Quote;
 use App\Modules\Order\Support\NumberSequence;
+use App\Modules\Production\Actions\PlanProductionTasks;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Throwable;
 
 final class AcceptOrder
 {
@@ -35,6 +39,7 @@ final class AcceptOrder
         private readonly NumberSequence $numbers,
         private readonly AuditRecorder $auditor,
         private readonly OutboxWriter $outbox,
+        private readonly PlanProductionTasks $planner,
     ) {}
 
     /**
@@ -171,6 +176,8 @@ final class AcceptOrder
                 $content->save();
             }
 
+            $this->autoPlanProduction($order, $actorMembershipId, $actor);
+
             $event = new OrderEvent([
                 'order_id' => $order->id,
                 'event_type' => 'accepted',
@@ -221,6 +228,27 @@ final class AcceptOrder
 
             return $order->refresh()->load(['lines', 'invoice.lines', 'bags.contents', 'events']);
         });
+    }
+
+    private function autoPlanProduction(Order $order, int $actorMembershipId, User $actor): void
+    {
+        $tenant = Tenant::query()->whereKey($order->tenant_id)->first();
+
+        if ($tenant?->production_mode !== ProductionMode::Simple) {
+            return;
+        }
+
+        $location = $tenant->defaultProductionLocation();
+
+        if ($location === null) {
+            return;
+        }
+
+        try {
+            $this->planner->handle($order, $location, $actorMembershipId, $actor, false);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 
     private function ensureDiscountApproved(Quote $quote): void

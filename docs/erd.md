@@ -102,10 +102,12 @@ Fase **P0** · Kelas kolom **G**.
 | `timezone` | `varchar(64)` | Default Asia/Jakarta |
 | `status` | `varchar(24)` | provisioning, active, suspended, closed |
 | `data_generation` | `bigint` | Naik saat resync menyeluruh diperlukan |
+| `production_mode` | `varchar(16)` | simple atau detailed; default detailed untuk tenant lama, simple untuk registrasi baru |
+| `require_payment_before_handover` | `boolean` | Default false; bila true, handover mensyaratkan lunas atau credit approval |
 
 **Constraint dan relasi:** `slug` unik; tenant tidak mempunyai tenant_id yang menunjuk dirinya sendiri. Penghapusan memerlukan proses retensi, bukan cascade massal.
 
-**Catatan implementasi T009:** `provisioning_requests` adalah tabel control plane dengan unique `(user_id, client_command_id)`, hash payload, status terminal, dan referensi tenant/cabang/membership. RLS membatasi baris ke `app_current_user_id()`. Role runtime tidak dapat menghapus request. Tenant baru dibuat setelah ID dialokasikan dan tenant context diaktifkan, sehingga policy tenant normal tetap berlaku.
+**Catatan implementasi T081:** registrasi baru membuat lokasi `OUTLET`, laci `KASIR-1`, workflow standar, layanan kiloan/bed-cover, price book tenant, dan kalender cabang agar langsung dapat menerima order. **Catatan implementasi T009:** `provisioning_requests` adalah tabel control plane dengan unique `(user_id, client_command_id)`, hash payload, status terminal, dan referensi tenant/cabang/membership. RLS membatasi baris ke `app_current_user_id()`. Role runtime tidak dapat menghapus request. Tenant baru dibuat setelah ID dialokasikan dan tenant context diaktifkan, sehingga policy tenant normal tetap berlaku.
 
 ### `users`
 

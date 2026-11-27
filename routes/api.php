@@ -151,6 +151,8 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/production/tasks/{task}/transitions', [ProductionTaskController::class, 'transition'])->middleware('tenant');
         Route::post('/production/tasks/{task}/qc-results', [ProductionTaskController::class, 'recordQc'])->middleware('tenant');
         Route::get('/orders/{order}/readiness', [ProductionTaskController::class, 'readiness'])->middleware('tenant');
+        Route::get('/orders/{order}/production-summary', [ProductionTaskController::class, 'summary'])->middleware('tenant');
+        Route::post('/orders/{order}/production-complete', [ProductionTaskController::class, 'complete'])->middleware('tenant');
         Route::get('/orders/{order}/complaints', [ComplaintController::class, 'index'])->middleware('tenant');
         Route::post('/orders/{order}/complaints', [ComplaintController::class, 'store'])->middleware('tenant');
         Route::post('/complaints/{complaint}/rewash', [ComplaintController::class, 'rewash'])->middleware('tenant');
